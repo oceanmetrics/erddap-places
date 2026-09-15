@@ -8,12 +8,15 @@
   import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
   import { engine } from './lib/engine'
   import { gazetteerBase, loadPlaces, placeLobes, type Place } from './lib/gazetteer'
-  import { loadDatasets, toDatasetLon, valueExpr, valueLabel, type Dataset } from './lib/catalog'
+  import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type Dataset } from './lib/catalog'
+  import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors } from './lib/palette'
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
   const LAG_DAYS     = 2      // most near-real-time grids are a couple of days behind
+  const MIN_STEPS    = 8      // a coarse product (8-day Seascapes) still gets this many time steps
+  const WIN          = { days: DEFAULT_DAYS, minSteps: MIN_STEPS, maxDays: MAX_DAYS }
   const iso          = (d: Date) => d.toISOString().slice(0, 10)
 
   // ── state ───────────────────────────────────────────────────────────────────
@@ -33,6 +36,9 @@
   let sql       = $state('')
   let totalMs   = $state(0)
   let chartEl   = $state<HTMLDivElement | null>(null)
+  // the dataset's live time extent, from ERDDAP's info table (the STAC extent end is null/stale)
+  let extent    = $state<TimeExtent | null>(null)
+  let extentFor = $state('')   // the dataset id `extent` belongs to
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
@@ -40,6 +46,10 @@
   const groups  = $derived([...new Set(places.map((p) => p.gazetteer))].map((g) => ({ g, ps: places.filter((p) => p.gazetteer === g) })))
   const categorical = $derived(variable?.categorical === true)
   const nDays   = $derived(Math.round((Date.parse(endDate) - Date.parse(startDate)) / 864e5) + 1)
+  const step    = $derived(extent?.stepLabel ?? (dataset?.timeStep === 'P1D' ? 'daily' : undefined))
+  const nSteps  = $derived(Math.max(1, Math.round(nDays / (extent?.stepDays ?? 1))))
+  const through = $derived(extentFor === dsId && extent ? `data through ${extent.end.slice(0, 10)}` +
+                           (step && step !== 'daily' ? ` (${step} steps)` : '') : '')
   // categorical rows, labelled and coloured (seascapeR's class table when the collection carries one)
   const classList = $derived(categorical
     ? [...new Set(rows.map((r) => Number(r.class)))].sort((a, b) => a - b)
@@ -72,6 +82,17 @@
   }
   // keep the variable valid when the dataset changes
   $effect(() => { if (dataset && !dataset.variables.some((v) => v.name === varName)) varName = dataset.variables[0]?.name ?? '' })
+  // ask the server for the dataset's last time step, and default the window to it
+  $effect(() => { const d = dataset; if (d && extentFor !== d.id) loadExtent(d, true) })
+
+  /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
+  async function loadExtent(ds: Dataset, reset = false): Promise<TimeExtent | null> {
+    const ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId)
+    if (dataset?.id !== ds.id) return ext        // the user moved on while we were fetching
+    extent = ext; extentFor = ds.id
+    if (reset && ext) { const w = defaultWindow(ext, WIN); startDate = w.start; endDate = w.end }
+    return ext
+  }
 
   // ── pipeline ────────────────────────────────────────────────────────────────
   async function run() {
@@ -81,9 +102,17 @@
     const t0 = performance.now()
     try {
       if (!(nDays > 0)) throw new Error('the end date must be on or after the start date')
-      const days  = Math.min(nDays, MAX_DAYS)
-      const start = days === nDays ? startDate : iso(new Date(Date.parse(endDate) - (MAX_DAYS - 1) * 864e5))
-      if (days !== nDays) startDate = start
+      // the window must sit inside what the server actually holds: an out-of-range start snaps back
+      // to the last steps of the dataset instead of 404ing on `"Start" is greater than the axis maximum`
+      status = 'reading the dataset time extent…'
+      const ext = extentFor === ds.id ? extent : await loadExtent(ds)
+      const win = clampWindow({ start: startDate, end: endDate }, ext, WIN)
+      if (win.snapped) note = `window ${win.reason}`
+      let end = win.end, start = win.start
+      if (daysBetween(start, end) + 1 > MAX_DAYS) start = iso(new Date(Date.parse(end) - (MAX_DAYS - 1) * 864e5))
+      startDate = start; endDate = end
+      const days = daysBetween(start, end) + 1
+      const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
 
       const lobes   = placeLobes(place)
       const cells: MaskCell[] = []
@@ -105,11 +134,11 @@
 
         const url = griddapUrl({
           base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name,
-          time: [noonZ(start), noonZ(endDate)],
+          time: [timeInstant(start, ext, noonZ), timeInstant(end, ext, noonZ)],
           lat : [lat[lat.length - 1], lat[0]], lon: [lonSrv[0], lonSrv[lonSrv.length - 1]],
           latDescending: ds.latDescending, format: ds.format,
         })
-        status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days of ${v.name} as .${ds.format} (this can take 15–30 s)…`
+        status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
         const slab = await fetchSlab(url, ds.format, `erddapCb${i}`)
         const file = ds.format === 'parquet' ? `slab_${i}.parquet` : `slab_${i}`
         if (ds.format === 'parquet') await engine.registerBuffer(file, slab.buffer!)
@@ -123,12 +152,13 @@
       const slab = ds.format === 'parquet'
         ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
         : `(${files.map((f) => `SELECT * FROM ${f}`).join(' UNION ALL ')})`
-      rows = await engine.runTemplate(v.categorical ? 'stats_categorical' : 'stats_daily',
-                                      { expr: valueExpr(v), slab, mask: 'mask' })
+      rows = await engine.runTemplate(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
       sql  = engine.lastSql
       totalMs = performance.now() - t0
-      note = `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
-             `${days} time steps requested, ERDDAP ${ds.version ?? '?'} (.${ds.format})`
+      note = (win.snapped ? `window ${win.reason}. ` : '') +
+             `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
+             `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, ` +
+             `ERDDAP ${ds.version ?? '?'} (.${ds.format})`
       status = `done: ${rows.length} rows for ${place.name} in ${(totalMs / 1000).toFixed(1)} s`
     } catch (e) { fail(e) } finally { busy = false }
   }
@@ -151,7 +181,7 @@
     return Plot.plot({
       width: 820, height: 320, marginLeft: 55,
       y: { label: valueLabel(variable!), grid: true },
-      x: { label: null },
+      x: { label: step && step !== 'daily' ? `date (${step} steps)` : null },
       color: { legend: true, domain: ['mean', 'area-wtd mean'], range: ['#1f77b4', '#d62728'] },
       marks: [
         Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: '#1f77b4', fillOpacity: 0.12 }),
@@ -166,7 +196,7 @@
     return Plot.plot({
       width: 820, height: 360, marginLeft: 55, marginRight: 10,
       y: { label: 'fraction of place area', grid: true, percent: true },
-      x: { label: null },
+      x: { label: step && step !== 'daily' ? `date (${step} steps)` : null },
       color: { legend: true, domain, range: classList.map((c) => colours.get(String(c))!) },
       marks: [
         Plot.areaY(catRows, {
@@ -200,6 +230,7 @@
         {#each datasets as d}<option value={d.id}>{d.title}</option>{/each}
       </select>
     </label>
+    {#if through}<span class="through">{through}</span>{/if}
     <label>variable
       <select bind:value={varName} disabled={busy || !dataset}>
         {#each dataset?.variables ?? [] as v}<option value={v.name}>{v.name}{v.categorical ? ' (categorical)' : ''} — {v.description}</option>{/each}
@@ -209,7 +240,7 @@
     <label>to <input type="date" bind:value={endDate} disabled={busy} /></label>
     <button onclick={run} disabled={busy || !place || !variable}>Run</button>
   </div>
-  <p class="meta">{nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS})</p>
+  <p class="meta">{nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS}){#if step && step !== 'daily'} ≈ {nSteps} {step} steps{/if}</p>
 
   <p class="status" class:err={!!error}>{error || status}</p>
   {#if note}<p class="meta">{note}</p>{/if}
@@ -263,6 +294,7 @@
   .status { background: #eef4fb; border-left: 3px solid #1f77b4; padding: .5rem .75rem; }
   .status.err { background: #fdeeee; border-left-color: #d62728; }
   .meta   { color: #444; font-size: 13px; }
+  .through { font-size: 12px; color: #555; padding-bottom: 4px; }
   .url    { font-size: 12px; word-break: break-all; color: #666; }
   .chart  { margin: 1rem 0; }
   table   { border-collapse: collapse; font-size: 13px; width: 100%; }

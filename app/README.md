@@ -20,7 +20,8 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 ```sh
 npm install
 npm run dev      # http://localhost:5179/
-npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP URL shapes, SQL
+npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP URL shapes, SQL,
+                 # time-extent parse + window clamp
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
 npm run check    # svelte-check + tsc
@@ -44,6 +45,16 @@ npm run check    # svelte-check + tsc
   the area weight, the area-weighted `fraction` (sums to 1 per date) and the percent of cells. The
   chart is a stacked area of the class proportions (`Plot.areaY` with `offset: 'normalize'`), the
   colours being seascapeR's reversed ColorBrewer Spectral ramp (`src/lib/palette.ts`).
+- **Time extent comes from the server, not the catalog** (`src/lib/extent.ts`): the STAC
+  `cube:dimensions.time.extent` end is `null`/stale, so on dataset selection the app reads
+  `<base>/info/<datasetID>/index.json` (the `time` `actual_range` row, seconds since epoch, with the
+  `time_coverage_*` globals as the fallback) and caches it. The picker shows "data through
+  2026-06-26"; the default window is the last 30 days ending at the **dataset's** last time step
+  (widened to ~8 steps for a coarser product, so the 8-day Seascapes grid gets 65 days), and a
+  user window is clamped to the extent — a start after the end snaps back and says so in the status
+  line instead of 404ing on `"Start" is greater than the axis maximum=…`. `averageSpacing` from the
+  same info table labels the chart x-axis and status ("8-day steps"), and the extent's own endpoints
+  go into the griddap constraint verbatim so a non-noon axis (MUR is 09:00Z) cannot be overshot.
 - Datasets and variables come from the STAC Collections under `erddap/` in the catalog
   (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
   choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit

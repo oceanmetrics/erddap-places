@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { loadDatasets, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
+import { isCategorical, loadDatasets, statsTemplate, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
 
 const DIR = path.dirname(fileURLToPath(import.meta.url))
 const collection = (id: string) =>
@@ -37,6 +37,28 @@ describe('toDataset', () => {
     expect(d.baseUrl).toBe('https://erddap.oceanmetrics.io/erddap')
     expect(d.latDescending).toBe(false)
     expect(d.variables.map((v) => v.name)).toContain('analysed_sst')
+  })
+})
+
+describe('erddap-places:categorical -> the categorical path', () => {
+  it('flags CRW_BAA in dhw_5km and CLASS in Seascapes, and only those', () => {
+    for (const [id, name] of [['dhw_5km', 'CRW_BAA'], ['noaa_aoml_seascapes_8day', 'CLASS']] as const) {
+      const vars = toDataset(collection(id)).variables
+      expect(vars.find((v) => v.name === name)!.categorical).toBe(true)
+      expect(vars.filter((v) => v.categorical).map((v) => v.name)).toEqual([name])
+    }
+  })
+  it('a flagged variable maps to the categorical SQL template, an unflagged one to stats_daily', () => {
+    const vars = toDataset(collection('dhw_5km')).variables
+    expect(statsTemplate(vars.find((v) => v.name === 'CRW_BAA'))).toBe('stats_categorical')
+    expect(statsTemplate(vars.find((v) => v.name === 'CRW_SST'))).toBe('stats_daily')
+    expect(statsTemplate(null)).toBe('stats_daily')
+  })
+  it('reads the flag whether it is published as a boolean or a string', () => {
+    expect(isCategorical({ 'erddap-places:categorical': true })).toBe(true)
+    expect(isCategorical({ 'erddap-places:categorical': 'true' })).toBe(true)
+    expect(isCategorical({ 'erddap-places:categorical': false })).toBe(false)
+    expect(isCategorical({})).toBe(false)
   })
 })
 

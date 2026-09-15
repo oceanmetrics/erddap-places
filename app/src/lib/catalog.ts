@@ -47,12 +47,23 @@ export function valueLabel(v: CubeVariable): string {
   return u
 }
 
+/** the `erddap-places:categorical` flag as published in the catalog (boolean, or the string). */
+export function isCategorical(v: any): boolean {
+  const f = v?.['erddap-places:categorical']
+  return f === true || f === 'true'
+}
+
+/** the SQL template a variable is summarised with: flagged variables get per-class fractions. */
+export function statsTemplate(v: Pick<CubeVariable, 'categorical'> | null | undefined): 'stats_daily' | 'stats_categorical' {
+  return v?.categorical === true ? 'stats_categorical' : 'stats_daily'
+}
+
 function toVariable(name: string, v: any): CubeVariable {
   return {
     name,
     unit       : v?.unit ?? null,
     description: v?.description ?? name,
-    categorical: v?.['erddap-places:categorical'] === true,
+    categorical: isCategorical(v),
     classes    : v?.['erddap-places:classes'] ?? undefined,
   }
 }
