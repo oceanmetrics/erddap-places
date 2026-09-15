@@ -38,3 +38,11 @@ npm run check    # svelte-check + tsc
   NOAA data, from `noaa-onms/onmsR`).
 - ERDDAP wants each constraint's `[` `]` percent-encoded and nothing else, and it rejects an
   ascending constraint on a **descending** axis — `latitude` on the CRW grid must be `[(hi):1:(lo)]`.
+
+## DuckDB-WASM gotchas (verified 2026-09-15)
+
+- No ICU extension in the WASM build, so `TIMESTAMPTZ::DATE` is unimplemented; `sql/stats_daily.sql`
+  goes through `make_timestamp(epoch_ms(time) * 1000)::DATE` instead (UTC day).
+- `import.meta.glob` paths are relative to the importing file: `src/lib/engine.ts` reaches the repo-root
+  `sql/` as `../../../sql/*.sql`.
+- Arrow returns DATE values to JS as epoch milliseconds; format with `new Date(v)`.

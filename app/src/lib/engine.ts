@@ -10,7 +10,7 @@ import { tableFromArrays, tableToIPC } from 'apache-arrow'
 import type { MaskCell } from './gridMask'
 
 // ── templates ─────────────────────────────────────────────────────────────────
-const templates = import.meta.glob('../../sql/*.sql', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+const templates = import.meta.glob('../../../sql/*.sql', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 export function template(name: string): string {
   const k = Object.keys(templates).find((p) => p.endsWith(`/${name}.sql`))
   if (!k) throw new Error(`no SQL template ${name} (have: ${Object.keys(templates).join(', ')})`)

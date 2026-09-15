@@ -6,7 +6,8 @@
 -- in the JS mask, so 21.375 arrives as 21.374999... on one side; rounding to the grid's 3 decimals
 -- (0.05 spacing) makes the two match without a tolerance join.
 SELECT
-  s."time"::DATE                                    AS date,
+  -- utc day; via epoch_ms because duckdb-wasm ships without icu, so TIMESTAMPTZ::DATE is unimplemented there
+  make_timestamp(epoch_ms(s."time") * 1000)::DATE   AS date,
   count(s.{{var}})                                  AS n,
   avg(s.{{var}})                                    AS mean,
   sum(s.{{var}} * m.weight) / sum(m.weight)         AS mean_wt,

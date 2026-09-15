@@ -69,7 +69,7 @@
 
       status = 'computing the daily statistics…'
       rows = await engine.runTemplate('stats_daily', { var: VAR, slab: "'slab.parquet'", mask: 'mask' })
-      status = `done: ${rows.length} days × ${mask.nInside} cells`
+      status = `done: ${rows.length} days; ${mask.nInside} cells with centres inside, ${mask.cells.length} cells with area weights`
     } catch (e) {
       error  = e instanceof Error ? e.message : String(e)
       status = 'failed'
@@ -126,7 +126,7 @@
       <tbody>
         {#each rows as r}
           <tr>
-            <td>{String(r.date).slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean)}</td><td>{fmt(r.mean_wt)}</td>
+            <td>{new Date(r.date).toISOString().slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean)}</td><td>{fmt(r.mean_wt)}</td>
             <td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td><td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
           </tr>
         {/each}
