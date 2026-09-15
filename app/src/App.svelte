@@ -81,6 +81,9 @@
   // a superseded run used to render SST rows through a categorical template ("class NaN")
   const categorical = $derived(shownVar?.categorical === true)
   const nDays   = $derived(Math.round((Date.parse(endDate) - Date.parse(startDate)) / 864e5) + 1)
+  // the dataset in the picker, which the pre-run line describes (`pointRun` is about the results)
+  const pickedTabular = $derived(dataset?.protocol === 'tabledap')
+  const nYears  = $derived((Math.max(0, nDays) / 365).toFixed(1))
   const step    = $derived(extent?.stepLabel ?? (dataset?.timeStep === 'P1D' ? 'daily' : undefined))
   const nSteps  = $derived(Math.max(1, Math.round(nDays / (extent?.stepDays ?? 1))))
   const through = $derived(extentFor === dsId && extent ? `data through ${extent.end.slice(0, 10)}` +
@@ -374,9 +377,14 @@
                    weight: cells.reduce((a, c) => a + c.weight, 0),
                    partial: cells.filter((c) => c.weight < 0.999).length }
       if (typeof history !== 'undefined') history.replaceState(null, '', permalink(shownRun))
+      // tabledap counts stations and rolls up by month; a grid counts cells and time steps
       note = (win.snapped ? `window ${win.reason}. ` : '') +
-             `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
-             `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, ` +
+             `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ` +
+             (tabular
+               ? `${cells.length} station${cells.length === 1 ? '' : 's'} inside the place, ` +
+                 `${start} to ${end}, monthly roll-up, `
+               : `${cells.length} masked cells, ` +
+                 `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, `) +
              `mask ${(maskMs / 1000).toFixed(2)} s, ` +
              `ERDDAP ${ds.version ?? '?'} (.${ds.format})`
       status = `done: ${rows.length} rows for ${p.name} in ${(totalMs / 1000).toFixed(1)} s ` +
@@ -482,7 +490,13 @@
     <label>to <input type="date" bind:value={endDate} /></label>
     <button onclick={run} disabled={!place || !variable}>{busy ? 'Run (supersedes)' : 'Run'}</button>
   </div>
-  <p class="meta">{nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS}){#if step && step !== 'daily'} ≈ {nSteps} {step} steps{/if}</p>
+  <p class="meta">
+    {#if pickedTabular}
+      {nYears} year{nYears === '1.0' ? '' : 's'} requested (tabledap: monthly roll-up, no {MAX_DAYS}-day cap)
+    {:else}
+      {nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS}){#if step && step !== 'daily'} ≈ {nSteps} {step} steps{/if}
+    {/if}
+  </p>
 
   <p class="status" class:err={!!error}>{error || status}</p>
   {#if note}<p class="meta">{note}</p>{/if}
