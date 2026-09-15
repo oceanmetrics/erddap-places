@@ -5,7 +5,7 @@ with DuckDB-WASM, for places from a gazetteer (NOAA sanctuaries, MarineRegions M
 PSGID). No server of ours in the request path except ERDDAP itself. Started 2026-09-14 after Roy
 Mendelssohn's ioos_tech post "duckDB as an ERDDAP client".
 
-**Live demo:** <https://oceanmetrics.github.io/erddap-places/> (built from `app/` by
+**Live demo:** <https://oceanmetrics.io/erddap-places/> (built from `app/` by
 `.github/workflows/pages.yml`; everything runs in your browser, so the first load pulls ~8 MB of
 gzipped DuckDB-WASM).
 

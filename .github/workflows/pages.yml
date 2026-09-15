@@ -1,4 +1,4 @@
-# build the browser app and publish it to GitHub Pages at https://oceanmetrics.github.io/erddap-places/
+# build the browser app and publish it to GitHub Pages at https://oceanmetrics.io/erddap-places/
 name: pages
 
 on:
