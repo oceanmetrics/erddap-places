@@ -1,0 +1,3 @@
+/* minimal reset; the app's styles live in App.svelte */
+body { margin: 0; background: #fff; color: #222; }
+* { box-sizing: border-box; }

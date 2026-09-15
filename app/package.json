@@ -1,0 +1,32 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@tsconfig/svelte": "^5.0.8",
+    "@types/node": "^24.13.3",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "1.29.0",
+    "@observablehq/plot": "^0.6.17",
+    "@turf/area": "^7.4.0",
+    "@turf/bbox-clip": "^7.4.0",
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "@turf/helpers": "^7.4.0",
+    "apache-arrow": "^17.0.0"
+  }
+}
