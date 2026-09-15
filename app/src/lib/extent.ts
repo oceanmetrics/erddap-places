@@ -150,12 +150,12 @@ const cache = new Map<string, Promise<TimeExtent | null>>()
 const stripSlash = (s: string) => s.replace(/\/+$/, '')
 
 /** `<base>/info/<datasetID>/index.json` -> the live extent, memoised per base+dataset. */
-export function fetchTimeExtent(base: string, datasetId: string, axis = 'time'): Promise<TimeExtent | null> {
+export function fetchTimeExtent(base: string, datasetId: string, axis = 'time', signal?: AbortSignal): Promise<TimeExtent | null> {
   const url = `${stripSlash(base)}/info/${datasetId}/index.json`
   const hit = cache.get(url)
   if (hit) return hit
   const p = (async () => {
-    const res = await fetch(url)
+    const res = await fetch(url, { signal })
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
     return parseInfoExtent(await res.json(), axis)
   })().catch((e) => { cache.delete(url); console.warn('extent:', e); return null })

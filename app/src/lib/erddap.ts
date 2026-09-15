@@ -58,10 +58,10 @@ export function griddapUrls(s: Omit<GriddapSpec, 'lat' | 'lon'>, bboxes: Array<[
 
 // ── axis vectors ──────────────────────────────────────────────────────────────
 /** `dataset.json?latitude[(min):1:(max)]` -> the axis values, in the server's own order. */
-export async function fetchAxis(base: string, datasetId: string, axis: string, min: number, max: number, descending = false): Promise<number[]> {
+export async function fetchAxis(base: string, datasetId: string, axis: string, min: number, max: number, descending = false, signal?: AbortSignal): Promise<number[]> {
   const c   = descending ? constraint(max, min) : constraint(min, max)
   const url = `${stripSlash(base)}/griddap/${datasetId}.json?${axis}${c}`
-  const res = await fetch(url)
+  const res = await fetch(url, { signal })
   if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
   const j: { table: { columnNames: string[]; rows: number[][] } } = await res.json()
   return j.table.rows.map((r) => Number(r[0]))
@@ -94,12 +94,14 @@ export interface Slab {
 }
 
 /** load a `.json?...&.jsonp=cb` URL through a <script> tag (browser only; no CORS needed). */
-export function fetchJsonp(url: string, cbName: string, timeoutMs = 120_000): Promise<any> {
+export function fetchJsonp(url: string, cbName: string, timeoutMs = 120_000, signal?: AbortSignal): Promise<any> {
   return new Promise((resolve, reject) => {
     if (typeof document === 'undefined') return reject(new Error('jsonp needs a browser document'))
     const done = (fn: () => void) => { clearTimeout(timer); delete (window as any)[cbName]; script.remove(); fn() }
     const timer = setTimeout(() => done(() => reject(new Error(`jsonp timeout: ${url}`))), timeoutMs)
     ;(window as any)[cbName] = (data: any) => done(() => resolve(data))
+    // a <script> tag cannot be cancelled, but a superseded run must stop waiting on it
+    signal?.addEventListener('abort', () => done(() => reject(new DOMException('aborted', 'AbortError'))), { once: true })
     const script  = document.createElement('script')
     script.src    = url
     script.onerror = () => done(() => reject(new Error(`jsonp failed: ${url}`)))
@@ -140,13 +142,13 @@ export function parseCsvp(text: string): Record<string, unknown>[] {
 }
 
 /** fetch one slab in the given format. Parquet comes back as bytes for `registerFileBuffer`. */
-export async function fetchSlab(url: string, format: Format = 'parquet', callback = 'erddapCb'): Promise<Slab> {
+export async function fetchSlab(url: string, format: Format = 'parquet', callback = 'erddapCb', signal?: AbortSignal): Promise<Slab> {
   const t0 = (globalThis.performance ?? Date).now()
   if (format === 'jsonp') {
-    const data = await fetchJsonp(url, callback)
+    const data = await fetchJsonp(url, callback, 120_000, signal)
     return { url, format, ms: (globalThis.performance ?? Date).now() - t0, rows: tableToRows(data) }
   }
-  const res = await fetch(url)
+  const res = await fetch(url, { signal })
   if (!res.ok) {
     const msg = (await res.text().catch(() => '')).slice(0, 400)
     throw new Error(`${res.status} ${res.statusText} from ERDDAP: ${msg}`)

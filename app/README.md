@@ -21,7 +21,7 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 npm install
 npm run dev      # http://localhost:5179/
 npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP URL shapes, SQL,
-                 # time-extent parse + window clamp, FKNMS mask budget
+                 # time-extent parse + window clamp, FKNMS mask budget, run tokens
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
 npm run check    # svelte-check + tsc
@@ -45,6 +45,12 @@ npm run check    # svelte-check + tsc
   the area weight, the area-weighted `fraction` (sums to 1 per date) and the percent of cells. The
   chart is a stacked area of the class proportions (`Plot.areaY` with `offset: 'normalize'`), the
   colours being seascapeR's reversed ColorBrewer Spectral ramp (`src/lib/palette.ts`).
+- **One run at a time** (`src/lib/runToken.ts`): each `run()` takes a token and an `AbortController`
+  from `Runs`, which aborts whatever was in flight; every await checkpoint (extent, axes, slab,
+  DuckDB) returns early when `stale()`, and the signal goes into every `fetch`. The results also
+  carry the variable they came from (`shownVar`), so a superseded SST run can no longer render
+  through the newly-picked categorical template as "class NaN" rows. The pickers stay live while a
+  run is in flight and the button reads "Run (supersedes)".
 - **Never put place geometry in deep `$state`** (verified 2026-09-15): Svelte 5's reactive proxy
   wraps every nested coordinate array, and `gridMask` reads each vertex many times — masking FKNMS
   (13 parts, 39,645 vertices) takes **0.24 s on plain arrays and 67 s through the proxy** (TBNMS:

@@ -8,9 +8,10 @@
   import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
   import { engine } from './lib/engine'
   import { gazetteerBase, loadPlaces, placeLobes, plainPlace, type Place } from './lib/gazetteer'
-  import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type Dataset } from './lib/catalog'
+  import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors } from './lib/palette'
+  import { isAbort, Runs, type RunHandle } from './lib/runToken'
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
@@ -43,12 +44,17 @@
   let extent    = $state<TimeExtent | null>(null)
   let extentFor = $state('')   // the dataset id `extent` belongs to
   let maskMs    = $state(0)    // time spent masking the grid, reported in the status line
+  // only the newest run may touch the UI: a run started while another is in flight supersedes it
+  const runs    = new Runs()
+  let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
   const variable = $derived(dataset?.variables.find((v) => v.name === varName) ?? dataset?.variables[0] ?? null)
   const groups  = $derived([...new Set(places.map((p) => p.gazetteer))].map((g) => ({ g, ps: places.filter((p) => p.gazetteer === g) })))
-  const categorical = $derived(variable?.categorical === true)
+  // the results on screen belong to the variable that produced them, never to the current picker:
+  // a superseded run used to render SST rows through a categorical template ("class NaN")
+  const categorical = $derived(shownVar?.categorical === true)
   const nDays   = $derived(Math.round((Date.parse(endDate) - Date.parse(startDate)) / 864e5) + 1)
   const step    = $derived(extent?.stepLabel ?? (dataset?.timeStep === 'P1D' ? 'daily' : undefined))
   const nSteps  = $derived(Math.max(1, Math.round(nDays / (extent?.stepDays ?? 1))))
@@ -58,7 +64,7 @@
   const classList = $derived(categorical
     ? [...new Set(rows.map((r) => Number(r.class)))].sort((a, b) => a - b)
     : [])
-  const classLabel = (c: number) => variable?.classes?.[String(c)] ?? `class ${c}`
+  const classLabel = (c: number) => shownVar?.classes?.[String(c)] ?? `class ${c}`
   const colours = $derived(classColors(classList))
   const catRows = $derived(rows.map((r) => ({
     date    : new Date(r.date),
@@ -90,8 +96,8 @@
   $effect(() => { const d = dataset; if (d && extentFor !== d.id) loadExtent(d, true) })
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
-  async function loadExtent(ds: Dataset, reset = false): Promise<TimeExtent | null> {
-    const ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId)
+  async function loadExtent(ds: Dataset, reset = false, signal?: AbortSignal): Promise<TimeExtent | null> {
+    const ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId, 'time', signal)
     if (dataset?.id !== ds.id) return ext        // the user moved on while we were fetching
     extent = ext; extentFor = ds.id
     if (reset && ext) { const w = defaultWindow(ext, WIN); startDate = w.start; endDate = w.end }
@@ -100,16 +106,20 @@
 
   // ── pipeline ────────────────────────────────────────────────────────────────
   async function run() {
-    if (!place || !dataset || !variable || busy) return
-    const ds = dataset, v = variable
-    busy = true; error = ''; rows = []; urls = []; note = ''
+    if (!place || !dataset || !variable) return
+    const ds = dataset, v = variable, p = place
+    const superseding = runs.active
+    const h: RunHandle = runs.start()      // aborts whatever was in flight
+    busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null
+    if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
     try {
       if (!(nDays > 0)) throw new Error('the end date must be on or after the start date')
       // the window must sit inside what the server actually holds: an out-of-range start snaps back
       // to the last steps of the dataset instead of 404ing on `"Start" is greater than the axis maximum`
       status = 'reading the dataset time extent…'
-      const ext = extentFor === ds.id ? extent : await loadExtent(ds)
+      const ext = extentFor === ds.id ? extent : await loadExtent(ds, false, h.signal)
+      if (h.stale()) return
       const win = clampWindow({ start: startDate, end: endDate }, ext, WIN)
       if (win.snapped) note = `window ${win.reason}`
       let end = win.end, start = win.start
@@ -119,7 +129,7 @@
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
 
       // the mask works on a plain copy: nothing reactive, and no work at all happens until Run
-      const lobes   = placeLobes(plainPlace(place))
+      const lobes   = placeLobes(plainPlace(p))
       maskMs = 0
       const cells: MaskCell[] = []
       const files: string[] = []
@@ -130,9 +140,10 @@
         const lo = toDatasetLon(lobe.bbox[0], ds.lonRange), hi = toDatasetLon(lobe.bbox[2], ds.lonRange)
         status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
         const [lonSrv, lat] = await Promise.all([
-          fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', Math.min(lo, hi), Math.max(lo, hi)),
-          fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending),
+          fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', Math.min(lo, hi), Math.max(lo, hi), false, h.signal),
+          fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending, h.signal),
         ])
+        if (h.stale()) return
         status = `lobe ${i + 1}/${lobes.length}: masking the grid…`
         const m = gridMask(lobe.geojson, lonSrv.map(toPoly), lat)
         maskMs += m.ms
@@ -147,20 +158,25 @@
           latDescending: ds.latDescending, format: ds.format,
         })
         status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
-        const slab = await fetchSlab(url, ds.format, `erddapCb${i}`)
+        const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
+        if (h.stale()) return
         const file = ds.format === 'parquet' ? `slab_${i}.parquet` : `slab_${i}`
         if (ds.format === 'parquet') await engine.registerBuffer(file, slab.buffer!)
         else                          await engine.insertRows(slab.rows ?? [], file)
+        if (h.stale()) return
         files.push(file)
         urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
       }
 
       status = 'computing the statistics…'
       await engine.insertMask(cells)
+      if (h.stale()) return
       const slab = ds.format === 'parquet'
         ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
         : `(${files.map((f) => `SELECT * FROM ${f}`).join(' UNION ALL ')})`
-      rows = await engine.runTemplate(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
+      const out = await engine.runTemplate(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
+      if (h.stale()) return                 // a newer pick is on screen: do not render this result
+      rows = out; shownVar = v
       sql  = engine.lastSql
       totalMs = performance.now() - t0
       note = (win.snapped ? `window ${win.reason}. ` : '') +
@@ -168,16 +184,21 @@
              `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, ` +
              `mask ${(maskMs / 1000).toFixed(2)} s, ` +
              `ERDDAP ${ds.version ?? '?'} (.${ds.format})`
-      status = `done: ${rows.length} rows for ${place.name} in ${(totalMs / 1000).toFixed(1)} s ` +
+      status = `done: ${rows.length} rows for ${p.name} in ${(totalMs / 1000).toFixed(1)} s ` +
                `(mask ${(maskMs / 1000).toFixed(2)} s)`
-    } catch (e) { fail(e) } finally { busy = false }
+    } catch (e) {
+      if (!h.stale() && !isAbort(e)) fail(e)
+    } finally {
+      runs.finish(h)
+      if (!h.stale()) busy = false          // a superseded run leaves `busy` to the run that took over
+    }
   }
 
   // ── charts ──────────────────────────────────────────────────────────────────
   // continuous: mean / area-weighted mean with a p10-p90 band.
   // categorical: stacked area of the area-weighted class proportions (seascapeR's plot_ss_ts()).
   $effect(() => {
-    if (!chartEl || !rows.length || !variable) return
+    if (!chartEl || !rows.length || !shownVar) return
     const chart = categorical ? categoricalChart() : continuousChart()
     chartEl.replaceChildren(chart)
     return () => chart.remove()
@@ -190,7 +211,7 @@
     ])
     return Plot.plot({
       width: 820, height: 320, marginLeft: 55,
-      y: { label: valueLabel(variable!), grid: true },
+      y: { label: valueLabel(shownVar!), grid: true },
       x: { label: step && step !== 'daily' ? `date (${step} steps)` : null },
       color: { legend: true, domain: ['mean', 'area-wtd mean'], range: ['#1f77b4', '#d62728'] },
       marks: [
@@ -227,7 +248,7 @@
 
   <div class="controls">
     <label>place
-      <select bind:value={placeId} disabled={busy || !places.length}>
+      <select bind:value={placeId} disabled={!places.length}>
         {#each groups as { g, ps }}
           <optgroup label={g}>
             {#each ps as p}<option value={p.place_id}>{p.name} ({p.place_id})</option>{/each}
@@ -236,19 +257,19 @@
       </select>
     </label>
     <label>dataset
-      <select bind:value={dsId} disabled={busy || !datasets.length}>
+      <select bind:value={dsId} disabled={!datasets.length}>
         {#each datasets as d}<option value={d.id}>{d.title}</option>{/each}
       </select>
     </label>
     {#if through}<span class="through">{through}</span>{/if}
     <label>variable
-      <select bind:value={varName} disabled={busy || !dataset}>
+      <select bind:value={varName} disabled={!dataset}>
         {#each dataset?.variables ?? [] as v}<option value={v.name}>{v.name}{v.categorical ? ' (categorical)' : ''} — {v.description}</option>{/each}
       </select>
     </label>
-    <label>from <input type="date" bind:value={startDate} disabled={busy} /></label>
-    <label>to <input type="date" bind:value={endDate} disabled={busy} /></label>
-    <button onclick={run} disabled={busy || !place || !variable}>Run</button>
+    <label>from <input type="date" bind:value={startDate} /></label>
+    <label>to <input type="date" bind:value={endDate} /></label>
+    <button onclick={run} disabled={!place || !variable}>{busy ? 'Run (supersedes)' : 'Run'}</button>
   </div>
   <p class="meta">{nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS}){#if step && step !== 'daily'} ≈ {nSteps} {step} steps{/if}</p>
 
