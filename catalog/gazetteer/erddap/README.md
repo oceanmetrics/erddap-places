@@ -1,6 +1,6 @@
 # ERDDAP dataset descriptions
 
-STAC Collections describing two ERDDAP griddap datasets used to compute fresh place statistics
+STAC Collections describing three ERDDAP griddap datasets used to compute fresh place statistics
 in the browser (DuckDB-WASM), rather than storing pre-computed values. Each collection carries the
 [datacube extension](https://stac-extensions.github.io/datacube/v2.2.0/schema.json) (dimensions,
 variables) plus custom `erddap:*` fields (base URL, dataset id, protocol, CORS support, formats)
@@ -12,6 +12,10 @@ and a templated `griddap` asset href for building query URLs.
   `erddap.oceanmetrics.io` (our planned re-serving mirror, **not yet live**); the collection also
   carries an `erddap:upstream_url` and a `griddap_upstream` asset pointing at the NOAA CoastWatch
   server, which is usable today.
+- [`noaa_aoml_seascapes_8day/`](noaa_aoml_seascapes_8day/collection.json) — NOAA AOML Seascapes,
+  8-day global 0.05° **categorical** classes (`CLASS` 1–33, with `erddap-places:categorical` and an
+  `erddap-places:classes` label map). Points at `erddap.oceanmetrics.io` with the upstream
+  `cwcgom.aoml.noaa.gov` server as `erddap:upstream_url`.
 
 ## Note on Portolan/rashid validation
 

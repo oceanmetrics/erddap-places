@@ -39,6 +39,12 @@
       "href": "./erddap/jplMURSST41/collection.json",
       "type": "application/json",
       "title": "JPL MUR SST v4.1 (re-served)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/noaa_aoml_seascapes_8day/collection.json",
+      "type": "application/json",
+      "title": "NOAA AOML Seascapes — 8-day Global (categorical)"
     }
   ],
   "title": "Ocean Metrics gazetteer",
