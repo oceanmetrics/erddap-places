@@ -14,6 +14,9 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
   (live, PacIOOS ERDDAP).
 - [`erddap/jplMURSST41/`](erddap/jplMURSST41/collection.json) — JPL MUR SST v4.1, 0.01° daily
   (upstream NOAA CoastWatch is live; our re-serving mirror is not yet live).
+- [`stats/`](stats/collection.json) — **precomputed** statistics: one Parquet per (dataset,
+  variable, place) for the last 365 days, refreshed weekly, computed with exactly the mask and SQL
+  the browser app runs live.
 
 ## How to read
 
@@ -21,6 +24,9 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
   in DuckDB; load `places.pmtiles` into MapLibre GL for rendering.
 - ERDDAP: read a `collection.json`'s `griddap` asset template and build a query URL — see
   [`AGENTS.md`](AGENTS.md).
+- Statistics, precomputed (cheapest):
+  `SELECT * FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/stats/dhw_5km/CRW_SST/NMS:HIHWNMS.parquet')`
+  — note the colon in `place_id` is kept in the object key. See [`stats/README.md`](stats/README.md).
 
 ---
 

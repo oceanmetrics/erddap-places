@@ -1,0 +1,28 @@
+{
+  "name": "precompute",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "precomputed place x ERDDAP statistics for the gazetteer stats/ collection",
+  "scripts": {
+    "stats": "tsx src/precompute.ts",
+    "items": "tsx src/precompute.ts --items-only",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.5.5-r.5",
+    "@turf/area": "^7.4.0",
+    "@turf/bbox-clip": "^7.4.0",
+    "@turf/boolean-point-in-polygon": "^7.4.0",
+    "@turf/helpers": "^7.4.0",
+    "hyparquet": "^1.30.1",
+    "hyparquet-compressors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.13.3",
+    "tsx": "^4.20.6",
+    "typescript": "~7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

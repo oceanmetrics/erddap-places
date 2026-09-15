@@ -1,0 +1,230 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_BAA_NMS-PMNM",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -180,
+            19.2345784
+          ],
+          [
+            -161.01730609999998,
+            19.2345784
+          ],
+          [
+            -161.01730609999998,
+            31.7978642
+          ],
+          [
+            -180,
+            31.7978642
+          ],
+          [
+            -180,
+            19.2345784
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            177.84422,
+            25.3897549
+          ],
+          [
+            180,
+            25.3897549
+          ],
+          [
+            180,
+            31.4683176
+          ],
+          [
+            177.84422,
+            31.4683176
+          ],
+          [
+            177.84422,
+            25.3897549
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180,
+    19.2345784,
+    180,
+    31.7978642
+  ],
+  "properties": {
+    "title": "Papahānaumokuākea Marine National Monument — CRW_BAA (dhw_5km)",
+    "description": "Precomputed per-class composition of CRW_BAA from NOAA Coral Reef Watch — Daily Global 5km SST + DHW over Papahānaumokuākea Marine National Monument (NMS:PMNM), 2025-09-15 to 2026-09-14.",
+    "datetime": null,
+    "start_datetime": "2025-09-15T12:00:00Z",
+    "end_datetime": "2026-09-14T12:00:00Z",
+    "created": "2026-09-15T21:40:21Z",
+    "table:row_count": 666,
+    "erddap-places:place_id": "NMS:PMNM",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_BAA",
+    "erddap-places:categorical": true,
+    "erddap-places:mask_cells": 55106,
+    "erddap-places:lobes": 2,
+    "erddap-places:griddap_urls": [
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-09-15T12:00:00Z):1:(2025-10-03T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-10-04T12:00:00Z):1:(2025-10-22T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-10-23T12:00:00Z):1:(2025-11-10T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-11-11T12:00:00Z):1:(2025-11-29T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-11-30T12:00:00Z):1:(2025-12-18T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-12-19T12:00:00Z):1:(2026-01-06T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-01-07T12:00:00Z):1:(2026-01-25T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-01-26T12:00:00Z):1:(2026-02-13T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-02-14T12:00:00Z):1:(2026-03-04T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-03-05T12:00:00Z):1:(2026-03-23T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-03-24T12:00:00Z):1:(2026-04-11T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-04-12T12:00:00Z):1:(2026-04-30T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-05-01T12:00:00Z):1:(2026-05-19T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-05-20T12:00:00Z):1:(2026-06-07T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-06-08T12:00:00Z):1:(2026-06-26T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-06-27T12:00:00Z):1:(2026-07-15T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-07-16T12:00:00Z):1:(2026-08-03T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-08-04T12:00:00Z):1:(2026-08-22T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-08-23T12:00:00Z):1:(2026-09-10T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-09-11T12:00:00Z):1:(2026-09-14T12:00:00Z)%5D%5B(31.775):1:(19.225)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-09-15T12:00:00Z):1:(2025-10-03T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-10-04T12:00:00Z):1:(2025-10-22T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-10-23T12:00:00Z):1:(2025-11-10T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-11-11T12:00:00Z):1:(2025-11-29T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-11-30T12:00:00Z):1:(2025-12-18T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-12-19T12:00:00Z):1:(2026-01-06T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-01-07T12:00:00Z):1:(2026-01-25T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-01-26T12:00:00Z):1:(2026-02-13T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-02-14T12:00:00Z):1:(2026-03-04T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-03-05T12:00:00Z):1:(2026-03-23T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-03-24T12:00:00Z):1:(2026-04-11T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-04-12T12:00:00Z):1:(2026-04-30T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-05-01T12:00:00Z):1:(2026-05-19T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-05-20T12:00:00Z):1:(2026-06-07T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-06-08T12:00:00Z):1:(2026-06-26T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-06-27T12:00:00Z):1:(2026-07-15T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-07-16T12:00:00Z):1:(2026-08-03T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-08-04T12:00:00Z):1:(2026-08-22T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-08-23T12:00:00Z):1:(2026-09-10T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-09-11T12:00:00Z):1:(2026-09-14T12:00:00Z)%5D%5B(31.475):1:(25.375)%5D%5B(177.825):1:(179.975)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../dhw_5km/CRW_BAA/NMS:PMNM.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CRW_BAA statistics for Papahānaumokuākea Marine National Monument",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "class",
+          "type": "int64",
+          "description": "the class value (see the dataset collection's erddap-places:classes)"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells in that class on that day"
+        },
+        {
+          "name": "weight",
+          "type": "double",
+          "description": "sum of the class cells' area weights"
+        },
+        {
+          "name": "frac_area",
+          "type": "double",
+          "description": "area-weighted share of the place in that class; sums to 1 over a date (the SQL template calls this `fraction`)"
+        },
+        {
+          "name": "pct_cells",
+          "type": "double",
+          "description": "unweighted percent of masked cells in that class (the SQL template calls this `percent_cells`)"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CLASS"
+        }
+      ],
+      "file:size": 14663,
+      "file:checksum": "12209396e71b725c6f1695ad2fbdee881c12fd391c339f45ed13a4bd107c51378867"
+    },
+    "provenance": {
+      "href": "../../dhw_5km/CRW_BAA/NMS:PMNM.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 20172,
+      "file:checksum": "12206b05ca769686239b4d3c3c0fefeb22b85a998765a7d8e6d8c124def3c79bc1dd"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://pae-paha.pacioos.hawaii.edu/erddap/info/dhw_5km/index.html",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

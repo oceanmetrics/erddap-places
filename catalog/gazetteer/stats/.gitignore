@@ -1,0 +1,5 @@
+# the data files are regenerated weekly by .github/workflows/stats.yml and published to
+# s3://oceanmetrics.io-public/gazetteer/stats/; only the STAC (collection.json, items/) and the docs
+# are tracked in git. run `cd precompute && npm run stats` to rebuild them locally.
+*.parquet
+*.provenance.json

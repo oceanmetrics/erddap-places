@@ -1,0 +1,200 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "noaa_aoml_seascapes_8day_CLASS_NMS-PMNM",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -180,
+            19.2345784
+          ],
+          [
+            -161.01730609999998,
+            19.2345784
+          ],
+          [
+            -161.01730609999998,
+            31.7978642
+          ],
+          [
+            -180,
+            31.7978642
+          ],
+          [
+            -180,
+            19.2345784
+          ]
+        ]
+      ],
+      [
+        [
+          [
+            177.84422,
+            25.3897549
+          ],
+          [
+            180,
+            25.3897549
+          ],
+          [
+            180,
+            31.4683176
+          ],
+          [
+            177.84422,
+            31.4683176
+          ],
+          [
+            177.84422,
+            25.3897549
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -180,
+    19.2345784,
+    180,
+    31.7978642
+  ],
+  "properties": {
+    "title": "Papahānaumokuākea Marine National Monument — CLASS (noaa_aoml_seascapes_8day)",
+    "description": "Precomputed per-class composition of CLASS from NOAA AOML Seascapes — 8-day Global (categorical) over Papahānaumokuākea Marine National Monument (NMS:PMNM), 2025-06-27 to 2026-06-26.",
+    "datetime": null,
+    "start_datetime": "2025-06-27T12:00:00Z",
+    "end_datetime": "2026-06-26T12:00:00Z",
+    "created": "2026-09-15T21:41:43Z",
+    "table:row_count": 620,
+    "erddap-places:place_id": "NMS:PMNM",
+    "erddap-places:dataset_id": "noaa_aoml_seascapes_8day",
+    "erddap-places:variable": "CLASS",
+    "erddap-places:categorical": true,
+    "erddap-places:mask_cells": 55106,
+    "erddap-places:lobes": 2,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-06-27T12:00:00Z):1:(2025-09-24T12:00:00Z)%5D%5B(19.225):1:(31.775)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-09-25T12:00:00Z):1:(2025-12-23T12:00:00Z)%5D%5B(19.225):1:(31.775)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-12-24T12:00:00Z):1:(2026-03-23T12:00:00Z)%5D%5B(19.225):1:(31.775)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-03-24T12:00:00Z):1:(2026-06-21T12:00:00Z)%5D%5B(19.225):1:(31.775)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-06-22T12:00:00Z):1:(2026-06-26T12:00:00Z)%5D%5B(19.225):1:(31.775)%5D%5B(-179.975):1:(-161.025)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-06-27T12:00:00Z):1:(2025-09-24T12:00:00Z)%5D%5B(25.375):1:(31.475)%5D%5B(177.825):1:(179.975)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-09-25T12:00:00Z):1:(2025-12-23T12:00:00Z)%5D%5B(25.375):1:(31.475)%5D%5B(177.825):1:(179.975)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-12-24T12:00:00Z):1:(2026-03-23T12:00:00Z)%5D%5B(25.375):1:(31.475)%5D%5B(177.825):1:(179.975)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-03-24T12:00:00Z):1:(2026-06-21T12:00:00Z)%5D%5B(25.375):1:(31.475)%5D%5B(177.825):1:(179.975)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-06-22T12:00:00Z):1:(2026-06-26T12:00:00Z)%5D%5B(25.375):1:(31.475)%5D%5B(177.825):1:(179.975)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../noaa_aoml_seascapes_8day/CLASS/NMS:PMNM.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CLASS statistics for Papahānaumokuākea Marine National Monument",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "class",
+          "type": "int64",
+          "description": "the class value (see the dataset collection's erddap-places:classes)"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells in that class on that day"
+        },
+        {
+          "name": "weight",
+          "type": "double",
+          "description": "sum of the class cells' area weights"
+        },
+        {
+          "name": "frac_area",
+          "type": "double",
+          "description": "area-weighted share of the place in that class; sums to 1 over a date (the SQL template calls this `fraction`)"
+        },
+        {
+          "name": "pct_cells",
+          "type": "double",
+          "description": "unweighted percent of masked cells in that class (the SQL template calls this `percent_cells`)"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CLASS"
+        }
+      ],
+      "file:size": 16676,
+      "file:checksum": "12201ee6007288b65cd3d4d48f4eec710990ef6353d82d7b8feb5fab365b9ba755b2"
+    },
+    "provenance": {
+      "href": "../../noaa_aoml_seascapes_8day/CLASS/NMS:PMNM.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 7198,
+      "file:checksum": "12208b2bf17c4e6a7447a47eb037250b69f3aeed46bee0cb8e79633e24ae72be368b"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/noaa_aoml_seascapes_8day/collection.json",
+      "type": "application/json",
+      "title": "NOAA AOML Seascapes — 8-day Global (categorical)"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_seascapes_8day/index.html",
+      "title": "8_Day Global Seascapes (NOAA AOML)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

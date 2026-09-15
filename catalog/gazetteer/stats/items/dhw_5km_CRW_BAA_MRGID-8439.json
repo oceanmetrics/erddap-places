@@ -1,0 +1,174 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_BAA_MRGID-8439",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -133.4326935,
+            -28.4247039
+          ],
+          [
+            -121.1089689,
+            -28.4247039
+          ],
+          [
+            -121.1089689,
+            -20.5605365
+          ],
+          [
+            -133.4326935,
+            -20.5605365
+          ],
+          [
+            -133.4326935,
+            -28.4247039
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -133.4326935,
+    -28.4247039,
+    -121.1089689,
+    -20.5605365
+  ],
+  "properties": {
+    "title": "British Exclusive Economic Zone (Pitcairn) — CRW_BAA (dhw_5km)",
+    "description": "Precomputed per-class composition of CRW_BAA from NOAA Coral Reef Watch — Daily Global 5km SST + DHW over British Exclusive Economic Zone (Pitcairn) (MRGID:8439), 2025-09-15 to 2026-09-14.",
+    "datetime": null,
+    "start_datetime": "2025-09-15T12:00:00Z",
+    "end_datetime": "2026-09-14T12:00:00Z",
+    "created": "2026-09-15T21:37:40Z",
+    "table:row_count": 581,
+    "erddap-places:place_id": "MRGID:8439",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_BAA",
+    "erddap-places:categorical": true,
+    "erddap-places:mask_cells": 30477,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-09-15T12:00:00Z):1:(2025-11-04T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-11-05T12:00:00Z):1:(2025-12-25T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-12-26T12:00:00Z):1:(2026-02-14T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-02-15T12:00:00Z):1:(2026-04-06T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-04-07T12:00:00Z):1:(2026-05-27T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-05-28T12:00:00Z):1:(2026-07-17T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-07-18T12:00:00Z):1:(2026-09-06T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-09-07T12:00:00Z):1:(2026-09-14T12:00:00Z)%5D%5B(-20.575):1:(-28.425)%5D%5B(-133.425):1:(-121.125)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../dhw_5km/CRW_BAA/MRGID:8439.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CRW_BAA statistics for British Exclusive Economic Zone (Pitcairn)",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "class",
+          "type": "int64",
+          "description": "the class value (see the dataset collection's erddap-places:classes)"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells in that class on that day"
+        },
+        {
+          "name": "weight",
+          "type": "double",
+          "description": "sum of the class cells' area weights"
+        },
+        {
+          "name": "frac_area",
+          "type": "double",
+          "description": "area-weighted share of the place in that class; sums to 1 over a date (the SQL template calls this `fraction`)"
+        },
+        {
+          "name": "pct_cells",
+          "type": "double",
+          "description": "unweighted percent of masked cells in that class (the SQL template calls this `percent_cells`)"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CLASS"
+        }
+      ],
+      "file:size": 11672,
+      "file:checksum": "1220537dff4330a247fae8232a3e9dbfbc230cc39e2dc8352addb0b029bbb9010596"
+    },
+    "provenance": {
+      "href": "../../dhw_5km/CRW_BAA/MRGID:8439.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 5958,
+      "file:checksum": "122050639889d3acb2dc35d923ebe6ca67ca5eba57925adf8928f109a1a6454e4b55"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://pae-paha.pacioos.hawaii.edu/erddap/info/dhw_5km/index.html",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

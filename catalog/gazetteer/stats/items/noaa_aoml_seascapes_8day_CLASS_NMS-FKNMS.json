@@ -1,0 +1,171 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "noaa_aoml_seascapes_8day_CLASS_NMS-FKNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -83.1498852,
+            24.300408
+          ],
+          [
+            -80.0664707,
+            24.300408
+          ],
+          [
+            -80.0664707,
+            25.6504576
+          ],
+          [
+            -83.1498852,
+            25.6504576
+          ],
+          [
+            -83.1498852,
+            24.300408
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -83.1498852,
+    24.300408,
+    -80.0664707,
+    25.6504576
+  ],
+  "properties": {
+    "title": "Florida Keys National Marine Sanctuary — CLASS (noaa_aoml_seascapes_8day)",
+    "description": "Precomputed per-class composition of CLASS from NOAA AOML Seascapes — 8-day Global (categorical) over Florida Keys National Marine Sanctuary (NMS:FKNMS), 2025-06-27 to 2026-06-26.",
+    "datetime": null,
+    "start_datetime": "2025-06-27T12:00:00Z",
+    "end_datetime": "2026-06-26T12:00:00Z",
+    "created": "2026-09-15T21:40:55Z",
+    "table:row_count": 208,
+    "erddap-places:place_id": "NMS:FKNMS",
+    "erddap-places:dataset_id": "noaa_aoml_seascapes_8day",
+    "erddap-places:variable": "CLASS",
+    "erddap-places:categorical": true,
+    "erddap-places:mask_cells": 462,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-06-27T12:00:00Z):1:(2025-09-24T12:00:00Z)%5D%5B(24.325):1:(25.675)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-09-25T12:00:00Z):1:(2025-12-23T12:00:00Z)%5D%5B(24.325):1:(25.675)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2025-12-24T12:00:00Z):1:(2026-03-23T12:00:00Z)%5D%5B(24.325):1:(25.675)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-03-24T12:00:00Z):1:(2026-06-21T12:00:00Z)%5D%5B(24.325):1:(25.675)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://erddap.oceanmetrics.io/erddap/griddap/noaa_aoml_seascapes_8day.parquet?CLASS%5B(2026-06-22T12:00:00Z):1:(2026-06-26T12:00:00Z)%5D%5B(24.325):1:(25.675)%5D%5B(-83.125):1:(-80.075)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../noaa_aoml_seascapes_8day/CLASS/NMS:FKNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CLASS statistics for Florida Keys National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "class",
+          "type": "int64",
+          "description": "the class value (see the dataset collection's erddap-places:classes)"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells in that class on that day"
+        },
+        {
+          "name": "weight",
+          "type": "double",
+          "description": "sum of the class cells' area weights"
+        },
+        {
+          "name": "frac_area",
+          "type": "double",
+          "description": "area-weighted share of the place in that class; sums to 1 over a date (the SQL template calls this `fraction`)"
+        },
+        {
+          "name": "pct_cells",
+          "type": "double",
+          "description": "unweighted percent of masked cells in that class (the SQL template calls this `percent_cells`)"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CLASS"
+        }
+      ],
+      "file:size": 6835,
+      "file:checksum": "1220482c82b2b02438624a2d90454d4eefbdacd4d93697c3d4ef3f7befbe62a81774"
+    },
+    "provenance": {
+      "href": "../../noaa_aoml_seascapes_8day/CLASS/NMS:FKNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 4771,
+      "file:checksum": "1220f41bfcbf032f8a98d038851e3262898f9a0ff968dba9c3b961bca413c413d968"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/noaa_aoml_seascapes_8day/collection.json",
+      "type": "application/json",
+      "title": "NOAA AOML Seascapes — 8-day Global (categorical)"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://cwcgom.aoml.noaa.gov/erddap/info/noaa_aoml_seascapes_8day/index.html",
+      "title": "8_Day Global Seascapes (NOAA AOML)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

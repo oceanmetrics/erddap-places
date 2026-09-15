@@ -1,0 +1,171 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_BAA_NMS-OCNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -125.6816635,
+            47.1291657
+          ],
+          [
+            -124.18389889999999,
+            47.1291657
+          ],
+          [
+            -124.18389889999999,
+            48.5058899
+          ],
+          [
+            -125.6816635,
+            48.5058899
+          ],
+          [
+            -125.6816635,
+            47.1291657
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -125.6816635,
+    47.1291657,
+    -124.18389889999999,
+    48.5058899
+  ],
+  "properties": {
+    "title": "Olympic Coast National Marine Sanctuary — CRW_BAA (dhw_5km)",
+    "description": "Precomputed per-class composition of CRW_BAA from NOAA Coral Reef Watch — Daily Global 5km SST + DHW over Olympic Coast National Marine Sanctuary (NMS:OCNMS), 2025-09-15 to 2026-09-14.",
+    "datetime": null,
+    "start_datetime": "2025-09-15T12:00:00Z",
+    "end_datetime": "2026-09-14T12:00:00Z",
+    "created": "2026-09-15T21:39:14Z",
+    "table:row_count": 532,
+    "erddap-places:place_id": "NMS:OCNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_BAA",
+    "erddap-places:categorical": true,
+    "erddap-places:mask_cells": 461,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-09-15T12:00:00Z):1:(2025-12-13T12:00:00Z)%5D%5B(48.525):1:(47.125)%5D%5B(-125.675):1:(-124.175)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2025-12-14T12:00:00Z):1:(2026-03-13T12:00:00Z)%5D%5B(48.525):1:(47.125)%5D%5B(-125.675):1:(-124.175)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-03-14T12:00:00Z):1:(2026-06-11T12:00:00Z)%5D%5B(48.525):1:(47.125)%5D%5B(-125.675):1:(-124.175)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-06-12T12:00:00Z):1:(2026-09-09T12:00:00Z)%5D%5B(48.525):1:(47.125)%5D%5B(-125.675):1:(-124.175)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_BAA%5B(2026-09-10T12:00:00Z):1:(2026-09-14T12:00:00Z)%5D%5B(48.525):1:(47.125)%5D%5B(-125.675):1:(-124.175)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../dhw_5km/CRW_BAA/NMS:OCNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CRW_BAA statistics for Olympic Coast National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "class",
+          "type": "int64",
+          "description": "the class value (see the dataset collection's erddap-places:classes)"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells in that class on that day"
+        },
+        {
+          "name": "weight",
+          "type": "double",
+          "description": "sum of the class cells' area weights"
+        },
+        {
+          "name": "frac_area",
+          "type": "double",
+          "description": "area-weighted share of the place in that class; sums to 1 over a date (the SQL template calls this `fraction`)"
+        },
+        {
+          "name": "pct_cells",
+          "type": "double",
+          "description": "unweighted percent of masked cells in that class (the SQL template calls this `percent_cells`)"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CLASS"
+        }
+      ],
+      "file:size": 8810,
+      "file:checksum": "1220e7be9f66335615ab1b32a5de666e2f4e884852512be038e04c1fdfe2b48f06bd"
+    },
+    "provenance": {
+      "href": "../../dhw_5km/CRW_BAA/NMS:OCNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 4575,
+      "file:checksum": "1220b7d39c2f2e4a7f67d807d8486f85169696e77f1abbc2544e2cd2d5665cc99644"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://pae-paha.pacioos.hawaii.edu/erddap/info/dhw_5km/index.html",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

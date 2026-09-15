@@ -1,0 +1,191 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-FKNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -83.1498852,
+            24.300408
+          ],
+          [
+            -80.0664707,
+            24.300408
+          ],
+          [
+            -80.0664707,
+            25.6504576
+          ],
+          [
+            -83.1498852,
+            25.6504576
+          ],
+          [
+            -83.1498852,
+            24.300408
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -83.1498852,
+    24.300408,
+    -80.0664707,
+    25.6504576
+  ],
+  "properties": {
+    "title": "Florida Keys National Marine Sanctuary — CRW_SST (dhw_5km)",
+    "description": "Precomputed daily statistics of CRW_SST from NOAA Coral Reef Watch — Daily Global 5km SST + DHW over Florida Keys National Marine Sanctuary (NMS:FKNMS), 2025-09-15 to 2026-09-14.",
+    "datetime": null,
+    "start_datetime": "2025-09-15T12:00:00Z",
+    "end_datetime": "2026-09-14T12:00:00Z",
+    "created": "2026-09-15T21:23:38Z",
+    "table:row_count": 364,
+    "erddap-places:place_id": "NMS:FKNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:categorical": false,
+    "erddap-places:mask_cells": 462,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_SST%5B(2025-09-15T12:00:00Z):1:(2025-12-13T12:00:00Z)%5D%5B(25.675):1:(24.325)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_SST%5B(2025-12-14T12:00:00Z):1:(2026-03-13T12:00:00Z)%5D%5B(25.675):1:(24.325)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_SST%5B(2026-03-14T12:00:00Z):1:(2026-06-11T12:00:00Z)%5D%5B(25.675):1:(24.325)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_SST%5B(2026-06-12T12:00:00Z):1:(2026-09-09T12:00:00Z)%5D%5B(25.675):1:(24.325)%5D%5B(-83.125):1:(-80.075)%5D",
+      "https://pae-paha.pacioos.hawaii.edu/erddap/griddap/dhw_5km.parquet?CRW_SST%5B(2026-09-10T12:00:00Z):1:(2026-09-14T12:00:00Z)%5D%5B(25.675):1:(24.325)%5D%5B(-83.125):1:(-80.075)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../dhw_5km/CRW_SST/NMS:FKNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CRW_SST statistics for Florida Keys National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells with a non-null value on that day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "unweighted mean over the masked cells"
+        },
+        {
+          "name": "mean_wt",
+          "type": "double",
+          "description": "area-weighted mean (partial boundary cells count for their overlap)"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum"
+        },
+        {
+          "name": "p10",
+          "type": "double",
+          "description": "10th percentile (continuous)"
+        },
+        {
+          "name": "p90",
+          "type": "double",
+          "description": "90th percentile (continuous)"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the cell area weights contributing to the day"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 16828,
+      "file:checksum": "1220ea73ef09985fd9cc1c5e1401b77e15eb120dfa3a9e054ea993c91545d3fe633b"
+    },
+    "provenance": {
+      "href": "../../dhw_5km/CRW_SST/NMS:FKNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 4405,
+      "file:checksum": "12201c2e7c98c9fdf45d6853fc397ff183af7278e6a8ca242b661dedbee4a5a68e6c"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://pae-paha.pacioos.hawaii.edu/erddap/info/dhw_5km/index.html",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

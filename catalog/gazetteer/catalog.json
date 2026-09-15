@@ -51,6 +51,12 @@
       "href": "./erddap/calcofi_bottle/collection.json",
       "type": "application/json",
       "title": "CalCOFI Bottle Database — observations (tabledap)"
+    },
+    {
+      "rel": "child",
+      "href": "./stats/collection.json",
+      "type": "application/json",
+      "title": "Precomputed place statistics"
     }
   ],
   "title": "Ocean Metrics gazetteer",
