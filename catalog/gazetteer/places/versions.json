@@ -1,0 +1,58 @@
+{
+  "spec_version": "1.0.0",
+  "current_version": "1.0.1",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "created": "2026-09-15T13:52:04.806491Z",
+      "breaking": false,
+      "assets": {
+        "places.parquet": {
+          "sha256": "8be0ce1b0a11c30ae6febed2c3c29405ba7cb4ff4160fbb4533615dc5c1f1da5",
+          "size_bytes": 4183823,
+          "href": "places/places.parquet",
+          "source_mtime": 1789480324.7740173,
+          "mtime": 1789480324.7740173,
+          "feature_count": 20,
+          "schema_fingerprint": "5187f3e49934ab8c"
+        }
+      },
+      "changes": [
+        "places.parquet"
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "created": "2026-09-15T13:52:21.940252Z",
+      "breaking": false,
+      "assets": {
+        "places.parquet": {
+          "sha256": "8be0ce1b0a11c30ae6febed2c3c29405ba7cb4ff4160fbb4533615dc5c1f1da5",
+          "size_bytes": 4183823,
+          "href": "places/places.parquet",
+          "source_mtime": 1789480324.7740173,
+          "mtime": 1789480324.7740173,
+          "feature_count": 20,
+          "schema_fingerprint": "5187f3e49934ab8c"
+        },
+        "places.pmtiles": {
+          "sha256": "aba1283e43bd2d2ec39e2a5a54ac2b9ac390f9dfc406cf2a74c921fbf2fe55e1",
+          "size_bytes": 1810141,
+          "href": "places/places.pmtiles",
+          "mtime": 1789480330.732199
+        },
+        "places.thumb.jpg": {
+          "sha256": "2d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a",
+          "size_bytes": 2323,
+          "href": "places/places.thumb.jpg",
+          "mtime": 1789480341.935538
+        }
+      },
+      "changes": [
+        "places.pmtiles",
+        "places.thumb.jpg"
+      ],
+      "message": "Generated PMTiles and thumbnail: places.pmtiles, places.thumb.jpg"
+    }
+  ]
+}

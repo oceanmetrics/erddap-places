@@ -1,0 +1,172 @@
+{
+  "type": "Collection",
+  "id": "places",
+  "stac_version": "1.1.0",
+  "description": "20 marine place polygons (18 NOAA National Marine Sanctuaries, 1 MarineRegions EEZ, 1 ProtectedSeas MPA) as GeoParquet and PMTiles, for computing place statistics against the erddap/ collections.",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "places"
+      ]
+    },
+    {
+      "rel": "via",
+      "href": "https://sanctuaries.noaa.gov/library/imast_gis.html",
+      "type": "text/html",
+      "title": "Upstream sources: NOAA sanctuary boundaries, MarineRegions.org, ProtectedSeas"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 20,
+  "table:row_count": 20,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed id, e.g. NMS:CINMS, MRGID:8439, PSGID:939"
+    },
+    {
+      "name": "gazetteer",
+      "type": "string",
+      "description": "source gazetteer: NMS (NOAA sanctuary), MRGID (MarineRegions), PSGID (ProtectedSeas)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable place name"
+    },
+    {
+      "name": "area_km2",
+      "type": "double",
+      "description": "polygon area in square kilometers"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column, added by portolan for query pushdown"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "title": "Places",
+  "updated": "2026-09-15T00:00:00Z",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -28.4247039,
+          180.0,
+          48.5058899
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-BY-4.0",
+  "providers": [
+    {
+      "name": "NOAA Office of National Marine Sanctuaries",
+      "roles": ["producer", "licensor"],
+      "url": "https://sanctuaries.noaa.gov"
+    },
+    {
+      "name": "MarineRegions.org (Flanders Marine Institute)",
+      "roles": ["producer", "licensor"],
+      "url": "https://www.marineregions.org"
+    },
+    {
+      "name": "ProtectedSeas",
+      "roles": ["producer", "licensor"],
+      "url": "https://protectedseas.net"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": ["processor", "host"],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 4183823,
+      "file:checksum": "12208be0ce1b0a11c30ae6febed2c3c29405ba7cb4ff4160fbb4533615dc5c1f1da5",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "places (vector tiles)",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 1810141,
+      "file:checksum": "1220aba1283e43bd2d2ec39e2a5a54ac2b9ac390f9dfc406cf2a74c921fbf2fe55e1"
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "roles": [
+        "style",
+        "default"
+      ],
+      "title": "Default",
+      "file:size": 451,
+      "file:checksum": "1220cd2635d8d2a98c92aa2a602480b275adfd87b84c7fc5c95588a43702f355b538"
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2323,
+      "file:checksum": "12202d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a"
+    }
+  }
+}
