@@ -11,9 +11,14 @@ export const GAZETTEER_BASE = 'https://storage.oceanmetrics.io/gazetteer/'
 /** same objects, straight from the bucket: used when the storage host does not answer. */
 export const GAZETTEER_FALLBACK = 'https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/'
 
+/** the tippecanoe layer inside places.pmtiles (`-l places`): place_id, name, gazetteer, area_km2. */
+export const PLACES_SOURCE_LAYER = 'places'
+
 let activeBase: string | null = null
 /** the base URL that last answered (after `gazetteerFetch`), for display. */
 export const gazetteerBase = () => activeBase ?? GAZETTEER_BASE
+/** the vector tiles of the places, for the map (same base as everything else). */
+export const placesPmtilesUrl = () => `${gazetteerBase()}places/places.pmtiles`
 
 /** fetch `path` under the gazetteer base, falling back to the bucket URL on any failure. */
 export async function gazetteerFetch(path: string, init?: RequestInit): Promise<Response> {

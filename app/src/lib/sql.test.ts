@@ -35,8 +35,8 @@ function duck(sql: string): Record<string, any>[] {
 }
 
 describe('sql templates', () => {
-  it('ships both statistics templates', () => {
-    expect(templateNames()).toEqual(expect.arrayContaining(['stats_daily', 'stats_categorical']))
+  it('ships the statistics and map templates', () => {
+    expect(templateNames()).toEqual(expect.arrayContaining(['stats_daily', 'stats_categorical', 'last_step']))
   })
   it('quotes literals and splices identifiers', () => {
     expect(lit("O'ahu")).toBe("'O''ahu'")
@@ -74,6 +74,24 @@ describe.skipIf(!haveDuckdb)('stats_categorical.sql', () => {
     const d2 = r.filter((x) => x.date === '2026-01-09')
     expect(d2).toHaveLength(1)
     expect(Number(d2[0].fraction)).toBe(1)
+  })
+})
+
+describe.skipIf(!haveDuckdb)('last_step.sql', () => {
+  it('returns the masked cells of the latest time step only, for the map', () => {
+    const r = duck(render('last_step', { expr: 's."SST"', slab: 'slab', mask: 'mask' }))
+    expect(r.map((x) => x.date)).toEqual(Array(4).fill('2026-01-09'))
+    // ordered by latitude then longitude, with the mask's own coordinates and weights
+    expect(r.map((x) => [Number(x.latitude), Number(x.longitude), Number(x.weight), Number(x.value)])).toEqual([
+      [20.00, -160.00, 1.00, 25.5],
+      [20.00, -159.95, 0.50, 26.5],
+      [20.05, -160.00, 1.00, 27.5],
+      [20.05, -159.95, 0.25, 29.5],
+    ])
+  })
+  it('drops cells outside the mask', () => {
+    const r = duck(render('last_step', { expr: 's."SST"', slab: 'slab', mask: 'mask' }))
+    expect(r.some((x) => Number(x.value) === 99)).toBe(false)
   })
 })
 

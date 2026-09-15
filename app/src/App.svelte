@@ -7,10 +7,12 @@
   import { gridMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
   import { engine } from './lib/engine'
-  import { gazetteerBase, loadPlaces, placeLobes, plainPlace, type Place } from './lib/gazetteer'
+  import { gazetteerBase, loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
   import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
-  import { classColors } from './lib/palette'
+  import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
+  import MapView from './lib/MapView.svelte'
+  import { cellSquares, placeMapBounds } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
 
   const MAX_DAYS     = 90
@@ -38,6 +40,7 @@
   let urls      = $state.raw<{ url: string; kb: number; ms: number }[]>([])
   let rows      = $state.raw<Record<string, any>[]>([])
   let sql       = $state('')
+  let mapSql    = $state('')   // the last-time-step query behind the map layer
   let totalMs   = $state(0)
   let chartEl   = $state<HTMLDivElement | null>(null)
   // the dataset's live time extent, from ERDDAP's info table (the STAC extent end is null/stale)
@@ -47,6 +50,10 @@
   // only the newest run may touch the UI: a run started while another is in flight supersedes it
   const runs    = new Runs()
   let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
+  // the map layer: the last time step of the slab, one square per masked cell (raw, never deep state)
+  let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
+  let stepDate  = $state('')
+  let pmtiles   = $state(placesPmtilesUrl())
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
@@ -76,11 +83,38 @@
   })))
   const fmt     = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
+  // ── map ─────────────────────────────────────────────────────────────────────
+  // the place's bounds; only an antimeridian place (PMNM) costs a geometry walk (see cells.ts)
+  const mapBounds = $derived(place ? placeMapBounds(place) : null)
+  const unit      = $derived(shownVar ? valueLabel(shownVar) : '')
+  // a sequential ramp for a measurement, the chart's own class colours for a categorical grid
+  const fillColor = $derived.by(() => {
+    if (!squares) return '#1f77b4'
+    if (categorical)
+      return ['match', ['to-string', ['get', 'value']],
+              ...classList.flatMap((c) => [String(c), colours.get(String(c)) ?? '#cccccc']),
+              '#cccccc'] as any
+    return ['case', ['==', ['get', 'value'], null], 'rgba(0,0,0,0)',
+            ['interpolate', ['linear'], ['get', 'value'], ...rampStops(squares.range[0], squares.range[1])]] as any
+  })
+  const ramp7  = VIRIDIS_9.filter((_, i) => i % 2 === 0)
+  const legend = $derived.by(() => {
+    if (!squares) return []
+    if (categorical) return classList.map((c) => ({ label: classLabel(c), color: colours.get(String(c))! }))
+    const [lo, hi] = squares.range
+    return ramp7.map((color, i) => ({ color, label: i === 0 || i === ramp7.length - 1
+      ? (lo + ((hi - lo) * i) / (ramp7.length - 1)).toFixed(1) : '' }))
+  })
+  const cellText  = $derived(categorical
+    ? (v: number) => `${classLabel(v)} (class ${v})`
+    : (v: number) => `${v.toFixed(2)} ${unit}`.trim())
+
   onMount(async () => {
     try {
       const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
       places = ps; datasets = ds
       if (!datasets.some((d) => d.id === dsId)) dsId = datasets[0]?.id ?? ''
+      pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
       status = `gazetteer: ${places.length} places, ${datasets.length} ERDDAP datasets (${gazetteerBase()})`
       await run()
     } catch (e) { fail(e) }
@@ -111,6 +145,7 @@
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
     busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null
+    squares = null; stepDate = ''
     if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
     try {
@@ -178,6 +213,14 @@
       if (h.stale()) return                 // a newer pick is on screen: do not render this result
       rows = out; shownVar = v
       sql  = engine.lastSql
+      // the map layer: the latest time step of the same slab, one square per masked cell
+      const last = await engine.runTemplate('last_step', { expr: valueExpr(v), slab, mask: 'mask' })
+      if (h.stale()) return
+      mapSql  = engine.lastSql
+      squares = cellSquares(
+        last.map((r: any) => ({ lon: Number(r.longitude), lat: Number(r.latitude),
+                                weight: Number(r.weight), value: r.value === null ? null : Number(r.value) })))
+      stepDate = last.length ? new Date(last[0].date).toISOString().slice(0, 10) : ''
       totalMs = performance.now() - t0
       note = (win.snapped ? `window ${win.reason}. ` : '') +
              `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
@@ -279,6 +322,18 @@
   {#each urls as u}
     <p class="url">griddap: <a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
   {/each}
+
+  <MapView
+    pmtilesUrl={pmtiles}
+    {placeId}
+    onselect={(id) => { placeId = id }}
+    bounds={mapBounds}
+    squares={squares?.geojson ?? null}
+    {fillColor}
+    valueLabel={shownVar ? (categorical ? shownVar.name : `${shownVar.name}${unit && unit !== shownVar.name ? ` (${unit})` : ''}`) : 'place'}
+    valueText={cellText}
+    {stepDate}
+    {legend} />
 
   <div bind:this={chartEl} class="chart"></div>
 

@@ -8,6 +8,12 @@ export const SPECTRAL_11 = [
   '#e6f598', '#abdda4', '#66c2a5', '#3288bd', '#5e4fa2',
 ]
 
+/** viridis, 9 stops (low -> high): the sequential ramp the map uses for continuous variables. */
+export const VIRIDIS_9 = [
+  '#440154', '#472d7b', '#3b528b', '#2c728e', '#21918c',
+  '#27ad81', '#5ec962', '#aadc32', '#fde725',
+]
+
 const rgb = (hex: string): [number, number, number] =>
   [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]
 const hex = (c: number[]) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')
@@ -32,4 +38,15 @@ export function ramp(n: number, stops: string[] = SPECTRAL_11, reverse = true): 
 export function classColors(values: Array<string | number>, stops?: string[]): Map<string, string> {
   const cols = ramp(values.length, stops)
   return new Map(values.map((v, i) => [String(v), cols[i]]))
+}
+
+/**
+ * `[value, colour, value, colour, ...]` stops spanning `[min, max]`, for a MapLibre
+ * `['interpolate', ['linear'], ['get', 'value'], ...stops]` paint expression. A flat range (every
+ * cell the same value) still gets two stops, so the expression stays valid.
+ */
+export function rampStops(min: number, max: number, n = 7, stops = VIRIDIS_9): Array<number | string> {
+  const cols = ramp(Math.max(2, n), stops, false)
+  const lo = min, hi = max > min ? max : min + 1e-9
+  return cols.flatMap((c, i) => [lo + ((hi - lo) * i) / (cols.length - 1), c])
 }

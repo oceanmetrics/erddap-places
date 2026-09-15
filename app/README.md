@@ -15,6 +15,18 @@ ERDDAP axes  ──┘
 WKB decoded by `src/lib/wkb.ts`), splits it into lobes (one griddap request each, grouped by side of
 the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_5km`.
 
+## Features
+
+- **Pickers**: place (gazetteer, grouped by NMS/MRGID/PSGID), ERDDAP dataset, variable, date window
+  (clamped to the dataset's live time extent).
+- **Map** (`src/lib/MapView.svelte`, between the pickers and the chart, 420 px tall): the gazetteer
+  places as vector tiles from `places.pmtiles`, outlined, with the selected one filled and a click
+  anywhere in a place selecting it; after a run, the **last time step** of the slab as one square per
+  masked grid cell, hover showing the value and the area weight. Fits the place bbox on selection.
+- **Chart**: daily mean / area-weighted mean with a p10–p90 band, or a stacked area of class
+  proportions for a categorical grid.
+- **Table** of the daily or per-class result.
+
 ## Run
 
 ```sh
@@ -70,6 +82,22 @@ npm run check    # svelte-check + tsc
   line instead of 404ing on `"Start" is greater than the axis maximum=…`. `averageSpacing` from the
   same info table labels the chart x-axis and status ("8-day steps"), and the extent's own endpoints
   go into the griddap constraint verbatim so a non-noon axis (MUR is 09:00Z) cannot be overshot.
+- **Map** (`src/lib/MapView.svelte`, `svelte-maplibre` + `pmtiles`): **MapLibre GL is pinned to
+  major version 5** (`svelte-maplibre` 1.3.x, which peers on 4/5) — MapLibre 6 ships its worker as a
+  module worker that Vite's dep optimizer breaks. The basemap is Esri's keyless *World Ocean Base*
+  raster tiles, attributed in the map's own attribution control. The places come straight from the
+  published `places/places.pmtiles` through the `pmtiles://` protocol, source layer **`places`**
+  (`PLACES_SOURCE_LAYER` in `src/lib/gazetteer.ts`; its fields are `place_id`, `name`, `gazetteer`,
+  `area_km2`), so selecting or drawing a place costs no geometry work in JS at all.
+- **Cell squares** (`src/lib/cells.ts`): after a run, `sql/last_step.sql` returns the masked cells of
+  the newest time step (mask coordinates, weight, value) and `cellSquares()` turns them into a
+  GeoJSON square each, sized by the **median gap between the distinct cell coordinates** (so the
+  holes the mask leaves cannot inflate the step) — `lon ± dx/2`, `lat ± dy/2`. Antimeridian-safe: a
+  cell set spanning more than 180° is put in the `[0, 360)` frame, so a square at 179.975 runs
+  179.95 → 180.05 instead of wrapping the globe; `placeMapBounds()` does the same for the map fit,
+  and only walks geometry for such a place (every other place uses its stored bbox). Continuous
+  variables are coloured with a viridis ramp (`rampStops()` in `src/lib/palette.ts`), categorical
+  ones with the chart's own class colours.
 - Datasets and variables come from the STAC Collections under `erddap/` in the catalog
   (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
   choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit

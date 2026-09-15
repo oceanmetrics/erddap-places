@@ -51,5 +51,7 @@ spikes/     verified experiments (see spikes/README.md)
 ## Status
 
 P1: the browser app does gazetteer place → ERDDAP dataset/variable → daily statistics or categorical
-class composition, on GitHub Pages. Plan phases P0–P3 target a demo at the MBON all-hands,
-Oct 14–16 2026.
+class composition, on GitHub Pages, **with a map**: the gazetteer places as PMTiles vector tiles
+(click to select) over a keyless Esri ocean basemap, and the latest time step of the run drawn as the
+masked grid cells themselves, antimeridian included. Plan phases P0–P3 target a demo at the MBON
+all-hands, Oct 14–16 2026.

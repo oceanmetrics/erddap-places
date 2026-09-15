@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SPECTRAL_11, classColors, ramp } from './palette'
+import { SPECTRAL_11, VIRIDIS_9, classColors, ramp, rampStops } from './palette'
 
 describe('ramp', () => {
   it('reverses Spectral, as seascapeR does', () => {
@@ -21,5 +21,18 @@ describe('classColors', () => {
     const m = classColors([1, 2, 3])
     expect([...m.keys()]).toEqual(['1', '2', '3'])
     expect(new Set(m.values()).size).toBe(3)
+  })
+})
+
+describe('rampStops', () => {
+  it('spans the value range low -> high, as value/colour pairs', () => {
+    const s = rampStops(20, 30, 3)
+    expect(s).toEqual([20, VIRIDIS_9[0], 25, expect.any(String), 30, VIRIDIS_9[VIRIDIS_9.length - 1]])
+  })
+  it('stays a valid two-stop expression when every cell has the same value', () => {
+    const s = rampStops(5, 5, 2)
+    expect(s).toHaveLength(4)
+    expect(s[0]).toBe(5)
+    expect(Number(s[2])).toBeGreaterThan(5)
   })
 })
