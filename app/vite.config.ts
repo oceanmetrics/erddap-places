@@ -2,12 +2,14 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vite'
 
-// base './' so the built app works from any path (a GitHub Pages project site).
+// base: './' by default, so the built app works from any path; the Pages workflow sets
+// VITE_BASE=/erddap-places/ for the project site (the duckdb-wasm worker + wasm are imported with
+// `?url`, so Vite rewrites those URLs to the same base and they still resolve under the sub-path).
 // the duckdb-wasm bundles are self-hosted: src/lib/engine.ts imports them with `?url` so Vite copies
 // them beside the app; the dep optimizer must not touch the package (it ships its own worker + wasm).
 export default defineConfig({
   plugins      : [svelte()],
-  base         : './',
+  base         : process.env.VITE_BASE || './',
   publicDir    : 'static',
   optimizeDeps : { exclude: ['@duckdb/duckdb-wasm'] },
   build        : { target: 'es2022', chunkSizeWarningLimit: 4000 },
