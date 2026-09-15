@@ -9,6 +9,7 @@
   import { engine } from './lib/engine'
   import { gazetteerBase, loadPlaces, placeLobes, type Place } from './lib/gazetteer'
   import { loadDatasets, toDatasetLon, valueExpr, valueLabel, type Dataset } from './lib/catalog'
+  import { classColors } from './lib/palette'
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
@@ -37,7 +38,22 @@
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
   const variable = $derived(dataset?.variables.find((v) => v.name === varName) ?? dataset?.variables[0] ?? null)
   const groups  = $derived([...new Set(places.map((p) => p.gazetteer))].map((g) => ({ g, ps: places.filter((p) => p.gazetteer === g) })))
+  const categorical = $derived(variable?.categorical === true)
   const nDays   = $derived(Math.round((Date.parse(endDate) - Date.parse(startDate)) / 864e5) + 1)
+  // categorical rows, labelled and coloured (seascapeR's class table when the collection carries one)
+  const classList = $derived(categorical
+    ? [...new Set(rows.map((r) => Number(r.class)))].sort((a, b) => a - b)
+    : [])
+  const classLabel = (c: number) => variable?.classes?.[String(c)] ?? `class ${c}`
+  const colours = $derived(classColors(classList))
+  const catRows = $derived(rows.map((r) => ({
+    date    : new Date(r.date),
+    class   : Number(r.class),
+    label   : classLabel(Number(r.class)),
+    fraction: Number(r.fraction),
+    n       : Number(r.n),
+    percent : Number(r.percent_cells),
+  })))
   const fmt     = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
   onMount(async () => {
@@ -107,7 +123,8 @@
       const slab = ds.format === 'parquet'
         ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
         : `(${files.map((f) => `SELECT * FROM ${f}`).join(' UNION ALL ')})`
-      rows = await engine.runTemplate('stats_daily', { expr: valueExpr(v), slab, mask: 'mask' })
+      rows = await engine.runTemplate(v.categorical ? 'stats_categorical' : 'stats_daily',
+                                      { expr: valueExpr(v), slab, mask: 'mask' })
       sql  = engine.lastSql
       totalMs = performance.now() - t0
       note = `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
@@ -116,16 +133,24 @@
     } catch (e) { fail(e) } finally { busy = false }
   }
 
-  // ── chart ───────────────────────────────────────────────────────────────────
+  // ── charts ──────────────────────────────────────────────────────────────────
+  // continuous: mean / area-weighted mean with a p10-p90 band.
+  // categorical: stacked area of the area-weighted class proportions (seascapeR's plot_ss_ts()).
   $effect(() => {
     if (!chartEl || !rows.length || !variable) return
+    const chart = categorical ? categoricalChart() : continuousChart()
+    chartEl.replaceChildren(chart)
+    return () => chart.remove()
+  })
+
+  function continuousChart() {
     const long = rows.flatMap((r) => [
       { date: new Date(r.date), stat: 'mean',          value: r.mean    },
       { date: new Date(r.date), stat: 'area-wtd mean', value: r.mean_wt },
     ])
-    const chart = Plot.plot({
+    return Plot.plot({
       width: 820, height: 320, marginLeft: 55,
-      y: { label: valueLabel(variable), grid: true },
+      y: { label: valueLabel(variable!), grid: true },
       x: { label: null },
       color: { legend: true, domain: ['mean', 'area-wtd mean'], range: ['#1f77b4', '#d62728'] },
       marks: [
@@ -134,9 +159,25 @@
         Plot.dot(long,  { x: 'date', y: 'value', stroke: 'stat', r: 2 }),
       ],
     })
-    chartEl.replaceChildren(chart)
-    return () => chart.remove()
-  })
+  }
+
+  function categoricalChart() {
+    const domain = classList.map(classLabel)
+    return Plot.plot({
+      width: 820, height: 360, marginLeft: 55, marginRight: 10,
+      y: { label: 'fraction of place area', grid: true, percent: true },
+      x: { label: null },
+      color: { legend: true, domain, range: classList.map((c) => colours.get(String(c))!) },
+      marks: [
+        Plot.areaY(catRows, {
+          x: 'date', y: 'fraction', fill: 'label', offset: 'normalize',
+          order: domain, curve: 'step',
+          title: (d: any) => `${d.date.toISOString().slice(0, 10)}\n${d.label}\n${(d.fraction * 100).toFixed(1)}% of area, ${d.n} cells`,
+        }),
+        Plot.ruleY([0]),
+      ],
+    })
+  }
 </script>
 
 <main>
@@ -161,7 +202,7 @@
     </label>
     <label>variable
       <select bind:value={varName} disabled={busy || !dataset}>
-        {#each dataset?.variables ?? [] as v}<option value={v.name}>{v.name} — {v.description}</option>{/each}
+        {#each dataset?.variables ?? [] as v}<option value={v.name}>{v.name}{v.categorical ? ' (categorical)' : ''} — {v.description}</option>{/each}
       </select>
     </label>
     <label>from <input type="date" bind:value={startDate} disabled={busy} /></label>
@@ -179,7 +220,21 @@
 
   <div bind:this={chartEl} class="chart"></div>
 
-  {#if rows.length}
+  {#if rows.length && categorical}
+    <table>
+      <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
+      <tbody>
+        {#each catRows as r}
+          <tr>
+            <td>{r.date.toISOString().slice(0, 10)}</td>
+            <td><span class="swatch" style="background:{colours.get(String(r.class))}"></span>{r.class}</td>
+            <td>{r.label}</td><td>{r.n}</td><td>{fmt(rows.find((x) => x.date === +r.date && Number(x.class) === r.class)?.weight)}</td>
+            <td>{(r.fraction * 100).toFixed(1)}%</td><td>{r.percent.toFixed(1)}%</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {:else if rows.length}
     <table>
       <thead><tr><th>date</th><th>n</th><th>mean</th><th>area-wtd mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
       <tbody>
@@ -213,5 +268,6 @@
   table   { border-collapse: collapse; font-size: 13px; width: 100%; }
   th, td  { border-bottom: 1px solid #e3e3e3; padding: 3px 8px; text-align: right; }
   th:first-child, td:first-child { text-align: left; }
+  .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border: 1px solid #999; }
   pre     { background: #f7f7f7; padding: .5rem; overflow-x: auto; font-size: 12px; }
 </style>

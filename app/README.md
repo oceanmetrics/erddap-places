@@ -38,6 +38,12 @@ npm run check    # svelte-check + tsc
 - `static/` is the Vite public dir (empty: the app has no static place files any more).
   `src/lib/__fixtures__/*.geojson` are the four test sanctuaries (public NOAA data, from
   `noaa-onms/onmsR`).
+- **Categorical grids** (`CLASS` in AOML Seascapes, `CRW_BAA` in `dhw_5km`) are marked in the
+  catalog with `erddap-places:categorical` and an `erddap-places:classes` label map. They run
+  `sql/stats_categorical.sql` instead of `stats_daily.sql`: per date × class, the number of cells,
+  the area weight, the area-weighted `fraction` (sums to 1 per date) and the percent of cells. The
+  chart is a stacked area of the class proportions (`Plot.areaY` with `offset: 'normalize'`), the
+  colours being seascapeR's reversed ColorBrewer Spectral ramp (`src/lib/palette.ts`).
 - Datasets and variables come from the STAC Collections under `erddap/` in the catalog
   (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
   choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit
