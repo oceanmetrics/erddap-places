@@ -21,7 +21,7 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 npm install
 npm run dev      # http://localhost:5179/
 npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP URL shapes, SQL,
-                 # time-extent parse + window clamp
+                 # time-extent parse + window clamp, FKNMS mask budget
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
 npm run check    # svelte-check + tsc
@@ -45,6 +45,15 @@ npm run check    # svelte-check + tsc
   the area weight, the area-weighted `fraction` (sums to 1 per date) and the percent of cells. The
   chart is a stacked area of the class proportions (`Plot.areaY` with `offset: 'normalize'`), the
   colours being seascapeR's reversed ColorBrewer Spectral ramp (`src/lib/palette.ts`).
+- **Never put place geometry in deep `$state`** (verified 2026-09-15): Svelte 5's reactive proxy
+  wraps every nested coordinate array, and `gridMask` reads each vertex many times — masking FKNMS
+  (13 parts, 39,645 vertices) takes **0.24 s on plain arrays and 67 s through the proxy** (TBNMS:
+  202 s), which is the main-thread freeze that was seen in the browser. `App.svelte` keeps
+  `places`/`datasets`/`rows`/`urls` in `$state.raw` and calls `plainPlace()` (`src/lib/gazetteer.ts`)
+  before `placeLobes`/`gridMask`; `structuredClone` cannot do that job (DataCloneError on a proxy).
+  `maskPerf.test.ts` is the regression: the decode + lobes + weighted mask of FKNMS, plain and
+  `proxy()`-wrapped, must finish in under 1 s. Selecting a place does no geometry work at all — the
+  whole pipeline waits for Run — and the mask time is printed in the status line.
 - **Time extent comes from the server, not the catalog** (`src/lib/extent.ts`): the STAC
   `cube:dimensions.time.extent` end is `null`/stale, so on dataset selection the app reads
   `<base>/info/<datasetID>/index.json` (the `time` `actual_range` row, seconds since epoch, with the

@@ -7,7 +7,7 @@
   import { gridMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
   import { engine } from './lib/engine'
-  import { gazetteerBase, loadPlaces, placeLobes, type Place } from './lib/gazetteer'
+  import { gazetteerBase, loadPlaces, placeLobes, plainPlace, type Place } from './lib/gazetteer'
   import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type Dataset } from './lib/catalog'
   import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors } from './lib/palette'
@@ -20,8 +20,11 @@
   const iso          = (d: Date) => d.toISOString().slice(0, 10)
 
   // ── state ───────────────────────────────────────────────────────────────────
-  let places    = $state<Place[]>([])
-  let datasets  = $state<Dataset[]>([])
+  // $state.raw, not $state: deep reactive proxies make every vertex read go through a proxy trap,
+  // which turned the FKNMS mask (39,645 vertices) into 67 s of blocked main thread. these are only
+  // ever replaced wholesale, so raw state loses nothing.
+  let places    = $state.raw<Place[]>([])
+  let datasets  = $state.raw<Dataset[]>([])
   let placeId   = $state('NMS:HIHWNMS')
   let dsId      = $state('erddap/dhw_5km')
   let varName   = $state('CRW_SST')
@@ -31,14 +34,15 @@
   let error     = $state('')
   let busy      = $state(false)
   let note      = $state('')
-  let urls      = $state<{ url: string; kb: number; ms: number }[]>([])
-  let rows      = $state<Record<string, any>[]>([])
+  let urls      = $state.raw<{ url: string; kb: number; ms: number }[]>([])
+  let rows      = $state.raw<Record<string, any>[]>([])
   let sql       = $state('')
   let totalMs   = $state(0)
   let chartEl   = $state<HTMLDivElement | null>(null)
   // the dataset's live time extent, from ERDDAP's info table (the STAC extent end is null/stale)
   let extent    = $state<TimeExtent | null>(null)
   let extentFor = $state('')   // the dataset id `extent` belongs to
+  let maskMs    = $state(0)    // time spent masking the grid, reported in the status line
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
@@ -114,7 +118,9 @@
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
 
-      const lobes   = placeLobes(place)
+      // the mask works on a plain copy: nothing reactive, and no work at all happens until Run
+      const lobes   = placeLobes(plainPlace(place))
+      maskMs = 0
       const cells: MaskCell[] = []
       const files: string[] = []
       const shifted = ds.lonRange[1] > 180      // dataset longitudes run 0..360
@@ -129,6 +135,8 @@
         ])
         status = `lobe ${i + 1}/${lobes.length}: masking the grid…`
         const m = gridMask(lobe.geojson, lonSrv.map(toPoly), lat)
+        maskMs += m.ms
+        status = `lobe ${i + 1}/${lobes.length}: masked ${m.nInside} cells (${m.method}) in ${(m.ms / 1000).toFixed(2)} s`
         // mask cells go back into the server's own longitude frame, so they join the slab directly
         for (const c of m.cells) cells.push(shifted ? { ...c, lon: toDatasetLon(c.lon, ds.lonRange) } : c)
 
@@ -158,8 +166,10 @@
       note = (win.snapped ? `window ${win.reason}. ` : '') +
              `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
              `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, ` +
+             `mask ${(maskMs / 1000).toFixed(2)} s, ` +
              `ERDDAP ${ds.version ?? '?'} (.${ds.format})`
-      status = `done: ${rows.length} rows for ${place.name} in ${(totalMs / 1000).toFixed(1)} s`
+      status = `done: ${rows.length} rows for ${place.name} in ${(totalMs / 1000).toFixed(1)} s ` +
+               `(mask ${(maskMs / 1000).toFixed(2)} s)`
     } catch (e) { fail(e) } finally { busy = false }
   }
 

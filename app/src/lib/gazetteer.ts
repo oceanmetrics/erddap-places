@@ -76,6 +76,31 @@ export async function loadPlaces(buffer?: ArrayBuffer): Promise<Place[]> {
   })).sort((a, b) => a.gazetteer.localeCompare(b.gazetteer) || a.name.localeCompare(b.name))
 }
 
+// ── plain (non-reactive) geometry ─────────────────────────────────────────────
+/**
+ * A plain deep copy of a coordinate tree.
+ *
+ * Svelte 5 `$state` proxies **every nested array**, and the mask reads each vertex many times, so a
+ * place held in deep reactive state is catastrophic: FKNMS (13 parts, 39,645 vertices) masks in
+ * 0.24 s plain and 67 s through the proxy — a 280x penalty that freezes the tab. The app keeps
+ * places in `$state.raw`; this is the belt-and-braces unwrap right before the heavy work, and it
+ * costs one read per vertex (~0.03 s plain, ~0.3 s proxied). `structuredClone` cannot be used: it
+ * throws DataCloneError on a proxy.
+ */
+export function plainCoords<T>(c: T): T {
+  return (Array.isArray(c) ? c.map(plainCoords) : c) as T
+}
+/** a plain copy of a GeoJSON geometry, free of any reactive proxy. */
+export function plainGeometry(g: Geometry): Geometry {
+  if (g.type === 'GeometryCollection')
+    return { type: 'GeometryCollection', geometries: g.geometries.map(plainGeometry) }
+  return { type: g.type, coordinates: plainCoords((g as any).coordinates) } as Geometry
+}
+/** a plain copy of a place, for the mask/lobe code paths. */
+export function plainPlace(p: Place): Place {
+  return { ...p, bbox: [...p.bbox] as Place['bbox'], geometry: plainGeometry(p.geometry) }
+}
+
 // ── lobes ─────────────────────────────────────────────────────────────────────
 /** one griddap request's worth of a place: its own bbox and the polygons inside it. */
 export interface Lobe {
