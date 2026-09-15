@@ -92,12 +92,31 @@
    */
   let view = $state.raw<LngLatBoundsLike | undefined>(undefined)
   const fitBoundsOptions = { padding: 30, maxZoom: 11 }
+  const fittable = (b: typeof bounds): b is [number, number, number, number] =>
+    !!b && b[2] > b[0] && b[3] > b[1]
   // this effect writes `view` but never reads it: the map's own write-back cannot restart it
   $effect(() => {
     const b = bounds
-    if (!b || !(b[2] > b[0]) || !(b[3] > b[1])) return
-    view = new LngLatBounds([b[0], b[1]], [b[2], b[3]])
+    if (fittable(b)) view = new LngLatBounds([b[0], b[1]], [b[2], b[3]])
   })
+
+  /**
+   * Re-fit once the map has loaded.
+   *
+   * The place is already picked on first paint (from the hash, or the default), so `view` is set
+   * before the map exists — and a fit asked for before `load` lands on a container that has not been
+   * sized yet and is dropped, which left the page opening on the whole world with a sanctuary
+   * selected. Assigning a **fresh** LngLatBounds here re-runs svelte-maplibre's bounds effect, which
+   * then finds the map still showing the world and fits it for real. This is an event handler, not
+   * an effect, and it runs once, so nothing reads what it writes.
+   */
+  let refitted = false
+  function onload() {
+    if (refitted) return
+    refitted = true
+    const b = bounds
+    if (fittable(b)) view = new LngLatBounds([b[0], b[1]], [b[2], b[3]])
+  }
 </script>
 
 {#snippet cellPopup()}
@@ -114,7 +133,7 @@
 {/snippet}
 
 <div class="map">
-  <MapLibre {style} bind:map bind:bounds={view} {fitBoundsOptions} class="ml"
+  <MapLibre {style} bind:map bind:bounds={view} {fitBoundsOptions} {onload} class="ml"
             standardControls attributionControl={{ compact: true }}>
     <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
       <!-- every place, outlined; clicking anywhere in one selects it in the picker -->

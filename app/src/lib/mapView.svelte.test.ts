@@ -66,6 +66,24 @@ describe('MapView settles instead of looping', () => {
     await m.close()
   })
 
+  it('fits the place that was already selected on first paint, once the map loads', async () => {
+    // the regression Ben saw: the page opened on the whole world with a sanctuary selected, because
+    // `bounds` was set before the map existed and the first fit landed on an unsized container
+    const fake = await import('./__fixtures__/fakeMaplibre')
+    fake.resetLastMap()
+    const m = await mountMap({ bounds: [-158.3, 20.4, -155.8, 21.9] })
+    const map: any = fake.lastMap
+    expect(map).toBeDefined()
+    expect(map.loaded()).toBe(true)
+    const b = map.getBounds()
+    expect(b.getWest()).toBeCloseTo(-158.3, 6)
+    expect(b.getEast()).toBeCloseTo(-155.8, 6)
+    expect(b.getSouth()).toBeCloseTo(20.4, 6)
+    expect(b.getNorth()).toBeCloseTo(21.9, 6)
+    expect(m.messages).not.toMatch(/effect_update_depth_exceeded/)
+    await m.close()
+  })
+
   it('draws grid squares and tabledap points without looping', async () => {
     const squares = {
       type: 'FeatureCollection',

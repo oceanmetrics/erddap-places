@@ -114,7 +114,11 @@ npm run check    # svelte-check + tsc
   "reading the dataset time extent…" and an empty map. `MapView.svelte` now keeps one `$state.raw`
   bounds value, writes it only when the `bounds` prop changes (it never reads it, so the map's
   write-back cannot restart the effect) and hands it to `<MapLibre bind:bounds fitBoundsOptions>`,
-  which settles via `boundsEqual()` — longitude-wrapping, so an east-of-180 fit (PMNM) works.
+  which settles via `boundsEqual()` — longitude-wrapping, so an east-of-180 fit (PMNM) works. The
+  place is already selected on first paint (hash or default), so the first fit is asked for before
+  the map exists and lands on an unsized container, where it is dropped — the page then opened on
+  the whole world. `onload` re-assigns a fresh `LngLatBounds` once (an event handler, not an effect)
+  so the fit happens for real.
 - **Cell squares** (`src/lib/cells.ts`): after a run, `sql/last_step.sql` returns the masked cells of
   the newest time step (mask coordinates, weight, value) and `cellSquares()` turns them into a
   GeoJSON square each, sized by the **median gap between the distinct cell coordinates** (so the

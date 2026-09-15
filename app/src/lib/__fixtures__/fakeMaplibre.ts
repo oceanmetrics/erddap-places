@@ -37,8 +37,13 @@ export class LngLatBounds {
 const noop = () => {}
 const toggle = () => ({ enable: noop, disable: noop, isEnabled: () => true })
 
+/** the most recently constructed fake map, so a test can inspect the camera. */
+export let lastMap: Map | undefined
+export const resetLastMap = () => { lastMap = undefined }
+
 export class Map {
   #on = new Map2()
+  #loaded = false
   #center: LngLat
   #zoom: number
   #bounds: LngLatBounds
@@ -55,7 +60,8 @@ export class Map {
     this.#zoom = options.zoom ?? 0
     this.#bounds = new LngLatBounds([this.#center.lng - 1, this.#center.lat - 1], [this.#center.lng + 1, this.#center.lat + 1])
     if (options.bounds) this.#apply(LngLatBounds.convert(options.bounds))
-    queueMicrotask(() => this.#fire('load', {}))
+    lastMap = this
+    queueMicrotask(() => { this.#loaded = true; this.#fire('load', {}) })
   }
 
   // ── events ────────────────────────────────────────────────────────────────
@@ -75,7 +81,12 @@ export class Map {
     this.moves++
     this.#fire('movestart', {}); this.#fire('move', {}); this.#fire('moveend', {})
   }
-  fitBounds(b: any, _opts?: any) { this.#apply(LngLatBounds.convert(b)); this.#moved(); return this }
+  // a real map cannot fit before `load`: the container has no size yet and the request is dropped.
+  // that is the bug this models — the first fit, asked for while the place was already selected.
+  fitBounds(b: any, _opts?: any) {
+    if (!this.#loaded) return this
+    this.#apply(LngLatBounds.convert(b)); this.#moved(); return this
+  }
   easeTo(o: any = {}) { return this.jumpTo(o) }
   flyTo(o: any = {}) { return this.jumpTo(o) }
   jumpTo(o: any = {}) {
@@ -97,7 +108,7 @@ export class Map {
   getContainer() { return this.#container }
   getCanvas() { return this.#canvas }
   getCanvasContainer() { return this.#container }
-  loaded() { return true }
+  loaded() { return this.#loaded }
   isStyleLoaded() { return true }
   remove() { this.#on = new Map2() }
   resize() { return this }
