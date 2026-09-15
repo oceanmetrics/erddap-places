@@ -1,3 +1,12 @@
+<script lang="ts" module>
+  // the basemap: Esri's World Ocean Base raster tiles, which need no key and no account. ArcGIS REST
+  // tile URLs are `/tile/{z}/{y}/{x}` — row before column, unlike XYZ's {z}/{x}/{y}.
+  export const OCEAN_TILES =
+    'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}'
+  export const OCEAN_ATTRIBUTION =
+    'Tiles &copy; Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others'
+</script>
+
 <script lang="ts">
   // the map: gazetteer places from the published PMTiles archive (outline for all, fill for the
   // selected one, click to select) and, after a run, the last time step of the slab as one square
@@ -7,7 +16,7 @@
   // attribution. no geometry ever comes through this component as deep $state — App.svelte passes
   // the squares as a plain object built by cells.ts.
   import { CircleLayer, FillLayer, GeoJSON, LineLayer, MapLibre, Popup, VectorTileSource } from 'svelte-maplibre'
-  import maplibregl, { LngLatBounds, type StyleSpecification } from 'maplibre-gl'
+  import maplibregl, { LngLatBounds, type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl'
   import { Protocol } from 'pmtiles'
   import type { FeatureCollection } from 'geojson'
   import type { CellProps } from './cells'
@@ -51,16 +60,15 @@
     ;(globalThis as any).__pmtilesProtocol = protocol
   }
 
-  const OCEAN = 'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}'
   const style: StyleSpecification = {
     version: 8,
     sources: {
       ocean: {
         type       : 'raster',
-        tiles      : [OCEAN],
+        tiles      : [OCEAN_TILES],
         tileSize   : 256,
         maxzoom    : 13,
-        attribution: 'Tiles &copy; Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others',
+        attribution: OCEAN_ATTRIBUTION,
       },
     },
     layers: [{ id: 'ocean', type: 'raster', source: 'ocean' }],
@@ -71,12 +79,24 @@
   // a place id the tiles can be filtered by; '' matches nothing, which is what we want before load
   const selected = $derived(['==', ['get', 'place_id'], placeId] as any)
 
-  // fit to the place: bounds arrive from placeMapBounds(), already continuous across +-180
+  /**
+   * The camera, driven **only** through `<MapLibre bind:bounds>`.
+   *
+   * Never also pass `center`/`zoom`, and never call `map.fitBounds()` from here: svelte-maplibre's
+   * camera $effect reads `center`/`zoom` and eases the map whenever they differ from
+   * `map.getCenter()`, while its `moveend` handler writes them back. A `center={[lng, lat]}` array
+   * is never `compare`-equal to the `LngLat` the map returns, so the two chase each other until
+   * Svelte throws `effect_update_depth_exceeded` — which is exactly what broke the deployed build
+   * (regression test: `mapView.svelte.test.ts`). `bounds` is compared with `boundsEqual()`, which
+   * wraps longitudes, so it settles after one fit and handles an east-of-180 box (PMNM) too.
+   */
+  let view = $state.raw<LngLatBoundsLike | undefined>(undefined)
+  const fitBoundsOptions = { padding: 30, maxZoom: 11 }
+  // this effect writes `view` but never reads it: the map's own write-back cannot restart it
   $effect(() => {
-    const m = map, b = bounds
-    if (!m || !b) return
-    if (!(b[2] > b[0]) || !(b[3] > b[1])) return
-    m.fitBounds(new LngLatBounds([b[0], b[1]], [b[2], b[3]]), { padding: 30, duration: 600, maxZoom: 11 })
+    const b = bounds
+    if (!b || !(b[2] > b[0]) || !(b[3] > b[1])) return
+    view = new LngLatBounds([b[0], b[1]], [b[2], b[3]])
   })
 </script>
 
@@ -94,7 +114,8 @@
 {/snippet}
 
 <div class="map">
-  <MapLibre {style} bind:map class="ml" center={[-158, 21]} zoom={4} standardControls attributionControl={{ compact: true }}>
+  <MapLibre {style} bind:map bind:bounds={view} {fitBoundsOptions} class="ml"
+            standardControls attributionControl={{ compact: true }}>
     <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
       <!-- every place, outlined; clicking anywhere in one selects it in the picker -->
       <FillLayer

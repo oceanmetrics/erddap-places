@@ -45,6 +45,7 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 npm install
 npm run dev      # http://localhost:5179/
 npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP URL shapes, SQL,
+                 # App/MapView mount (jsdom + a fake maplibre-gl: no effect loops),
                  # time-extent parse + window clamp, FKNMS mask budget, run tokens
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
@@ -100,7 +101,20 @@ npm run check    # svelte-check + tsc
   raster tiles, attributed in the map's own attribution control. The places come straight from the
   published `places/places.pmtiles` through the `pmtiles://` protocol, source layer **`places`**
   (`PLACES_SOURCE_LAYER` in `src/lib/gazetteer.ts`; its fields are `place_id`, `name`, `gazetteer`,
-  `area_km2`), so selecting or drawing a place costs no geometry work in JS at all.
+  `area_km2`), so selecting or drawing a place costs no geometry work in JS at all. The basemap is
+  Esri's keyless *World Ocean Base* (`OCEAN_TILES`, an ArcGIS REST `/tile/{z}/{y}/{x}` template —
+  row before column, unlike XYZ).
+- **Drive the camera through `bind:bounds` only** (fixed 2026-09-15, regression test
+  `src/lib/mapView.svelte.test.ts`): svelte-maplibre's camera `$effect` *reads* the bindable
+  `center`/`zoom`/`bounds` props and eases the map when they differ from `map.getCenter()`, while
+  its `moveend` handler *writes* them back. Calling `map.fitBounds()` from our own effect — or
+  passing a constant `center={[lng, lat]}` array, which is never `compare`-equal to the `LngLat` the
+  map returns — makes the two chase each other until Svelte throws
+  `effect_update_depth_exceeded`; on the deployed build that froze the page with the status at
+  "reading the dataset time extent…" and an empty map. `MapView.svelte` now keeps one `$state.raw`
+  bounds value, writes it only when the `bounds` prop changes (it never reads it, so the map's
+  write-back cannot restart the effect) and hands it to `<MapLibre bind:bounds fitBoundsOptions>`,
+  which settles via `boundsEqual()` — longitude-wrapping, so an east-of-180 fit (PMNM) works.
 - **Cell squares** (`src/lib/cells.ts`): after a run, `sql/last_step.sql` returns the masked cells of
   the newest time step (mask coordinates, weight, value) and `cellSquares()` turns them into a
   GeoJSON square each, sized by the **median gap between the distinct cell coordinates** (so the

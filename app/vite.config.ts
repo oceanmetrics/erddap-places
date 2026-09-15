@@ -12,11 +12,17 @@ export default defineConfig({
   base         : process.env.VITE_BASE || './',
   publicDir    : 'static',
   optimizeDeps : { exclude: ['@duckdb/duckdb-wasm'] },
+  // vitest otherwise resolves svelte's `ssr` export condition and `mount()` refuses to run:
+  // this app only ever runs in a browser, which is the condition vite build already uses
+  resolve      : { conditions: ['browser'] },
   build        : { target: 'es2022', chunkSizeWarningLimit: 4000 },
   server       : { port: 5179, strictPort: true, fs: { allow: ['..'] } }, // sql/ lives at the repo root, above app/
   test         : {
     environment : 'node',
     include     : ['src/**/*.test.ts'],
     testTimeout : 120_000,
+    // svelte-maplibre imports maplibre-gl's stylesheet: inline it so vite handles the .css, and let
+    // the jsdom tests import it at all (node would choke on the extension)
+    server      : { deps: { inline: ['svelte-maplibre', /maplibre-gl/] } },
   },
 })
