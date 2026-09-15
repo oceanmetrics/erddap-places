@@ -2,7 +2,7 @@
 # run with: Rscript catalog/build_places.R
 
 librarian::shelf(
-  sf, dplyr, mregions2, sfarrow, jsonlite, glue, geojsonsf, here, fs, stringr, units,
+  sf, dplyr, mregions2, sfarrow, jsonlite, glue, geojsonsf, here, fs, stringr, units, readr,
   quiet = TRUE)
 
 sf::sf_use_s2(TRUE)
@@ -37,14 +37,21 @@ dir_sanct <- "~/Github/noaa-onms/onmsR/data-raw/sanctuary_polygons" |>
 files_sanct <- fs::dir_ls(dir_sanct, glob = "*.geojson") |>
   sort()
 
+# authoritative sanctuary names, keyed by nms code (avoids inconsistent geojson properties) ----
+sanctuaries <- readr::read_csv(
+  "~/Github/noaa-onms/onmsR/data-raw/sanctuaries.csv" |> path.expand(),
+  show_col_types = FALSE)
+
 read_sanctuary <- function(f) {
   stem <- fs::path_ext_remove(fs::path_file(f))
   x    <- sf::st_read(f, quiet = TRUE)
 
-  # note: source geojson property names vary widely by file (e.g. AREA_NAME, area_name,
-  # name, sanctuary, label). fall back through the most descriptive available column.
-  col_name <- pick_col(x, c("area_name", "AREA_NAME", "name", "NAME", "sanctuary", "SANCTUARY", "label", "LABEL"))
-  nm <- if (is.na(col_name)) stem else as.character(x[[col_name]][1])
+  sanctuary <- sanctuaries$sanctuary[match(stem, sanctuaries$nms)]
+  nm <- if (stem == "PMNM") {
+    glue::glue("{sanctuary} Marine National Monument")
+  } else {
+    glue::glue("{sanctuary} National Marine Sanctuary")
+  }
 
   # union multi-feature files (e.g. CINMS has 2 polygons) into one multipolygon per sanctuary
   geom <- sf::st_union(sf::st_geometry(x))
