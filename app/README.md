@@ -26,6 +26,14 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 - **Chart**: daily mean / area-weighted mean with a p10–p90 band, or a stacked area of class
   proportions for a categorical grid.
 - **Table** of the daily or per-class result.
+- **Export**: the result table as **CSV** or **Parquet** (DuckDB's own `COPY … TO` writer, read back
+  with `copyFileToBuffer`), named after the place, dataset, variable and window, e.g.
+  `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.parquet`.
+- **Reproduce panel**: the exact griddap URL(s) used, the mask summary (cells, lobes, total area
+  weight, partial boundary cells), the permalink and the rendered SQL of both queries, with a
+  *Copy all* button.
+- **Permalink**: `#place=…&dataset=…&variable=…&from=…&to=…`, written on every successful run and
+  read on load, so a shared link reproduces the run.
 
 ## Run
 
@@ -98,6 +106,15 @@ npm run check    # svelte-check + tsc
   and only walks geometry for such a place (every other place uses its stored bbox). Continuous
   variables are coloured with a viridis ramp (`rampStops()` in `src/lib/palette.ts`), categorical
   ones with the chart's own class colours.
+- **Export and permalink** (`src/lib/download.ts`, `src/lib/permalink.ts`, both DuckDB-free so they
+  test in plain Node): CSV is written from the rows on screen (`toCsv`, RFC 4180 quoting, ISO days);
+  Parquet goes back through DuckDB (`engine.toParquet()` inserts the rows as Arrow, `COPY … TO
+  'export.parquet' (FORMAT PARQUET)`, `copyFileToBuffer`, `dropFile`) rather than re-running the
+  statistics, so the file is exactly the table that is shown. The hash is read **synchronously in
+  the component script**, not in `onMount`, so the dataset-extent effect cannot default the window
+  over a window that came from the link (`hashWindow`); it is rewritten with `history.replaceState`
+  on every successful run. File names, the permalink and the reproduce panel all come from
+  `shownRun` — the run the results belong to, never the live pickers.
 - Datasets and variables come from the STAC Collections under `erddap/` in the catalog
   (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
   choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit

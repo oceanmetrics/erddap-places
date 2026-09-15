@@ -119,6 +119,31 @@ export class Engine {
     return this.q
   }
 
+  /**
+   * The result table as Parquet bytes, written by DuckDB itself.
+   *
+   * The rows go back into a temporary table (Arrow IPC, as the mask does), `COPY … TO` writes a
+   * Parquet file into the WASM filesystem and `copyFileToBuffer` hands it back. Going through the
+   * rows rather than re-running the statistics keeps the download identical to what is on screen,
+   * whatever has happened to the registered slab since.
+   */
+  async toParquet(rows: Record<string, unknown>[], table = '_export', file = 'export.parquet'): Promise<Uint8Array> {
+    if (!rows.length) throw new Error('nothing to export')
+    await this.insertRows(rows, table)
+    const run = async () => {
+      await this.ready
+      const t = performance.now()
+      await this.conn.query(`COPY (SELECT * FROM ${table}) TO '${file}' (FORMAT PARQUET)`)
+      const buf = await this.db.copyFileToBuffer(file)
+      await this.db.dropFile(file).catch(() => {})
+      await this.conn.query(`DROP TABLE IF EXISTS ${table}`)
+      this.mark(`parquet:${file}`, performance.now() - t, `${rows.length} rows, ${(buf.byteLength / 1e3).toFixed(0)} kB`)
+      return buf
+    }
+    this.q = this.q.then(run, run)
+    return this.q
+  }
+
   /** render a `sql/<name>.sql` template with {{params}} and run it. */
   runTemplate(name: string, params: Params): Promise<Row[]> { return this.exec(render(name, params), name) }
 }

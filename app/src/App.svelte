@@ -14,6 +14,8 @@
   import MapView from './lib/MapView.svelte'
   import { cellSquares, placeMapBounds } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
+  import { decodeHash, permalink, type RunState } from './lib/permalink'
+  import { copyText, download, resultFileName, toCsv } from './lib/download'
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
@@ -28,11 +30,15 @@
   // ever replaced wholesale, so raw state loses nothing.
   let places    = $state.raw<Place[]>([])
   let datasets  = $state.raw<Dataset[]>([])
-  let placeId   = $state('NMS:HIHWNMS')
-  let dsId      = $state('erddap/dhw_5km')
-  let varName   = $state('CRW_SST')
-  let endDate   = $state(iso(new Date(Date.now() - LAG_DAYS * 864e5)))
-  let startDate = $state(iso(new Date(Date.now() - (LAG_DAYS + DEFAULT_DAYS - 1) * 864e5)))
+  // a shared link reproduces the run: #place=…&dataset=…&variable=…&from=…&to=…, read once, here,
+  // before any effect can default the window from the dataset extent
+  const HASH    = typeof location === 'undefined' ? {} : decodeHash(location.hash)
+  let hashWindow = Boolean(HASH.from && HASH.to)
+  let placeId   = $state(HASH.place ?? 'NMS:HIHWNMS')
+  let dsId      = $state(HASH.dataset ?? 'erddap/dhw_5km')
+  let varName   = $state(HASH.variable ?? 'CRW_SST')
+  let endDate   = $state(HASH.to ?? iso(new Date(Date.now() - LAG_DAYS * 864e5)))
+  let startDate = $state(HASH.from ?? iso(new Date(Date.now() - (LAG_DAYS + DEFAULT_DAYS - 1) * 864e5)))
   let status    = $state('loading the gazetteer…')
   let error     = $state('')
   let busy      = $state(false)
@@ -54,6 +60,12 @@
   let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
   let stepDate  = $state('')
   let pmtiles   = $state(placesPmtilesUrl())
+  // what the results on screen are of: file names, the permalink and the reproduce panel use this,
+  // never the live pickers (which stay editable while a run is in flight)
+  let shownRun  = $state.raw<RunState | null>(null)
+  let maskInfo  = $state.raw<{ cells: number; weight: number; partial: number; lobes: number } | null>(null)
+  let copied    = $state('')
+  let exporting = $state('')
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
@@ -109,6 +121,62 @@
     ? (v: number) => `${classLabel(v)} (class ${v})`
     : (v: number) => `${v.toFixed(2)} ${unit}`.trim())
 
+  // ── export / reproduce ──────────────────────────────────────────────────────
+  const num = (v: unknown) => (v === null || v === undefined ? null : Number(v))
+  /** the table on screen, as plain rows: ISO dates, class labels, nothing Arrow-shaped. */
+  const exportRows = $derived.by(() => rows.map((r: any) => {
+    const date = new Date(r.date).toISOString().slice(0, 10)
+    return categorical
+      ? { date, class: num(r.class), label: classLabel(Number(r.class)), n: num(r.n),
+          weight: num(r.weight), fraction: num(r.fraction), percent_cells: num(r.percent_cells) }
+      : { date, n: num(r.n), mean: num(r.mean), mean_wt: num(r.mean_wt), sd: num(r.sd),
+          min: num(r.min), max: num(r.max), p10: num(r.p10), p90: num(r.p90), weight_sum: num(r.weight_sum) }
+  }))
+  const link = $derived(shownRun ? permalink(shownRun) : '')
+  /** everything needed to repeat this run outside the browser, as one copyable block. */
+  const reproduce = $derived.by(() => {
+    if (!shownRun) return ''
+    const ds = datasets.find((d) => d.id === shownRun!.dataset)
+    return [
+      `# erddap-places — ${place?.name ?? shownRun.place} (${shownRun.place})`,
+      `# dataset ${shownRun.dataset} (${ds?.baseUrl ?? '?'}, ERDDAP ${ds?.version ?? '?'}), ` +
+        `variable ${shownRun.variable}, ${shownRun.from} to ${shownRun.to}`,
+      `# permalink: ${link}`,
+      '',
+      '# griddap request(s):',
+      ...urls.map((u) => u.url),
+      '',
+      maskInfo
+        ? `# mask: ${maskInfo.cells} cells in ${maskInfo.lobes} lobe(s), total area weight ` +
+          `${maskInfo.weight.toFixed(3)}, ${maskInfo.partial} partial (boundary) cells`
+        : '# mask: —',
+      '',
+      '-- statistics (sql/' + statsTemplate(shownVar) + '.sql, run in DuckDB):',
+      sql,
+      '',
+      '-- the map layer (sql/last_step.sql):',
+      mapSql,
+    ].join('\n')
+  })
+
+  async function copy(text: string, what: string) {
+    copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
+    setTimeout(() => { copied = '' }, 2500)
+  }
+  function saveCsv() {
+    if (!exportRows.length || !shownRun) return
+    download(toCsv(exportRows as any), resultFileName(shownRun, 'csv'), 'text/csv;charset=utf-8')
+  }
+  async function saveParquet() {
+    if (!exportRows.length || !shownRun) return
+    exporting = 'writing Parquet…'
+    try {
+      const buf = await engine.toParquet(exportRows as any)
+      download(buf, resultFileName(shownRun, 'parquet'), 'application/vnd.apache.parquet')
+      exporting = ''
+    } catch (e) { exporting = `Parquet export failed: ${e instanceof Error ? e.message : String(e)}` }
+  }
+
   onMount(async () => {
     try {
       const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
@@ -127,7 +195,13 @@
   // keep the variable valid when the dataset changes
   $effect(() => { if (dataset && !dataset.variables.some((v) => v.name === varName)) varName = dataset.variables[0]?.name ?? '' })
   // ask the server for the dataset's last time step, and default the window to it
-  $effect(() => { const d = dataset; if (d && extentFor !== d.id) loadExtent(d, true) })
+  // (a window that came from the permalink is kept: it is only clamped, never reset)
+  $effect(() => {
+    const d = dataset
+    if (!d || extentFor === d.id) return
+    const reset = !hashWindow; hashWindow = false
+    loadExtent(d, reset)
+  })
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
   async function loadExtent(ds: Dataset, reset = false, signal?: AbortSignal): Promise<TimeExtent | null> {
@@ -145,7 +219,7 @@
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
     busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null
-    squares = null; stepDate = ''
+    squares = null; stepDate = ''; shownRun = null; maskInfo = null; copied = ''; exporting = ''
     if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
     try {
@@ -222,6 +296,12 @@
                                 weight: Number(r.weight), value: r.value === null ? null : Number(r.value) })))
       stepDate = last.length ? new Date(last[0].date).toISOString().slice(0, 10) : ''
       totalMs = performance.now() - t0
+      // what the exports, the reproduce panel and the permalink describe
+      shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
+      maskInfo = { cells: cells.length, lobes: lobes.length,
+                   weight: cells.reduce((a, c) => a + c.weight, 0),
+                   partial: cells.filter((c) => c.weight < 0.999).length }
+      if (typeof history !== 'undefined') history.replaceState(null, '', permalink(shownRun))
       note = (win.snapped ? `window ${win.reason}. ` : '') +
              `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells, ` +
              `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, ` +
@@ -319,9 +399,15 @@
   <p class="status" class:err={!!error}>{error || status}</p>
   {#if note}<p class="meta">{note}</p>{/if}
 
-  {#each urls as u}
-    <p class="url">griddap: <a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
-  {/each}
+  {#if rows.length && shownRun}
+    <div class="export">
+      <button onclick={saveCsv}>Download CSV</button>
+      <button onclick={saveParquet}>Download Parquet</button>
+      <button onclick={() => copy(link, 'permalink')}>Copy permalink</button>
+      {#if copied}<span class="ok">{copied}</span>{/if}
+      {#if exporting}<span class="ok">{exporting}</span>{/if}
+    </div>
+  {/if}
 
   <MapView
     pmtilesUrl={pmtiles}
@@ -365,8 +451,31 @@
     </table>
   {/if}
 
-  {#if sql}
-    <details><summary>SQL</summary><pre>{sql}</pre></details>
+  {#if shownRun}
+    <details class="repro" open>
+      <summary>reproduce this run</summary>
+      <button class="copy" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</button>
+
+      <h3>griddap request{urls.length > 1 ? 's' : ''}</h3>
+      {#each urls as u}
+        <p class="url"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
+      {/each}
+
+      <h3>mask</h3>
+      {#if maskInfo}
+        <p class="meta">{maskInfo.cells} cells in {maskInfo.lobes} lobe{maskInfo.lobes > 1 ? 's' : ''},
+           total area weight {maskInfo.weight.toFixed(3)},
+           {maskInfo.partial} partial (boundary) cell{maskInfo.partial === 1 ? '' : 's'}</p>
+      {/if}
+
+      <h3>permalink</h3>
+      <p class="url"><a href={link}>{link}</a></p>
+
+      <h3>SQL — sql/{statsTemplate(shownVar)}.sql</h3>
+      <pre>{sql}</pre>
+      <h3>SQL — sql/last_step.sql (the map layer)</h3>
+      <pre>{mapSql}</pre>
+    </details>
   {/if}
 </main>
 
@@ -382,6 +491,11 @@
   .meta   { color: #444; font-size: 13px; }
   .through { font-size: 12px; color: #555; padding-bottom: 4px; }
   .url    { font-size: 12px; word-break: break-all; color: #666; }
+  .export { display: flex; gap: .5rem; align-items: center; margin: .75rem 0; flex-wrap: wrap; }
+  .ok     { font-size: 12px; color: #2a7; }
+  .repro  { margin: 1rem 0; border: 1px solid #e3e3e3; border-radius: 3px; padding: .5rem .75rem; }
+  .repro h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555; margin: .75rem 0 .25rem; }
+  .repro .copy { float: right; }
   .chart  { margin: 1rem 0; }
   table   { border-collapse: collapse; font-size: 13px; width: 100%; }
   th, td  { border-bottom: 1px solid #e3e3e3; padding: 3px 8px; text-align: right; }

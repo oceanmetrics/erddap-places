@@ -53,5 +53,7 @@ spikes/     verified experiments (see spikes/README.md)
 P1: the browser app does gazetteer place → ERDDAP dataset/variable → daily statistics or categorical
 class composition, on GitHub Pages, **with a map**: the gazetteer places as PMTiles vector tiles
 (click to select) over a keyless Esri ocean basemap, and the latest time step of the run drawn as the
-masked grid cells themselves, antimeridian included. Plan phases P0–P3 target a demo at the MBON
+masked grid cells themselves, antimeridian included. Every run is shareable (the place, dataset,
+variable and window live in the URL hash) and exportable (CSV or Parquet, beside a reproduce panel
+with the griddap URLs, the mask summary and the SQL). Plan phases P0–P3 target a demo at the MBON
 all-hands, Oct 14–16 2026.
