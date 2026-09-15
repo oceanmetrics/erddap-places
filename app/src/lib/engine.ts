@@ -10,29 +10,11 @@ import { tableFromArrays, tableToIPC } from 'apache-arrow'
 import type { MaskCell } from './gridMask'
 
 // ── templates ─────────────────────────────────────────────────────────────────
-const templates = import.meta.glob('../../../sql/*.sql', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
-export function template(name: string): string {
-  const k = Object.keys(templates).find((p) => p.endsWith(`/${name}.sql`))
-  if (!k) throw new Error(`no SQL template ${name} (have: ${Object.keys(templates).join(', ')})`)
-  return templates[k]
-}
-export type Param = string | number | boolean | null
-export interface Params { [k: string]: Param }
-/** params spliced literally (identifiers: table/column names); everything else is quoted. */
-const RAW = new Set(['var', 'slab', 'mask', 'src'])
-export function lit(v: Param): string {
-  if (v === null || v === undefined) return 'NULL'
-  if (typeof v === 'number') return Number.isFinite(v) ? String(v) : 'NULL'
-  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE'
-  return `'${String(v).replace(/'/g, "''")}'`
-}
-export function render(name: string, params: Params): string {
-  const body = template(name)
-  return body.replace(/\{\{(\w+)\}\}/g, (_, k: string) => {
-    if (!(k in params)) throw new Error(`template ${name}: missing param ${k}`)
-    return RAW.has(k) ? String(params[k]) : lit(params[k])
-  }).trim()
-}
+// (loading and rendering live in ./sql, which is importable from plain Node)
+export { lit, render, template, templateNames } from './sql'
+import { render } from './sql'
+import type { Params } from './sql'
+export type { Param, Params } from './sql'
 
 // ── rows ──────────────────────────────────────────────────────────────────────
 export type Row = Record<string, any>

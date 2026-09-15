@@ -1,15 +1,14 @@
 <script lang="ts">
-  // first slice: daily SST statistics for one place (HIHWNMS), computed entirely in the browser.
-  // place polygon -> ERDDAP axis vectors -> gridMask -> one griddap .parquet -> DuckDB-WASM -> chart.
+  // place-based statistics in the browser: pick a place from the published gazetteer, mask the
+  // ERDDAP grid to it, fetch one griddap .parquet per lobe, aggregate with DuckDB-WASM.
   import { onMount } from 'svelte'
   import * as Plot from '@observablehq/plot'
-  import { gridMask, polygonParts, type MaskResult } from './lib/gridMask'
+  import { gridMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
   import { engine } from './lib/engine'
-  import type { FeatureCollection } from 'geojson'
+  import { gazetteerBase, loadPlaces, placeLobes, type Place } from './lib/gazetteer'
 
-  // ── configuration ───────────────────────────────────────────────────────────
-  const PLACE    = { id: 'HIHWNMS', name: 'Hawaiian Islands Humpback Whale NMS', url: `${import.meta.env.BASE_URL}places/HIHWNMS.geojson` }
+  // ── configuration (the dataset picker arrives in step 2) ────────────────────
   const BASE     = 'https://pae-paha.pacioos.hawaii.edu/erddap'
   const DATASET  = 'dhw_5km'
   const VAR      = 'CRW_SST'
@@ -17,66 +16,79 @@
   const LAG_DAYS = 2 // the CRW daily grid's latest time step is ~2 days back
 
   // ── state ───────────────────────────────────────────────────────────────────
-  let status  = $state('starting…')
-  let error   = $state('')
-  let mask    = $state<MaskResult | null>(null)
-  let slabUrl = $state('')
-  let slabMs  = $state(0)
-  let slabKb  = $state(0)
-  let rows    = $state<Record<string, any>[]>([])
-  let chartEl = $state<HTMLDivElement | null>(null)
+  let places   = $state<Place[]>([])
+  let placeId  = $state('NMS:HIHWNMS')
+  let status   = $state('loading the gazetteer…')
+  let error    = $state('')
+  let busy     = $state(false)
+  let note     = $state('')
+  let urls     = $state<{ url: string; kb: number; ms: number }[]>([])
+  let rows     = $state<Record<string, any>[]>([])
+  let chartEl  = $state<HTMLDivElement | null>(null)
 
-  const fmt = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
+  const place  = $derived(places.find((p) => p.place_id === placeId) ?? null)
+  const groups = $derived([...new Set(places.map((p) => p.gazetteer))].map((g) => ({ g, ps: places.filter((p) => p.gazetteer === g) })))
+  const fmt    = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
-  // ── pipeline ────────────────────────────────────────────────────────────────
   onMount(async () => {
     try {
-      status = `fetching the ${PLACE.id} polygon…`
-      const gj: FeatureCollection = await (await fetch(PLACE.url)).json()
-
-      // place bbox (one lobe here; lobes split at ±180 would get one request each)
-      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
-      for (const p of polygonParts(gj)) {
-        x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1])
-        x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3])
-      }
-
-      status = 'fetching the ERDDAP axis vectors…'
-      const [lon, lat] = await Promise.all([
-        fetchAxis(BASE, DATASET, 'longitude', x0, x1),
-        fetchAxis(BASE, DATASET, 'latitude',  y0, y1, true), // descending, as on the CRW grid
-      ])
-
-      status = 'masking the grid…'
-      mask = gridMask(gj, lon, lat)
-
-      const end   = new Date(Date.now() - LAG_DAYS * 864e5)
-      const start = new Date(end.getTime() - (N_DAYS - 1) * 864e5)
-      slabUrl = griddapUrl({
-        base: BASE, datasetId: DATASET, variable: VAR,
-        time: [noonZ(start), noonZ(end)],
-        lat : [lat[lat.length - 1], lat[0]], lon: [lon[0], lon[lon.length - 1]],
-        latDescending: true, format: 'parquet',
-      })
-
-      status = `fetching ${N_DAYS} days of ${VAR} from PacIOOS (the server takes ~15–20 s)…`
-      const slab = await fetchSlab(slabUrl, 'parquet')
-      slabMs = Math.round(slab.ms); slabKb = Math.round((slab.bytes ?? 0) / 1024)
-
-      status = 'loading DuckDB-WASM…'
-      await engine.registerBuffer('slab.parquet', slab.buffer!)
-      await engine.insertMask(mask.cells)
-
-      status = 'computing the daily statistics…'
-      rows = await engine.runTemplate('stats_daily', { var: VAR, slab: "'slab.parquet'", mask: 'mask' })
-      status = `done: ${rows.length} days; ${mask.nInside} cells with centres inside, ${mask.cells.length} cells with area weights`
+      places = await loadPlaces()
+      status = `gazetteer: ${places.length} places from ${gazetteerBase()}`
+      await run()
     } catch (e) {
       error  = e instanceof Error ? e.message : String(e)
       status = 'failed'
     }
   })
 
-  // redraw the chart whenever the rows (or the container) change
+  // ── pipeline ────────────────────────────────────────────────────────────────
+  async function run() {
+    if (!place || busy) return
+    busy = true; error = ''; rows = []; urls = []
+    try {
+      const lobes = placeLobes(place)
+      const end   = new Date(Date.now() - LAG_DAYS * 864e5)
+      const start = new Date(end.getTime() - (N_DAYS - 1) * 864e5)
+      const cells: MaskCell[] = []
+      const files: string[] = []
+
+      for (const [i, lobe] of lobes.entries()) {
+        status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
+        const [lon, lat] = await Promise.all([
+          fetchAxis(BASE, DATASET, 'longitude', lobe.bbox[0], lobe.bbox[2]),
+          fetchAxis(BASE, DATASET, 'latitude',  lobe.bbox[1], lobe.bbox[3], true), // descending on the CRW grid
+        ])
+        status = `lobe ${i + 1}/${lobes.length}: masking the grid…`
+        const m = gridMask(lobe.geojson, lon, lat)
+        cells.push(...m.cells)
+
+        const url = griddapUrl({
+          base: BASE, datasetId: DATASET, variable: VAR,
+          time: [noonZ(start), noonZ(end)],
+          lat : [lat[lat.length - 1], lat[0]], lon: [lon[0], lon[lon.length - 1]],
+          latDescending: true, format: 'parquet',
+        })
+        status = `lobe ${i + 1}/${lobes.length}: fetching ${N_DAYS} days of ${VAR} (the server takes ~15–20 s)…`
+        const slab = await fetchSlab(url, 'parquet')
+        const file = `slab_${i}.parquet`
+        await engine.registerBuffer(file, slab.buffer!)
+        files.push(file)
+        urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
+      }
+
+      status = 'computing the daily statistics…'
+      await engine.insertMask(cells)
+      const slab = `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])` // the lobes, unioned
+      rows = await engine.runTemplate('stats_daily', { var: VAR, slab, mask: 'mask' })
+      note = `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ${cells.length} masked cells`
+      status = `done: ${rows.length} days for ${place.name}`
+    } catch (e) {
+      error  = e instanceof Error ? e.message : String(e)
+      status = 'failed'
+    } finally { busy = false }
+  }
+
+  // ── chart ───────────────────────────────────────────────────────────────────
   $effect(() => {
     if (!chartEl || !rows.length) return
     const long = rows.flatMap((r) => [
@@ -101,22 +113,28 @@
 
 <main>
   <h1>erddap-places</h1>
-  <p class="sub">Daily <code>{VAR}</code> statistics for <strong>{PLACE.name}</strong> ({PLACE.id}) from
-     PacIOOS ERDDAP <code>{DATASET}</code> — masked, fetched and aggregated entirely in this browser.</p>
+  <p class="sub">Daily <code>{VAR}</code> statistics from PacIOOS ERDDAP <code>{DATASET}</code> for a place
+     from the Ocean Metrics gazetteer — masked, fetched and aggregated entirely in this browser.</p>
+
+  <div class="controls">
+    <label>place
+      <select bind:value={placeId} disabled={busy || !places.length}>
+        {#each groups as { g, ps }}
+          <optgroup label={g}>
+            {#each ps as p}<option value={p.place_id}>{p.name} ({p.place_id})</option>{/each}
+          </optgroup>
+        {/each}
+      </select>
+    </label>
+    <button onclick={run} disabled={busy || !place}>Run</button>
+  </div>
 
   <p class="status" class:err={!!error}>{error || status}</p>
+  {#if note}<p class="meta">{note}</p>{/if}
 
-  {#if mask}
-    <p class="meta">
-      mask: <strong>{mask.nInside}</strong> cells inside of {mask.nCandidates} candidates
-      ({mask.cells.length} with area weights), method <code>{mask.method}</code>, {mask.ms.toFixed(0)} ms
-      {#if slabKb}· slab: {slabKb} kB in {(slabMs / 1000).toFixed(1)} s{/if}
-    </p>
-  {/if}
-
-  {#if slabUrl}
-    <p class="url">griddap URL: <a href={slabUrl} target="_blank" rel="noreferrer">{slabUrl}</a></p>
-  {/if}
+  {#each urls as u}
+    <p class="url">griddap: <a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
+  {/each}
 
   <div bind:this={chartEl} class="chart"></div>
 
@@ -139,6 +157,9 @@
   main    { max-width: 900px; margin: 2rem auto; padding: 0 1rem; font: 15px/1.5 system-ui, sans-serif; color: #222; }
   h1      { font-size: 1.4rem; margin: 0 0 .25rem; }
   .sub    { color: #555; margin: 0 0 1rem; }
+  .controls { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; margin-bottom: .75rem; }
+  .controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 2px; }
+  .controls select { font-size: 14px; padding: 2px 4px; max-width: 460px; }
   .status { background: #eef4fb; border-left: 3px solid #1f77b4; padding: .5rem .75rem; }
   .status.err { background: #fdeeee; border-left-color: #d62728; }
   .meta   { color: #444; }
