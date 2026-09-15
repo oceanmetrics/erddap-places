@@ -85,6 +85,27 @@ export class Engine {
     return this.q
   }
 
+  /** rows from a non-Parquet slab (.csvp / .jsonp) as a table, so the same SQL works on them. */
+  async insertRows(rows: Record<string, unknown>[], table: string) {
+    const run = async () => {
+      await this.ready
+      const t = performance.now()
+      const cols = Object.keys(rows[0] ?? {})
+      const arrays: Record<string, any> = {}
+      for (const c of cols) {
+        const vals = rows.map((r) => r[c])
+        arrays[c] = vals.every((v) => typeof v === 'number' || v === null)
+          ? Float64Array.from(vals.map((v) => (v === null ? NaN : (v as number))))
+          : vals.map((v) => (v === null || v === undefined ? null : String(v)))
+      }
+      await this.conn.query(`DROP TABLE IF EXISTS ${table}`)
+      await this.conn.insertArrowFromIPCStream(tableToIPC(tableFromArrays(arrays), 'stream'), { name: table, create: true })
+      this.mark(`rows:${table}`, performance.now() - t, `${rows.length} rows`)
+    }
+    this.q = this.q.then(run, run)
+    return this.q
+  }
+
   exec(sql: string, label = 'exec'): Promise<Row[]> {
     const run = async () => {
       await this.ready

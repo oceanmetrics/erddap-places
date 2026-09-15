@@ -38,6 +38,10 @@ npm run check    # svelte-check + tsc
 - `static/` is the Vite public dir (empty: the app has no static place files any more).
   `src/lib/__fixtures__/*.geojson` are the four test sanctuaries (public NOAA data, from
   `noaa-onms/onmsR`).
+- Datasets and variables come from the STAC Collections under `erddap/` in the catalog
+  (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
+  choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit
+  becomes a `- 273.15` in the SQL (`valueExpr`).
 - The gazetteer base URL is one constant in `src/lib/gazetteer.ts`
   (`https://storage.oceanmetrics.io/gazetteer/`), with the bucket URL
   (`https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/`) as the fallback on any

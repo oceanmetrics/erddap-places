@@ -71,7 +71,7 @@ export async function loadPlaces(buffer?: ArrayBuffer): Promise<Place[]> {
     gazetteer: String(r.gazetteer),
     name     : String(r.name),
     area_km2 : Number(r.area_km2),
-    bbox     : [Number(r.bbox.xmin), Number(r.bbox.ymin), Number(r.bbox.xmax), Number(r.bbox.ymax)],
+    bbox     : [Number(r.bbox.xmin), Number(r.bbox.ymin), Number(r.bbox.xmax), Number(r.bbox.ymax)] as [number, number, number, number],
     geometry : r.geometry as Geometry,
   })).sort((a, b) => a.gazetteer.localeCompare(b.gazetteer) || a.name.localeCompare(b.name))
 }

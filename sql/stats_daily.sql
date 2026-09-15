@@ -1,5 +1,6 @@
 -- daily key statistics for one place from an ERDDAP griddap slab.
---   {{var}}   variable column in the slab (e.g. CRW_SST)
+--   {{expr}}  the value expression over the slab alias `s` (e.g. s."CRW_SST", or
+--             (s."analysed_sst" - 273.15) to convert Kelvin to Celsius)
 --   {{slab}}  the registered griddap file (parquet) or view
 --   {{mask}}  the mask table: latitude, longitude, weight (0,1]
 -- the join is an exact equality on ROUND(x, 3): the ERDDAP axis is float32 in the parquet and float64
@@ -8,19 +9,19 @@
 SELECT
   -- utc day; via epoch_ms because duckdb-wasm ships without icu, so TIMESTAMPTZ::DATE is unimplemented there
   make_timestamp(epoch_ms(s."time") * 1000)::DATE   AS date,
-  count(s.{{var}})                                  AS n,
-  avg(s.{{var}})                                    AS mean,
-  sum(s.{{var}} * m.weight) / sum(m.weight)         AS mean_wt,
-  stddev_samp(s.{{var}})                            AS sd,
-  min(s.{{var}})                                    AS min,
-  max(s.{{var}})                                    AS max,
-  quantile_cont(s.{{var}}, 0.10)                    AS p10,
-  quantile_cont(s.{{var}}, 0.90)                    AS p90,
+  count({{expr}})                                  AS n,
+  avg({{expr}})                                    AS mean,
+  sum({{expr}} * m.weight) / sum(m.weight)         AS mean_wt,
+  stddev_samp({{expr}})                            AS sd,
+  min({{expr}})                                    AS min,
+  max({{expr}})                                    AS max,
+  quantile_cont({{expr}}, 0.10)                    AS p10,
+  quantile_cont({{expr}}, 0.90)                    AS p90,
   sum(m.weight)                                     AS weight_sum
 FROM {{slab}} s
 JOIN {{mask}} m
   ON  ROUND(s.latitude::DOUBLE,  3) = ROUND(m.latitude::DOUBLE,  3)
   AND ROUND(s.longitude::DOUBLE, 3) = ROUND(m.longitude::DOUBLE, 3)
-WHERE s.{{var}} IS NOT NULL
+WHERE {{expr}} IS NOT NULL
 GROUP BY 1
 ORDER BY 1

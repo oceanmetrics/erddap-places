@@ -1,0 +1,75 @@
+// the STAC Collections -> Dataset mapping, against the repo copies of the published collections.
+// the live catalog read is skipped when the gazetteer is unreachable.
+import { describe, expect, it } from 'vitest'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { loadDatasets, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
+
+const DIR = path.dirname(fileURLToPath(import.meta.url))
+const collection = (id: string) =>
+  JSON.parse(fs.readFileSync(path.resolve(DIR, `../../../catalog/gazetteer/erddap/${id}/collection.json`), 'utf8'))
+
+const online = async () => {
+  if (process.env.ERDDAP_OFFLINE) return false
+  try { return (await fetch('https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/catalog.json', { signal: AbortSignal.timeout(15_000) })).ok }
+  catch { return false }
+}
+
+describe('toDataset', () => {
+  it('reads the erddap:* fields and cube:variables of dhw_5km', () => {
+    const d = toDataset(collection('dhw_5km'))
+    expect(d.datasetId).toBe('dhw_5km')
+    expect(d.baseUrl).toMatch(/pacioos/)
+    expect(d.latDescending).toBe(true)
+    expect(d.format).toBe('parquet')          // CORS on, parquet offered
+    expect(d.variables.map((v) => v.name)).toContain('CRW_SST')
+    expect(d.timeStep).toBe('P1D')
+  })
+
+  it('falls back to jsonp when the server has no CORS', () => {
+    const c = { ...collection('dhw_5km'), 'erddap:cors': false }
+    expect(toDataset(c).format).toBe('jsonp')
+  })
+
+  it('reads the re-served MUR collection', () => {
+    const d = toDataset(collection('jplMURSST41'))
+    expect(d.baseUrl).toBe('https://erddap.oceanmetrics.io/erddap')
+    expect(d.latDescending).toBe(false)
+    expect(d.variables.map((v) => v.name)).toContain('analysed_sst')
+  })
+})
+
+describe('valueExpr / valueLabel', () => {
+  const v = (unit: string | null): CubeVariable => ({ name: 'analysed_sst', unit, description: '', categorical: false })
+  it('converts Kelvin to Celsius in SQL and labels the axis', () => {
+    expect(valueExpr(v('K'))).toBe('(s."analysed_sst" - 273.15)')
+    expect(valueLabel(v('kelvin'))).toBe('°C')
+  })
+  it('leaves an already-Celsius variable alone', () => {
+    expect(valueExpr(v('degree_C'))).toBe('s."analysed_sst"')
+    expect(valueLabel(v('Celsius'))).toBe('°C')
+  })
+  it('falls back to the variable name for unitless variables', () => {
+    expect(valueLabel(v('1'))).toBe('analysed_sst')
+    expect(valueLabel(v(null))).toBe('analysed_sst')
+  })
+})
+
+describe('toDatasetLon', () => {
+  it('shifts into a 0..360 dataset and back into a -180..180 one', () => {
+    expect(toDatasetLon(-160, [0, 360])).toBe(200)
+    expect(toDatasetLon(200, [-180, 180])).toBe(-160)
+    expect(toDatasetLon(-160, [-180, 180])).toBe(-160)
+  })
+})
+
+describe('published catalog', () => {
+  it('lists the erddap/* collections', async () => {
+    if (!(await online())) return
+    const ds = await loadDatasets()
+    expect(ds.length).toBeGreaterThanOrEqual(2)
+    expect(ds.map((d) => d.datasetId)).toContain('dhw_5km')
+    for (const d of ds) expect(d.baseUrl).toMatch(/^https:/)
+  }, 120_000)
+})
