@@ -45,6 +45,12 @@
       "href": "./erddap/noaa_aoml_seascapes_8day/collection.json",
       "type": "application/json",
       "title": "NOAA AOML Seascapes — 8-day Global (categorical)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/calcofi_bottle/collection.json",
+      "type": "application/json",
+      "title": "CalCOFI Bottle Database — observations (tabledap)"
     }
   ],
   "title": "Ocean Metrics gazetteer",

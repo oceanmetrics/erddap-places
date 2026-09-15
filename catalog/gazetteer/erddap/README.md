@@ -1,6 +1,6 @@
 # ERDDAP dataset descriptions
 
-STAC Collections describing three ERDDAP griddap datasets used to compute fresh place statistics
+STAC Collections describing the ERDDAP datasets — three griddap, one tabledap — used to compute fresh place statistics
 in the browser (DuckDB-WASM), rather than storing pre-computed values. Each collection carries the
 [datacube extension](https://stac-extensions.github.io/datacube/v2.2.0/schema.json) (dimensions,
 variables) plus custom `erddap:*` fields (base URL, dataset id, protocol, CORS support, formats)
@@ -16,6 +16,12 @@ and a templated `griddap` asset href for building query URLs.
   8-day global 0.05° **categorical** classes (`CLASS` 1–33, with `erddap-places:categorical` and an
   `erddap-places:classes` label map). Points at `erddap.oceanmetrics.io` with the upstream
   `cwcgom.aoml.noaa.gov` server as `erddap:upstream_url`.
+- [`calcofi_bottle/`](calcofi_bottle/collection.json) — CalCOFI bottle observations, 1949–2021, the
+  first **tabledap** collection here (`erddap:protocol: "tabledap"`, ERDDAP 2.30 on
+  `erddap.calcofi.io`, CORS on, `.parquetWMeta`). The table is **long-format**, so
+  `erddap-places:long_format` names the `measurement_type` / `measurement_value` pair and each
+  `cube:variables` entry is a value of `measurement_type` (temperature, salinity, chlorophyll_a,
+  nitrate, oxygen_ml_l, phosphate, silicate) rather than a column.
 
 ## Note on Portolan/rashid validation
 
