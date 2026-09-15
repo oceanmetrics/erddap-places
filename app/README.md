@@ -26,6 +26,10 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 - **Chart**: daily mean / area-weighted mean with a p10–p90 band, or a stacked area of class
   proportions for a categorical grid.
 - **Table** of the daily or per-class result.
+- **Tabledap**: a dataset whose collection says `erddap:protocol: "tabledap"` takes a different
+  path — bbox + window constraints instead of axis vectors, `pointMask()` instead of `gridMask()`,
+  and a **monthly** roll-up with `n_casts`; the chart becomes a monthly mean with a min–max band and
+  the map draws the sample stations as circles.
 - **Export**: the result table as **CSV** or **Parquet** (DuckDB's own `COPY … TO` writer, read back
   with `copyFileToBuffer`), named after the place, dataset, variable and window, e.g.
   `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.parquet`.
@@ -115,6 +119,21 @@ npm run check    # svelte-check + tsc
   over a window that came from the link (`hashWindow`); it is rewritten with `history.replaceState`
   on every successful run. File names, the permalink and the reproduce panel all come from
   `shownRun` — the run the results belong to, never the live pickers.
+- **Tabledap** (`tabledapUrl()` / `tabledapPlaceConstraints()` in `src/lib/erddap.ts`,
+  `pointMask()` in `src/lib/gridMask.ts`, `sql/stats_tabledap.sql` + `sql/points_tabledap.sql`):
+  the column list is joined with `%2C` and each constraint encodes **only** its comparison
+  characters (`%3E=`, `%3C=`), `=` staying literal and a string value quoted with `%22` — the shape
+  ERDDAP 2.30 accepts (verified against `erddap.calcofi.io`, which returns `.parquetWMeta` with
+  CORS). There is no lattice: the distinct positions come back out of the slab
+  (`SELECT DISTINCT longitude, latitude`), go through turf point-in-polygon and return as the same
+  `mask` table the grid path uses, every kept station with weight 1. The roll-up is **monthly**
+  (`date_trunc('month', …)`) with `n_casts` counting the distinct time × position events behind the
+  measurements, because one cast contributes many depths. Long format: `erddap-places:long_format`
+  names the `measurement_type` / `measurement_value` columns, the request filters
+  `measurement_type="…"`, and `valueExpr(v, 's', longFormat)` reads the value column. The default
+  window is **five years**, and when the server publishes no `time` `actual_range` or
+  `time_coverage_*` (CalCOFI does not), the extent falls back to the collection's
+  `cube:dimensions.time.extent`.
 - Datasets and variables come from the STAC Collections under `erddap/` in the catalog
   (`src/lib/catalog.ts`): `cube:variables` fills the variable picker, `erddap:cors`/`erddap:formats`
   choose the format rung, `erddap:lat_descending` orients the latitude constraint, and a Kelvin unit

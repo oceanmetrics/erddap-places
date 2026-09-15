@@ -29,7 +29,16 @@ gzipped DuckDB-WASM).
    area-weighted fraction of the place (summing to 1 per date) and the percent of cells — the
    browser equivalent of `seascapeR::sum_ss_grds_to_ts()`, drawn as a stacked area chart of class
    proportions over time (`seascapeR::plot_ss_ts()`), with seascapeR's reversed Spectral colours.
-7. **Deliver** — Svelte 5 + Vite + svelte-maplibre app on GitHub Pages; CSV/Parquet export with the
+7. **Tabledap (point data)** — not every ERDDAP dataset is a grid. A collection with
+   `erddap:protocol: "tabledap"` (CalCOFI bottle observations, 1949–2021, on `erddap.calcofi.io`,
+   ERDDAP 2.30 with CORS and `.parquetWMeta`) takes the place bbox and window as `&col>=value`
+   constraints, masks the returned **positions** by point-in-polygon instead of building a grid
+   mask, and rolls up by **month** (`sql/stats_tabledap.sql`: n, n_casts, mean, sd, min, max,
+   p10/p90), since a quarterly cruise leaves most days empty. Long-format tables are supported:
+   `erddap-places:long_format` names the `measurement_type` / `measurement_value` pair, so a
+   "variable" is a row filter. The chart is the monthly mean with a min–max band and the map shows
+   the sample stations as coloured dots.
+8. **Deliver** — Svelte 5 + Vite + svelte-maplibre app on GitHub Pages; CSV/Parquet export with the
    exact URLs used; precomputed long series as STAC Items under `stats/`.
 
 ## Layout
@@ -56,4 +65,5 @@ class composition, on GitHub Pages, **with a map**: the gazetteer places as PMTi
 masked grid cells themselves, antimeridian included. Every run is shareable (the place, dataset,
 variable and window live in the URL hash) and exportable (CSV or Parquet, beside a reproduce panel
 with the griddap URLs, the mask summary and the SQL). Plan phases P0–P3 target a demo at the MBON
-all-hands, Oct 14–16 2026.
+all-hands, Oct 14–16 2026. Both ERDDAP protocols are wired up: griddap (CRW, MUR, Seascapes) and
+tabledap (CalCOFI bottle).

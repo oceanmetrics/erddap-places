@@ -7,7 +7,7 @@
 // cells span more than 180 degrees of longitude, they are expressed in [0, 360) ("centred at 180")
 // and the squares keep going past 180 (179.95 -> 180.05) instead of wrapping. MapLibre accepts
 // longitudes outside [-180, 180] and draws them across the seam.
-import type { Feature, FeatureCollection, Polygon } from 'geojson'
+import type { Feature, FeatureCollection, Point, Polygon } from 'geojson'
 
 /** a mask cell with the value of one time step (null when the grid has no data there). */
 export interface ValueCell { lon: number; lat: number; weight: number; value?: number | null }
@@ -134,4 +134,43 @@ export function placeMapBounds(
   if (g.type === 'GeometryCollection') for (const sub of g.geometries) walk(sub.coordinates)
   else walk(g.coordinates)
   return Number.isFinite(w) ? [w, s, e, n] : [x0, y0, x1, y1]
+}
+
+// ── points (tabledap) ─────────────────────────────────────────────────────────
+export interface CellPoints {
+  geojson: FeatureCollection<Point, CellProps>
+  center : LonCenter
+  bbox   : [number, number, number, number]
+  range  : [number, number]
+}
+
+/**
+ * One point per sample position, for a **tabledap** run: there is no cell to draw, so the map gets
+ * circles instead of squares. Same longitude framing as `cellSquares()`, so an antimeridian place
+ * stays in one piece, and the same properties, so the hover popup and the colour ramp are shared.
+ */
+export function cellPoints(cells: ValueCell[], opts: { center?: LonCenter | 'auto' } = {}): CellPoints {
+  const center = opts.center === undefined || opts.center === 'auto'
+    ? pickCenter(cells.map((c) => c.lon))
+    : opts.center
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity
+  let vmin = Infinity, vmax = -Infinity
+  const features: Feature<Point, CellProps>[] = cells.map((c, i) => {
+    const x = normalizeLon(c.lon, center), y = c.lat
+    const value = typeof c.value === 'number' && Number.isFinite(c.value) ? c.value : null
+    if (value !== null) { if (value < vmin) vmin = value; if (value > vmax) vmax = value }
+    if (x < w) w = x; if (x > e) e = x
+    if (y < s) s = y; if (y > n) n = y
+    return {
+      type: 'Feature', id: i,
+      properties: { lon: x, lat: y, weight: c.weight, value },
+      geometry  : { type: 'Point', coordinates: [x, y] },
+    }
+  })
+  return {
+    geojson: { type: 'FeatureCollection', features },
+    center,
+    bbox   : features.length ? [w, s, e, n] : [0, 0, 0, 0],
+    range  : Number.isFinite(vmin) ? [vmin, vmax] : [0, 0],
+  }
 }

@@ -5,7 +5,9 @@
 // literal, because ERDDAP will not accept a fully encoded query string. constraint values go in the
 // axis's own direction (latitude descends on the CRW grid, so [(22.4):1:(18.8)]).
 
-export type Format = 'parquet' | 'csvp' | 'jsonp'
+export type Format = 'parquet' | 'parquetWMeta' | 'csvp' | 'jsonp'
+/** the two Parquet rungs are handled identically once the bytes are in hand. */
+export const isParquet = (f: Format) => f === 'parquet' || f === 'parquetWMeta'
 
 export interface ErddapMeta { version?: string; cors?: boolean; formats?: string[] }
 export interface Collection { erddap: ErddapMeta }
@@ -34,7 +36,9 @@ export function noonZ(d: Date | string): string {
   return `${iso}T12:00:00Z`
 }
 
-const EXT: Record<Format, string> = { parquet: '.parquet', csvp: '.csvp', jsonp: '.json' }
+const EXT: Record<Format, string> = {
+  parquet: '.parquet', parquetWMeta: '.parquetWMeta', csvp: '.csvp', jsonp: '.json',
+}
 
 /** the griddap request URL for one lobe. */
 export function griddapUrl(s: GriddapSpec): string {
@@ -54,6 +58,72 @@ export function griddapUrl(s: GriddapSpec): string {
 /** one URL per polygon lobe (bbox = [lonMin, latMin, lonMax, latMax]). */
 export function griddapUrls(s: Omit<GriddapSpec, 'lat' | 'lon'>, bboxes: Array<[number, number, number, number]>): string[] {
   return bboxes.map((b) => griddapUrl({ ...s, lon: [b[0], b[2]], lat: [b[1], b[3]] }))
+}
+
+// ── tabledap ──────────────────────────────────────────────────────────────────
+// URL shape: {base}/tabledap/{dataset}.{fmt}?{col},{col},…&{col}{op}{value}&…
+// the column list is comma-separated and ERDDAP wants the commas percent-encoded (%2C); each
+// constraint's operator is encoded too (%3E= / %3C= / %3D), and the values are left literal, which
+// is what an ERDDAP 2.30 server accepts (verified against erddap.calcofi.io).
+
+export type TableOp = '>=' | '<=' | '>' | '<' | '=' | '!=' | '=~'
+export interface TableConstraint { column: string; op: TableOp; value: string | number }
+export interface TabledapSpec {
+  base       : string
+  datasetId  : string
+  columns    : string[]
+  constraints?: TableConstraint[]
+  format    ?: Format
+  callback  ?: string
+  /** extra server-side functions, e.g. `distinct()` or `orderByMax("time")`, appended literally. */
+  functions ?: string[]
+}
+
+// only the comparison characters are encoded; `=` stays literal, as ERDDAP's own example URLs do
+const OPS: Record<TableOp, string> = {
+  '>=': '%3E=', '<=': '%3C=', '>': '%3E', '<': '%3C', '=': '=', '!=': '!=', '=~': '=~',
+}
+/** one tabledap constraint, `column%3E=value`. */
+export function tableConstraint(c: TableConstraint): string {
+  return `${c.column}${OPS[c.op] ?? c.op}${c.value}`
+}
+
+/** the tabledap request URL: the encoded column list, then one `&constraint` each. */
+export function tabledapUrl(s: TabledapSpec): string {
+  const fmt = s.format ?? 'parquetWMeta'
+  const q = [
+    s.columns.join('%2C'),
+    ...(s.constraints ?? []).map(tableConstraint),
+    ...(s.functions ?? []),
+  ]
+  const tail = fmt === 'jsonp' ? `&.jsonp=${s.callback ?? 'erddapCb'}` : ''
+  return `${stripSlash(s.base)}/tabledap/${s.datasetId}${EXT[fmt]}?${q.join('&')}${tail}`
+}
+
+/**
+ * The constraints for one place lobe and one time window: a bbox and a half-open-ish time range,
+ * plus the long-format row filter when the dataset keeps its variables in a `measurement_type`
+ * column (`erddap-places:long_format` in the STAC Collection).
+ */
+export function tabledapPlaceConstraints(o: {
+  bbox: [number, number, number, number]   // [lonMin, latMin, lonMax, latMax]
+  from: string                              // yyyy-mm-dd or an ISO instant
+  to  : string
+  typeColumn?: string
+  typeValue ?: string
+}): TableConstraint[] {
+  const iso = (d: string, end = false) => (d.length > 10 ? d : `${d}T${end ? '23:59:59' : '00:00:00'}Z`)
+  const cs: TableConstraint[] = [
+    { column: 'time',      op: '>=', value: iso(o.from) },
+    { column: 'time',      op: '<=', value: iso(o.to, true) },
+    { column: 'longitude', op: '>=', value: o.bbox[0] },
+    { column: 'longitude', op: '<=', value: o.bbox[2] },
+    { column: 'latitude',  op: '>=', value: o.bbox[1] },
+    { column: 'latitude',  op: '<=', value: o.bbox[3] },
+  ]
+  // a string value is quoted, and the quotes percent-encoded (%22), as ERDDAP requires
+  if (o.typeColumn && o.typeValue) cs.push({ column: o.typeColumn, op: '=', value: `%22${o.typeValue}%22` })
+  return cs
 }
 
 // ── axis vectors ──────────────────────────────────────────────────────────────
@@ -77,6 +147,8 @@ export function pickFormat(collection: Collection): Format {
   const fmts = (e.formats ?? []).map((f) => f.replace(/^\./, '').toLowerCase())
   if (e.cors === false) return 'jsonp'
   if (fmts.length === 0) return 'parquet'
+  // parquetWMeta is plain Parquet with ERDDAP's metadata in the file footer: prefer it when offered
+  if (fmts.includes('parquetwmeta')) return 'parquetWMeta'
   if (fmts.includes('parquet')) return 'parquet'
   if (fmts.includes('csvp') || fmts.includes('csv')) return 'csvp'
   return 'jsonp'
@@ -157,6 +229,7 @@ export async function fetchSlab(url: string, format: Format = 'parquet', callbac
     const text = await res.text()
     return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: text.length, text, rows: parseCsvp(text) }
   }
+  // parquet and parquetWMeta alike: raw bytes for registerFileBuffer
   const buffer = new Uint8Array(await res.arrayBuffer())
   return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: buffer.byteLength, buffer }
 }

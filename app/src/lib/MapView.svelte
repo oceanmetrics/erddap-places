@@ -6,7 +6,7 @@
   // basemap: Esri's World Ocean Base raster tiles, which need no key and no account, with their
   // attribution. no geometry ever comes through this component as deep $state — App.svelte passes
   // the squares as a plain object built by cells.ts.
-  import { FillLayer, GeoJSON, LineLayer, MapLibre, Popup, VectorTileSource } from 'svelte-maplibre'
+  import { CircleLayer, FillLayer, GeoJSON, LineLayer, MapLibre, Popup, VectorTileSource } from 'svelte-maplibre'
   import maplibregl, { LngLatBounds, type StyleSpecification } from 'maplibre-gl'
   import { Protocol } from 'pmtiles'
   import type { FeatureCollection } from 'geojson'
@@ -20,8 +20,10 @@
     onselect  ?: (placeId: string) => void
     /** [west, south, east, north]; east may exceed 180 for an antimeridian place. */
     bounds    ?: [number, number, number, number] | null
-    /** the last time step's cells, from cellSquares() */
+    /** the last time step's grid cells, from cellSquares() */
     squares   ?: FeatureCollection | null
+    /** tabledap sample stations, from cellPoints(): circles instead of squares */
+    points    ?: FeatureCollection | null
     /** MapLibre fill-color expression (or colour) for the cells */
     fillColor ?: any
     /** what the hover popup calls the value */
@@ -31,11 +33,15 @@
     /** the date of the drawn time step, for the corner caption */
     stepDate  ?: string
     legend    ?: { label: string; color: string }[]
+    /** what the hover popup calls the weight (the area weight of a cell, the n behind a station) */
+    weightLabel?: string
+    weightText ?: (v: number) => string
   }
   let {
-    pmtilesUrl, placeId, onselect, bounds = null, squares = null,
+    pmtilesUrl, placeId, onselect, bounds = null, squares = null, points = null,
     fillColor = '#1f77b4', valueLabel = 'value', valueText = (v: number) => String(v),
-    stepDate = '', legend = [],
+    stepDate = '', legend = [], weightLabel = 'area weight',
+    weightText = (v: number) => v.toFixed(3),
   }: Props = $props()
 
   // the pmtiles:// protocol, registered once per page
@@ -74,6 +80,19 @@
   })
 </script>
 
+{#snippet cellPopup()}
+  <Popup openOn="hover" closeOnMove focusAfterOpen={false}>
+    {#snippet children({ data })}
+      {@const p = (data?.properties ?? {}) as CellProps}
+      <div class="pop">
+        <div><b>{valueLabel}</b>: {p.value === null || p.value === undefined ? 'no data' : valueText(Number(p.value))}</div>
+        <div>{weightLabel}: {weightText(Number(p.weight))}</div>
+        <div class="ll">{Number(p.lat).toFixed(3)}, {Number(p.lon).toFixed(3)}</div>
+      </div>
+    {/snippet}
+  </Popup>
+{/snippet}
+
 <div class="map">
   <MapLibre {style} bind:map class="ml" center={[-158, 21]} zoom={4} standardControls attributionControl={{ compact: true }}>
     <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
@@ -99,17 +118,20 @@
         <FillLayer
           paint={{ 'fill-color': fillColor, 'fill-opacity': 0.8, 'fill-outline-color': 'rgba(0,0,0,0.12)' }}
           hoverCursor="crosshair">
-          <Popup openOn="hover" closeOnMove focusAfterOpen={false}>
-            {#snippet children({ data })}
-              {@const p = (data?.properties ?? {}) as CellProps}
-              <div class="pop">
-                <div><b>{valueLabel}</b>: {p.value === null || p.value === undefined ? 'no data' : valueText(Number(p.value))}</div>
-                <div>area weight: {Number(p.weight).toFixed(3)}</div>
-                <div class="ll">{Number(p.lat).toFixed(3)}, {Number(p.lon).toFixed(3)}</div>
-              </div>
-            {/snippet}
-          </Popup>
+          {@render cellPopup()}
         </FillLayer>
+      </GeoJSON>
+    {/if}
+
+    {#if points}
+      <!-- tabledap: one circle per sample station, same colour ramp and same popup -->
+      <GeoJSON id="stations" data={points}>
+        <CircleLayer
+          paint={{ 'circle-color': fillColor, 'circle-opacity': 0.9, 'circle-radius': 5,
+                   'circle-stroke-width': 1, 'circle-stroke-color': '#33333388' }}
+          hoverCursor="crosshair">
+          {@render cellPopup()}
+        </CircleLayer>
       </GeoJSON>
     {/if}
   </MapLibre>

@@ -242,3 +242,41 @@ export function gridMask(geojson: GeoInput, lon: number[], lat: number[], opts: 
 
   return { cells, nCandidates: cands.size, nInside: inside.size, method, ms: (globalThis.performance ?? Date).now() - t0 }
 }
+
+// ── point masking (tabledap) ──────────────────────────────────────────────────
+/** a sampling position, as it comes out of a tabledap slab. */
+export interface MaskPoint { lon: number; lat: number }
+export interface PointMaskResult { cells: MaskCell[]; nCandidates: number; nInside: number; ms: number }
+
+/**
+ * The positions inside a place polygon, for a **tabledap** (point) dataset.
+ *
+ * There is no lattice and no partial cell here: a sample is in or out, so every kept position gets
+ * weight 1 and the caller can feed the result straight into the same `mask` table the grid path
+ * uses. Duplicate positions (one station, many casts and depths) are collapsed, which is what makes
+ * this cheap: a two-degree CalCOFI box over five years is tens of stations, not thousands of rows.
+ * The bbox of each polygon part prefilters, exactly as `maskTurf` does.
+ */
+export function pointMask(geojson: GeoInput, points: MaskPoint[]): PointMaskResult {
+  const t0 = (globalThis.performance ?? Date).now()
+  const ps = polygonParts(geojson)
+  const seen = new Map<string, MaskPoint>()
+  for (const p of points) {
+    if (!Number.isFinite(p.lon) || !Number.isFinite(p.lat)) continue
+    const k = `${p.lon},${p.lat}`
+    if (!seen.has(k)) seen.set(k, p)
+  }
+  const cells: MaskCell[] = []
+  for (const p of seen.values()) {
+    for (const part of ps) {
+      const [x0, y0, x1, y1] = part.bbox
+      if (p.lon < x0 || p.lon > x1 || p.lat < y0 || p.lat > y1) continue
+      if (booleanPointInPolygon([p.lon, p.lat], part.feat)) { cells.push({ lon: p.lon, lat: p.lat, weight: 1 }); break }
+    }
+  }
+  cells.sort((a, b) => a.lat - b.lat || a.lon - b.lon)
+  return {
+    cells, nCandidates: seen.size, nInside: cells.length,
+    ms: (globalThis.performance ?? Date).now() - t0,
+  }
+}

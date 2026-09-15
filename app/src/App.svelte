@@ -4,15 +4,15 @@
   // with DuckDB-WASM. Nothing but ERDDAP itself is in the request path.
   import { onMount } from 'svelte'
   import * as Plot from '@observablehq/plot'
-  import { gridMask, type MaskCell } from './lib/gridMask'
-  import { fetchAxis, fetchSlab, griddapUrl, noonZ } from './lib/erddap'
+  import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
+  import { fetchAxis, fetchSlab, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
   import { gazetteerBase, loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
   import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
   import MapView from './lib/MapView.svelte'
-  import { cellSquares, placeMapBounds } from './lib/cells'
+  import { cellPoints, cellSquares, placeMapBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
   import { decodeHash, permalink, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
@@ -22,6 +22,10 @@
   const LAG_DAYS     = 2      // most near-real-time grids are a couple of days behind
   const MIN_STEPS    = 8      // a coarse product (8-day Seascapes) still gets this many time steps
   const WIN          = { days: DEFAULT_DAYS, minSteps: MIN_STEPS, maxDays: MAX_DAYS }
+  // point data is sparse: a CalCOFI cruise is quarterly, so a tabledap run defaults to five years
+  const TABLE_DAYS   = 5 * 365
+  const TABLE_WIN    = { days: TABLE_DAYS, minSteps: 1, maxDays: TABLE_DAYS + 2 }
+  const winOpts      = (ds: Dataset | null) => (ds?.protocol === 'tabledap' ? TABLE_WIN : WIN)
   const iso          = (d: Date) => d.toISOString().slice(0, 10)
 
   // ── state ───────────────────────────────────────────────────────────────────
@@ -58,6 +62,8 @@
   let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
   // the map layer: the last time step of the slab, one square per masked cell (raw, never deep state)
   let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
+  let points    = $state.raw<ReturnType<typeof cellPoints> | null>(null)
+  let shownProtocol = $state<'griddap' | 'tabledap'>('griddap')
   let stepDate  = $state('')
   let pmtiles   = $state(placesPmtilesUrl())
   // what the results on screen are of: file names, the permalink and the reproduce panel use this,
@@ -100,20 +106,24 @@
   const mapBounds = $derived(place ? placeMapBounds(place) : null)
   const unit      = $derived(shownVar ? valueLabel(shownVar) : '')
   // a sequential ramp for a measurement, the chart's own class colours for a categorical grid
+  const layer     = $derived(squares ?? points)
+  const pointRun  = $derived(shownProtocol === 'tabledap')   // the results on screen are tabledap
   const fillColor = $derived.by(() => {
-    if (!squares) return '#1f77b4'
+    const l = layer
+    if (!l) return '#1f77b4'
     if (categorical)
       return ['match', ['to-string', ['get', 'value']],
               ...classList.flatMap((c) => [String(c), colours.get(String(c)) ?? '#cccccc']),
               '#cccccc'] as any
     return ['case', ['==', ['get', 'value'], null], 'rgba(0,0,0,0)',
-            ['interpolate', ['linear'], ['get', 'value'], ...rampStops(squares.range[0], squares.range[1])]] as any
+            ['interpolate', ['linear'], ['get', 'value'], ...rampStops(l.range[0], l.range[1])]] as any
   })
   const ramp7  = VIRIDIS_9.filter((_, i) => i % 2 === 0)
   const legend = $derived.by(() => {
-    if (!squares) return []
+    const l = layer
+    if (!l) return []
     if (categorical) return classList.map((c) => ({ label: classLabel(c), color: colours.get(String(c))! }))
-    const [lo, hi] = squares.range
+    const [lo, hi] = l.range
     return ramp7.map((color, i) => ({ color, label: i === 0 || i === ramp7.length - 1
       ? (lo + ((hi - lo) * i) / (ramp7.length - 1)).toFixed(1) : '' }))
   })
@@ -126,6 +136,9 @@
   /** the table on screen, as plain rows: ISO dates, class labels, nothing Arrow-shaped. */
   const exportRows = $derived.by(() => rows.map((r: any) => {
     const date = new Date(r.date).toISOString().slice(0, 10)
+    if (pointRun)
+      return { month: date, n: num(r.n), n_casts: num(r.n_casts), mean: num(r.mean), sd: num(r.sd),
+               min: num(r.min), max: num(r.max), p10: num(r.p10), p90: num(r.p90) }
     return categorical
       ? { date, class: num(r.class), label: classLabel(Number(r.class)), n: num(r.n),
           weight: num(r.weight), fraction: num(r.fraction), percent_cells: num(r.percent_cells) }
@@ -143,15 +156,17 @@
         `variable ${shownRun.variable}, ${shownRun.from} to ${shownRun.to}`,
       `# permalink: ${link}`,
       '',
-      '# griddap request(s):',
+      `# ${shownProtocol} request(s):`,
       ...urls.map((u) => u.url),
       '',
       maskInfo
-        ? `# mask: ${maskInfo.cells} cells in ${maskInfo.lobes} lobe(s), total area weight ` +
-          `${maskInfo.weight.toFixed(3)}, ${maskInfo.partial} partial (boundary) cells`
+        ? (pointRun
+            ? `# mask: ${maskInfo.cells} sample positions inside the place, in ${maskInfo.lobes} lobe(s)`
+            : `# mask: ${maskInfo.cells} cells in ${maskInfo.lobes} lobe(s), total area weight ` +
+              `${maskInfo.weight.toFixed(3)}, ${maskInfo.partial} partial (boundary) cells`)
         : '# mask: —',
       '',
-      '-- statistics (sql/' + statsTemplate(shownVar) + '.sql, run in DuckDB):',
+      '-- statistics (sql/' + statsTemplate(shownVar, shownProtocol) + '.sql, run in DuckDB):',
       sql,
       '',
       '-- the map layer (sql/last_step.sql):',
@@ -205,10 +220,14 @@
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
   async function loadExtent(ds: Dataset, reset = false, signal?: AbortSignal): Promise<TimeExtent | null> {
-    const ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId, 'time', signal)
+    let ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId, 'time', signal)
+    // some tabledap datasets publish neither `time` actual_range nor time_coverage_* (CalCOFI does
+    // not): fall back to the extent the STAC collection records
+    if (!ext && ds.timeExtent?.[0] && ds.timeExtent?.[1])
+      ext = { start: String(ds.timeExtent[0]), end: String(ds.timeExtent[1]) }
     if (dataset?.id !== ds.id) return ext        // the user moved on while we were fetching
     extent = ext; extentFor = ds.id
-    if (reset && ext) { const w = defaultWindow(ext, WIN); startDate = w.start; endDate = w.end }
+    if (reset && ext) { const w = defaultWindow(ext, winOpts(ds)); startDate = w.start; endDate = w.end }
     return ext
   }
 
@@ -219,7 +238,7 @@
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
     busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null
-    squares = null; stepDate = ''; shownRun = null; maskInfo = null; copied = ''; exporting = ''
+    squares = null; points = null; stepDate = ''; shownRun = null; maskInfo = null; copied = ''; exporting = ''
     if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
     try {
@@ -229,10 +248,11 @@
       status = 'reading the dataset time extent…'
       const ext = extentFor === ds.id ? extent : await loadExtent(ds, false, h.signal)
       if (h.stale()) return
-      const win = clampWindow({ start: startDate, end: endDate }, ext, WIN)
+      const opts = winOpts(ds), cap = opts.maxDays
+      const win = clampWindow({ start: startDate, end: endDate }, ext, opts)
       if (win.snapped) note = `window ${win.reason}`
       let end = win.end, start = win.start
-      if (daysBetween(start, end) + 1 > MAX_DAYS) start = iso(new Date(Date.parse(end) - (MAX_DAYS - 1) * 864e5))
+      if (daysBetween(start, end) + 1 > cap) start = iso(new Date(Date.parse(end) - (cap - 1) * 864e5))
       startDate = start; endDate = end
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
@@ -245,7 +265,35 @@
       const shifted = ds.lonRange[1] > 180      // dataset longitudes run 0..360
       const toPoly  = (x: number) => (shifted && x > 180 ? x - 360 : x)
 
+      const tabular = ds.protocol === 'tabledap'
+      const long    = ds.longFormat
+
       for (const [i, lobe] of lobes.entries()) {
+        if (tabular) {
+          // tabledap: no axis vectors and no lattice — ask for the place bbox and the window, then
+          // mask the positions that come back by point-in-polygon (below, once the slab is in)
+          const cols = ['longitude', 'latitude', 'time',
+                        ...(ds.collection?.['cube:dimensions']?.depth ? ['depth'] : []),
+                        ...(long ? [long.typeColumn, long.valueColumn] : [v.name])]
+          const url = tabledapUrl({
+            base: ds.baseUrl, datasetId: ds.datasetId, columns: cols, format: ds.format,
+            callback: `erddapCb${i}`,
+            constraints: tabledapPlaceConstraints({
+              bbox: lobe.bbox, from: start, to: end,
+              typeColumn: long?.typeColumn, typeValue: long ? v.name : undefined,
+            }),
+          })
+          status = `lobe ${i + 1}/${lobes.length}: fetching ${v.name} samples, ${start} to ${end}, as .${ds.format}…`
+          const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
+          if (h.stale()) return
+          const file = isParquet(ds.format) ? `slab_${i}.parquet` : `slab_${i}`
+          if (isParquet(ds.format)) await engine.registerBuffer(file, slab.buffer!)
+          else                      await engine.insertRows(slab.rows ?? [], file)
+          if (h.stale()) return
+          files.push(file)
+          urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
+          continue
+        }
         const lo = toDatasetLon(lobe.bbox[0], ds.lonRange), hi = toDatasetLon(lobe.bbox[2], ds.lonRange)
         status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
         const [lonSrv, lat] = await Promise.all([
@@ -269,32 +317,56 @@
         status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
         const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
         if (h.stale()) return
-        const file = ds.format === 'parquet' ? `slab_${i}.parquet` : `slab_${i}`
-        if (ds.format === 'parquet') await engine.registerBuffer(file, slab.buffer!)
-        else                          await engine.insertRows(slab.rows ?? [], file)
+        const file = isParquet(ds.format) ? `slab_${i}.parquet` : `slab_${i}`
+        if (isParquet(ds.format)) await engine.registerBuffer(file, slab.buffer!)
+        else                      await engine.insertRows(slab.rows ?? [], file)
         if (h.stale()) return
         files.push(file)
         urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
       }
 
+      const slab = isParquet(ds.format)
+        ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
+        : `(${files.map((f) => `SELECT * FROM ${f}`).join(' UNION ALL ')})`
+      const expr = valueExpr(v, 's', long)
+
+      // tabledap has no lattice: the stations come back out of the slab and are masked by
+      // point-in-polygon, then go into the same `mask` table the grid path uses (weight 1)
+      if (tabular) {
+        status = 'masking the sample positions…'
+        const stations = await engine.exec(`SELECT DISTINCT longitude, latitude FROM ${slab}`, 'stations')
+        if (h.stale()) return
+        const pts = stations.map((r: any) => ({ lon: Number(r.longitude), lat: Number(r.latitude) }))
+        for (const lobe of lobes) {
+          const m = pointMask(lobe.geojson, pts)
+          maskMs += m.ms
+          for (const c of m.cells) cells.push(c)
+        }
+        status = `${cells.length} of ${pts.length} sample positions are inside ${p.name}`
+      }
+
       status = 'computing the statistics…'
       await engine.insertMask(cells)
       if (h.stale()) return
-      const slab = ds.format === 'parquet'
-        ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
-        : `(${files.map((f) => `SELECT * FROM ${f}`).join(' UNION ALL ')})`
-      const out = await engine.runTemplate(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
+      const out = await engine.runTemplate(statsTemplate(v, ds.protocol), { expr, slab, mask: 'mask' })
       if (h.stale()) return                 // a newer pick is on screen: do not render this result
-      rows = out; shownVar = v
+      rows = out; shownVar = v; shownProtocol = ds.protocol
       sql  = engine.lastSql
-      // the map layer: the latest time step of the same slab, one square per masked cell
-      const last = await engine.runTemplate('last_step', { expr: valueExpr(v), slab, mask: 'mask' })
+      // the map layer: a square per grid cell, or a point per tabledap station
+      const last = await engine.runTemplate(tabular ? 'points_tabledap' : 'last_step',
+                                            { expr, slab, mask: 'mask' })
       if (h.stale()) return
       mapSql  = engine.lastSql
-      squares = cellSquares(
-        last.map((r: any) => ({ lon: Number(r.longitude), lat: Number(r.latitude),
-                                weight: Number(r.weight), value: r.value === null ? null : Number(r.value) })))
-      stepDate = last.length ? new Date(last[0].date).toISOString().slice(0, 10) : ''
+      // for a station the "weight" slot carries the number of measurements averaged into the dot
+      const vcells: ValueCell[] = last.map((r: any) => ({
+        lon: Number(r.longitude), lat: Number(r.latitude),
+        weight: Number(tabular ? r.n : r.weight), value: r.value === null ? null : Number(r.value) }))
+      // a grid draws its cells as squares; tabledap stations are points
+      squares = tabular ? null : cellSquares(vcells)
+      points  = tabular ? cellPoints(vcells) : null
+      stepDate = last.length
+        ? new Date(Math.max(...last.map((r: any) => +new Date(r.date)))).toISOString().slice(0, 10)
+        : ''
       totalMs = performance.now() - t0
       // what the exports, the reproduce panel and the permalink describe
       shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
@@ -322,7 +394,7 @@
   // categorical: stacked area of the area-weighted class proportions (seascapeR's plot_ss_ts()).
   $effect(() => {
     if (!chartEl || !rows.length || !shownVar) return
-    const chart = categorical ? categoricalChart() : continuousChart()
+    const chart = pointRun ? monthlyChart() : categorical ? categoricalChart() : continuousChart()
     chartEl.replaceChildren(chart)
     return () => chart.remove()
   })
@@ -341,6 +413,22 @@
         Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: '#1f77b4', fillOpacity: 0.12 }),
         Plot.line(long, { x: 'date', y: 'value', stroke: 'stat', strokeWidth: 1.8 }),
         Plot.dot(long,  { x: 'date', y: 'value', stroke: 'stat', r: 2 }),
+      ],
+    })
+  }
+
+  // tabledap: monthly mean with the month's min-max band, over an x axis of months
+  function monthlyChart() {
+    return Plot.plot({
+      width: 820, height: 320, marginLeft: 55,
+      y: { label: valueLabel(shownVar!), grid: true },
+      x: { label: 'month' },
+      color: { legend: true, domain: ['monthly mean', 'min–max'], range: ['#1f77b4', '#9ecae1'] },
+      marks: [
+        Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'min', y2: 'max', fill: '#1f77b4', fillOpacity: 0.15, curve: 'step' }),
+        Plot.line(rows, { x: (r: any) => new Date(r.date), y: 'mean', stroke: '#1f77b4', strokeWidth: 1.8 }),
+        Plot.dot(rows,  { x: (r: any) => new Date(r.date), y: 'mean', fill: '#1f77b4', r: 2.5,
+          title: (r: any) => `${new Date(r.date).toISOString().slice(0, 7)}\n${Number(r.mean).toFixed(2)}\n${r.n} measurements, ${r.n_casts} casts` }),
       ],
     })
   }
@@ -415,15 +503,31 @@
     onselect={(id) => { placeId = id }}
     bounds={mapBounds}
     squares={squares?.geojson ?? null}
+    points={points?.geojson ?? null}
     {fillColor}
     valueLabel={shownVar ? (categorical ? shownVar.name : `${shownVar.name}${unit && unit !== shownVar.name ? ` (${unit})` : ''}`) : 'place'}
     valueText={cellText}
+    weightLabel={pointRun ? 'measurements' : 'area weight'}
+    weightText={pointRun ? (v) => String(Math.round(v)) : undefined}
     {stepDate}
     {legend} />
 
   <div bind:this={chartEl} class="chart"></div>
 
-  {#if rows.length && categorical}
+  {#if rows.length && pointRun}
+    <table>
+      <thead><tr><th>month</th><th>n</th><th>casts</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+      <tbody>
+        {#each rows as r}
+          <tr>
+            <td>{new Date(r.date).toISOString().slice(0, 7)}</td><td>{r.n}</td><td>{r.n_casts}</td>
+            <td>{fmt(r.mean)}</td><td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td>
+            <td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {:else if rows.length && categorical}
     <table>
       <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
       <tbody>
@@ -456,13 +560,16 @@
       <summary>reproduce this run</summary>
       <button class="copy" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</button>
 
-      <h3>griddap request{urls.length > 1 ? 's' : ''}</h3>
+      <h3>{shownProtocol} request{urls.length > 1 ? 's' : ''}</h3>
       {#each urls as u}
         <p class="url"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
       {/each}
 
       <h3>mask</h3>
-      {#if maskInfo}
+      {#if maskInfo && pointRun}
+        <p class="meta">{maskInfo.cells} sample position{maskInfo.cells === 1 ? '' : 's'} inside the place,
+           in {maskInfo.lobes} lobe{maskInfo.lobes > 1 ? 's' : ''}</p>
+      {:else if maskInfo}
         <p class="meta">{maskInfo.cells} cells in {maskInfo.lobes} lobe{maskInfo.lobes > 1 ? 's' : ''},
            total area weight {maskInfo.weight.toFixed(3)},
            {maskInfo.partial} partial (boundary) cell{maskInfo.partial === 1 ? '' : 's'}</p>
@@ -471,9 +578,9 @@
       <h3>permalink</h3>
       <p class="url"><a href={link}>{link}</a></p>
 
-      <h3>SQL — sql/{statsTemplate(shownVar)}.sql</h3>
+      <h3>SQL — sql/{statsTemplate(shownVar, shownProtocol)}.sql</h3>
       <pre>{sql}</pre>
-      <h3>SQL — sql/last_step.sql (the map layer)</h3>
+      <h3>SQL — sql/{pointRun ? 'points_tabledap' : 'last_step'}.sql (the map layer)</h3>
       <pre>{mapSql}</pre>
     </details>
   {/if}

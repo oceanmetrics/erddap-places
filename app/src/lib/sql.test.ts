@@ -36,7 +36,8 @@ function duck(sql: string): Record<string, any>[] {
 
 describe('sql templates', () => {
   it('ships the statistics and map templates', () => {
-    expect(templateNames()).toEqual(expect.arrayContaining(['stats_daily', 'stats_categorical', 'last_step']))
+    expect(templateNames()).toEqual(expect.arrayContaining(
+      ['stats_daily', 'stats_categorical', 'last_step', 'stats_tabledap', 'points_tabledap']))
   })
   it('quotes literals and splices identifiers', () => {
     expect(lit("O'ahu")).toBe("'O''ahu'")
@@ -106,5 +107,76 @@ describe.skipIf(!haveDuckdb)('stats_daily.sql', () => {
   it('applies a unit conversion given in the value expression', () => {
     const r = duck(render('stats_daily', { expr: '(s."SST" + 273.15)', slab: 'slab', mask: 'mask' }))
     expect(Number(r[0].mean)).toBeCloseTo((25 + 26 + 27 + 29) / 4 + 273.15, 8)
+  })
+})
+
+// ── tabledap (point samples) ──────────────────────────────────────────────────
+/** two stations, two cruises a quarter apart, three depths each; one station outside the mask. */
+const TABLE_FIXTURE = `
+CREATE TABLE mask AS SELECT * FROM (VALUES
+  (34.00, -120.50, 1.0), (34.10, -120.60, 1.0)
+) t(latitude, longitude, weight);
+CREATE TABLE slab AS SELECT * FROM (VALUES
+  (TIMESTAMPTZ '2015-01-27 08:34:10Z', 34.00, -120.50,  0.0, 'temperature', 15.0),
+  (TIMESTAMPTZ '2015-01-27 08:34:10Z', 34.00, -120.50, 10.0, 'temperature', 14.0),
+  (TIMESTAMPTZ '2015-01-27 08:34:10Z', 34.00, -120.50, 20.0, 'temperature', 13.0),
+  (TIMESTAMPTZ '2015-01-27 11:02:00Z', 34.10, -120.60,  0.0, 'temperature', 16.0),
+  (TIMESTAMPTZ '2015-01-27 11:02:00Z', 34.10, -120.60, 10.0, 'temperature', 12.0),
+  (TIMESTAMPTZ '2015-04-14 09:00:00Z', 34.00, -120.50,  0.0, 'temperature', 18.0),
+  (TIMESTAMPTZ '2015-04-14 09:00:00Z', 34.00, -120.50, 10.0, 'temperature', NULL),
+  -- a station outside the place: it must not reach any statistic
+  (TIMESTAMPTZ '2015-01-27 08:34:10Z', 40.00,  -60.00,  0.0, 'temperature', 99.0)
+) t("time", latitude, longitude, depth, measurement_type, measurement_value);
+`
+
+function duckTable(sql: string): Record<string, any>[] {
+  const out = execFileSync('duckdb', ['-json', '-c', TABLE_FIXTURE + sql], { encoding: 'utf8' })
+  return JSON.parse(out || '[]')
+}
+
+const TPARAMS = { expr: 's."measurement_value"', slab: 'slab', mask: 'mask' }
+
+describe.skipIf(!haveDuckdb)('stats_tabledap.sql', () => {
+  const rows = () => duckTable(render('stats_tabledap', TPARAMS))
+
+  it('rolls the sparse points up by month, not by day', () => {
+    const r = rows()
+    expect(r.map((x) => x.date)).toEqual(['2015-01-01', '2015-04-01'])
+  })
+  it('counts measurements and the distinct casts behind them', () => {
+    const [jan, apr] = rows()
+    expect(jan.n).toBe(5)        // 3 depths at one station + 2 at the other
+    expect(jan.n_casts).toBe(2)  // but only two sampling events
+    expect(apr.n).toBe(1)        // the NULL measurement is not counted
+    expect(apr.n_casts).toBe(1)
+  })
+  it('computes the month mean, sd and the min-max band the chart draws', () => {
+    const [jan] = rows()
+    expect(Number(jan.mean)).toBeCloseTo((15 + 14 + 13 + 16 + 12) / 5, 10)
+    expect(Number(jan.min)).toBe(12)
+    expect(Number(jan.max)).toBe(16)
+    expect(Number(jan.p10)).toBeCloseTo(12.4, 6)   // quantile_cont over 12,13,14,15,16
+    expect(Number(jan.p90)).toBeCloseTo(15.6, 6)
+    expect(Number(jan.sd)).toBeGreaterThan(0)
+  })
+  it('drops the samples that are not in the point mask', () => {
+    expect(rows().some((x) => Number(x.max) === 99)).toBe(false)
+  })
+  it('honours a unit conversion given in the value expression', () => {
+    const r = duckTable(render('stats_tabledap', { ...TPARAMS, expr: '(s."measurement_value" + 273.15)' }))
+    expect(Number(r[0].mean)).toBeCloseTo((15 + 14 + 13 + 16 + 12) / 5 + 273.15, 8)
+  })
+})
+
+describe.skipIf(!haveDuckdb)('points_tabledap.sql', () => {
+  it('gives the map one row per station: its mean, its n and its last sample date', () => {
+    const r = duckTable(render('points_tabledap', TPARAMS))
+    expect(r).toHaveLength(2)
+    const a = r.find((x) => Number(x.latitude) === 34)!
+    expect(Number(a.longitude)).toBe(-120.5)
+    expect(Number(a.mean ?? a.value)).toBeCloseTo((15 + 14 + 13 + 18) / 4, 10)
+    expect(a.n).toBe(4)
+    expect(a.date).toBe('2015-04-14')
+    expect(Number(a.weight)).toBe(1)
   })
 })

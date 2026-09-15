@@ -14,11 +14,17 @@ export interface CubeVariable {
   classes   ?: Record<string, string>
 }
 
+/** the long-format columns of a tabledap table: `measurement_type` / `measurement_value`. */
+export interface LongFormat { typeColumn: string; valueColumn: string }
+
 export interface Dataset {
   id           : string           // erddap/dhw_5km
   title        : string
   baseUrl      : string
   datasetId    : string
+  protocol     : 'griddap' | 'tabledap'
+  /** set when the table keeps its variables in a column (tabledap, long format) */
+  longFormat  ?: LongFormat
   version     ?: string
   cors         : boolean
   formats      : string[]
@@ -33,9 +39,14 @@ export interface Dataset {
 
 const KELVIN = /^(k|kelvin|degree_?k(elvin)?)$/i
 
-/** the SQL expression for a variable's value, converting Kelvin to °C. */
-export function valueExpr(v: CubeVariable, alias = 's'): string {
-  const col = `${alias}."${v.name}"`
+/**
+ * The SQL expression for a variable's value, converting Kelvin to °C.
+ *
+ * For a long-format table the variable is not a column: the rows were already filtered to
+ * `measurement_type = '<name>'` by the request, so the expression is the value column.
+ */
+export function valueExpr(v: CubeVariable, alias = 's', long?: LongFormat): string {
+  const col = long ? `${alias}."${long.valueColumn}"` : `${alias}."${v.name}"`
   return KELVIN.test(v.unit ?? '') ? `(${col} - 273.15)` : col
 }
 /** the axis label for a variable, after any unit conversion. */
@@ -53,8 +64,21 @@ export function isCategorical(v: any): boolean {
   return f === true || f === 'true'
 }
 
-/** the SQL template a variable is summarised with: flagged variables get per-class fractions. */
-export function statsTemplate(v: Pick<CubeVariable, 'categorical'> | null | undefined): 'stats_daily' | 'stats_categorical' {
+/** `erddap-places:long_format` -> the two column names, or undefined. */
+export function toLongFormat(f: any): LongFormat | undefined {
+  const t = f?.type_column, v = f?.value_column
+  return t && v ? { typeColumn: String(t), valueColumn: String(v) } : undefined
+}
+
+/**
+ * The SQL template a run is summarised with: point (tabledap) data rolls up by month, a flagged
+ * categorical grid gets per-class fractions, everything else is the daily grid statistics.
+ */
+export function statsTemplate(
+  v: Pick<CubeVariable, 'categorical'> | null | undefined,
+  protocol: 'griddap' | 'tabledap' = 'griddap',
+): 'stats_daily' | 'stats_categorical' | 'stats_tabledap' {
+  if (protocol === 'tabledap') return 'stats_tabledap'
   return v?.categorical === true ? 'stats_categorical' : 'stats_daily'
 }
 
@@ -79,6 +103,8 @@ export function toDataset(c: any): Dataset {
     title        : c.title ?? c.id,
     baseUrl      : c['erddap:base_url'],
     datasetId    : c['erddap:dataset_id'],
+    protocol     : c['erddap:protocol'] === 'tabledap' ? 'tabledap' : 'griddap',
+    longFormat   : toLongFormat(c['erddap-places:long_format']),
     version      : c['erddap:version'],
     cors         : c['erddap:cors'] !== false,
     formats      : c['erddap:formats'] ?? [],
