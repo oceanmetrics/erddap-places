@@ -4,3 +4,4 @@ spikes/*.geojson
 spikes/*.parquet
 app/dist/
 .DS_Store
+catalog/cache/
