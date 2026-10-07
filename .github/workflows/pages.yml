@@ -32,6 +32,10 @@ jobs:
       - run: npm ci
       # the live ERDDAP/gazetteer tests skip themselves when the network is unavailable
       - run: npm run test
+        # the deploy must not depend on a third-party ERDDAP answering from GitHub's runners
+        # (PacIOOS connect-timeouts broke run 37676415329); live fetches run locally only
+        env:
+          ERDDAP_OFFLINE: '1'
       - run: npm run build
         env:
           VITE_BASE: /erddap-places/   # project site sub-path
