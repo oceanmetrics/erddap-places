@@ -18,6 +18,11 @@ import {
   type Provenance,
 } from './stats'
 import { writeStac } from './stac'
+import { Agent, setGlobalDispatcher } from 'undici'
+
+// undici's default 10 s connect timeout is what every PacIOOS "fetch failed" in CI and on msens was
+// (2026-10-07/08); give a slow handshake 30 s before the retry logic in stats.ts takes over
+setGlobalDispatcher(new Agent({ connect: { timeout: 30_000 } }))
 
 // ── args ──────────────────────────────────────────────────────────────────────
 function parseArgs(argv: string[]) {
