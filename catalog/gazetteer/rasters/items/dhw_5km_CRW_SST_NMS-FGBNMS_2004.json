@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-FGBNMS_2004",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -94.75,
+          27.4
+        ],
+        [
+          -91.55,
+          27.4
+        ],
+        [
+          -91.55,
+          28.75
+        ],
+        [
+          -94.75,
+          28.75
+        ],
+        [
+          -94.75,
+          27.4
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -94.75,
+    27.4,
+    -91.55,
+    28.75
+  ],
+  "properties": {
+    "title": "Flower Garden Banks National Marine Sanctuary — CRW_SST (dhw_5km), 2004, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2004 on the 0.05 deg CRW grid over a 20 %-buffered box around Flower Garden Banks National Marine Sanctuary (NMS:FGBNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 366 days in the archive, 2004-01-01 to 2004-12-31, 366 with any value.",
+    "datetime": null,
+    "start_datetime": "2004-01-01T00:00:00Z",
+    "end_datetime": "2004-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:54Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      27,
+      64
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -94.75,
+      0.0,
+      -0.05,
+      28.75
+    ],
+    "proj:bbox": [
+      -94.75,
+      27.4,
+      -91.55,
+      28.75
+    ],
+    "erddap-places:place_id": "NMS:FGBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2004,
+    "erddap-places:n_days": 366,
+    "erddap-places:n_days_valid": 366,
+    "erddap-places:first_date": "2004-01-01",
+    "erddap-places:last_date": "2004-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:FGBNMS/2004.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:FGBNMS 2004 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1471148,
+      "file:checksum": "1220bb5becee9a833bd46a89c6707a15e1bd54974bc4f20a019f05139fc85510e7ce"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

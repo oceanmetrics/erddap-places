@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-CBNMS_2003",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -124.45,
+          37.4
+        ],
+        [
+          -122.6,
+          37.4
+        ],
+        [
+          -122.6,
+          38.7
+        ],
+        [
+          -124.45,
+          38.7
+        ],
+        [
+          -124.45,
+          37.4
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -124.45,
+    37.4,
+    -122.6,
+    38.7
+  ],
+  "properties": {
+    "title": "Cordell Bank National Marine Sanctuary — CRW_SST (dhw_5km), 2003, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2003 on the 0.05 deg CRW grid over a 20 %-buffered box around Cordell Bank National Marine Sanctuary (NMS:CBNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days in the archive, 2003-01-01 to 2003-12-31, 365 with any value.",
+    "datetime": null,
+    "start_datetime": "2003-01-01T00:00:00Z",
+    "end_datetime": "2003-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:54Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      26,
+      37
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -124.45,
+      0.0,
+      -0.05,
+      38.7
+    ],
+    "proj:bbox": [
+      -124.45,
+      37.4,
+      -122.6,
+      38.7
+    ],
+    "erddap-places:place_id": "NMS:CBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2003,
+    "erddap-places:n_days": 365,
+    "erddap-places:n_days_valid": 365,
+    "erddap-places:first_date": "2003-01-01",
+    "erddap-places:last_date": "2003-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:CBNMS/2003.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:CBNMS 2003 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1031896,
+      "file:checksum": "1220b6a7098ac165bb555a511d7fbaf4871d6b9d5f051cae7d338d50f46555280af4"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

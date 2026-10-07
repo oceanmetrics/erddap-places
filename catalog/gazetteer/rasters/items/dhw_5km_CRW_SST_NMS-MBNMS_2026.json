@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-MBNMS_2026",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -123.6,
+          35.1
+        ],
+        [
+          -120.65,
+          35.1
+        ],
+        [
+          -120.65,
+          38.25
+        ],
+        [
+          -123.6,
+          38.25
+        ],
+        [
+          -123.6,
+          35.1
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -123.6,
+    35.1,
+    -120.65,
+    38.25
+  ],
+  "properties": {
+    "title": "Monterey Bay National Marine Sanctuary — CRW_SST (dhw_5km), 2026, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2026 on the 0.05 deg CRW grid over a 20 %-buffered box around Monterey Bay National Marine Sanctuary (NMS:MBNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 277 days in the archive, 2026-01-01 to 2026-10-04, 277 with any value.",
+    "datetime": null,
+    "start_datetime": "2026-01-01T00:00:00Z",
+    "end_datetime": "2026-10-04T23:59:59Z",
+    "created": "2026-10-07T22:18:55Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      63,
+      59
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -123.6,
+      0.0,
+      -0.05,
+      38.25
+    ],
+    "proj:bbox": [
+      -123.6,
+      35.1,
+      -120.65,
+      38.25
+    ],
+    "erddap-places:place_id": "NMS:MBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2026,
+    "erddap-places:n_days": 277,
+    "erddap-places:n_days_valid": 277,
+    "erddap-places:first_date": "2026-01-01",
+    "erddap-places:last_date": "2026-10-04",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:MBNMS/2026.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:MBNMS 2026 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1801660,
+      "file:checksum": "1220584f261c1ee38e2bc6c0e42df24d14a0a9da03a6f298b61375fd536995721740"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

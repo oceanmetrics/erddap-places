@@ -12,7 +12,9 @@
   `cd precompute && npx tsx ../catalog/build_erddap_collections.ts [<id> ...]`.
 - `places/` — build output directory. `gazetteer/places/` is the published copy tracked by
   Portolan (currently synced by hand after each rebuild; not auto-linked).
-- `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` collections).
+- `build_then_now.py` — builds the Then vs Now `gazetteer/rasters/`, `climatology/`, `series/`
+  collections (see below).
+- `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` + Then vs Now collections).
   Validate with `rashid check catalog/gazetteer` / `portolan check catalog/gazetteer`.
 
 ## Precomputed statistics (`gazetteer/stats/`)
@@ -30,6 +32,45 @@ The `*.parquet` / `*.provenance.json` files are **not in git** (see
 `gazetteer/stats/.gitignore`) — only `collection.json`, `items/` and the docs are. A fresh clone
 therefore has Items whose data asset is missing until the precompute has run; run it before
 `rashid check` if you want a clean asset verification.
+
+## Then vs Now data (`gazetteer/rasters/`, `gazetteer/climatology/`, `gazetteer/series/`)
+
+`build_then_now.py` converts the sanctuary SST archive of the NOAA ONMS climate-dashboard-app
+(`mbon:/share/data/noaa-onms/climate-dashboard-app/erddap_sst/<NMS>/<year>.{tif,csv}`: one float64
+band per day of CRW `noaacrwsstDaily` `analysed_sst`, 0.05°, the sanctuary bbox + 20 % buffer;
+CSV `lyr, mean, time`) into three collections:
+
+- `rasters/dhw_5km/CRW_SST/<place_id>/<year>.tif`: 366-band COG per place × year, band i =
+  day-of-year i of a leap year (band 60 = 29 Feb, NaN in non-leap years), float32, NaN nodata,
+  `INTERLEAVE=BAND`, 256 px tiles, DEFLATE + predictor 3, band descriptions = ISO dates.
+- `climatology/dhw_5km/CRW_SST/<place_id>/<y0>-<y1>_{mean,sd,n}.tif`: raw day-of-year climatology
+  for 1985–2005 and 2003–2012 (`--window N` pools ±N days; default 0).
+- `series/dhw_5km/CRW_SST/<place_id>.parquet`: daily polygon area-weighted mean etc.
+
+See each collection's README for how a browser reads them. The data files are git-ignored (only the
+STAC and docs are tracked) and are uploaded from the Mac mini, where the 1.1 GB archive lives at
+`~/data/noaa-onms/climate-dashboard-app/erddap_sst/`. The weekly stats workflow excludes the three
+prefixes from its `--delete` sync.
+
+```bash
+# on the mini (`ssh macmini`); ~60-150 s per sanctuary, ~16 min for all 13
+rsync -a mbon:/share/data/noaa-onms/climate-dashboard-app/erddap_sst ~/data/noaa-onms/climate-dashboard-app/
+uv run catalog/build_then_now.py --src ~/data/noaa-onms/climate-dashboard-app/erddap_sst \
+  --gazetteer catalog/gazetteer                       # [--codes FKNMS ...] [--steps rasters,climatology,series,stac]
+uvx --from rasterio --with rio-cogeo rio cogeo validate catalog/gazetteer/rasters/dhw_5km/CRW_SST/NMS:FKNMS/2024.tif
+rashid check catalog/gazetteer --data-scope local     # 0 errors
+for d in rasters climatology series; do
+  aws s3 sync catalog/gazetteer/$d/ s3://oceanmetrics.io-public/gazetteer/$d/ --exclude .gitignore
+done
+aws s3 cp catalog/gazetteer/catalog.json s3://oceanmetrics.io-public/gazetteer/catalog.json
+```
+
+No `--delete`: a rebuild overwrites in place. Archive folders without a gazetteer place are skipped
+(`MBNMS-david`, `MBNMS-main`), as is `TBNMS` (no CRW SST over the Great Lakes); `CPNMS` is
+`NMS:CHNMS`. Nine place-years are all NaN in the archive: see `gazetteer/rasters/README.md`. The current year is partial: re-run for that
+year (`--years 2026 2026 --steps rasters,series,stac` after a fresh rsync) to extend it.
+`erddap_sss/` (SMOS 3-day SSS, 2010–) and `erddap_precip/` (IMERG monthly, 1998–) have the same
+layout and are not converted yet.
 
 ## Publish
 

@@ -58,8 +58,8 @@ export function variableOf(ds: Dataset, name: string): CubeVariable {
 }
 
 /** retry settings for the extent probe: attempts, and the pause before each retry (ms). */
-export const EXTENT_ATTEMPTS = 3
-export const EXTENT_BACKOFF_MS = [5_000, 20_000]
+export const EXTENT_ATTEMPTS = 5
+export const EXTENT_BACKOFF_MS = [5_000, 20_000, 60_000, 120_000]   // ~3.5 min in all: PacIOOS drops connects for minutes at a time (2026-10-07/08)
 
 /**
  * The live time extent, straight from `<base>/info/<id>/index.json` (never the possibly-stale STAC

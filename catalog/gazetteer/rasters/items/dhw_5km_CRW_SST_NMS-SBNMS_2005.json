@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-SBNMS_2005",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -71.1,
+          41.75
+        ],
+        [
+          -69.55,
+          41.75
+        ],
+        [
+          -69.55,
+          43.15
+        ],
+        [
+          -71.1,
+          43.15
+        ],
+        [
+          -71.1,
+          41.75
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -71.1,
+    41.75,
+    -69.55,
+    43.15
+  ],
+  "properties": {
+    "title": "Stellwagen Bank National Marine Sanctuary — CRW_SST (dhw_5km), 2005, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2005 on the 0.05 deg CRW grid over a 20 %-buffered box around Stellwagen Bank National Marine Sanctuary (NMS:SBNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days in the archive, 2005-01-01 to 2005-12-31, 0 with any value (this year is all NaN in the source archive).",
+    "datetime": null,
+    "start_datetime": "2005-01-01T00:00:00Z",
+    "end_datetime": "2005-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:55Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      28,
+      31
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -71.1,
+      0.0,
+      -0.05,
+      43.15
+    ],
+    "proj:bbox": [
+      -71.1,
+      41.75,
+      -69.55,
+      43.15
+    ],
+    "erddap-places:place_id": "NMS:SBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2005,
+    "erddap-places:n_days": 365,
+    "erddap-places:n_days_valid": 0,
+    "erddap-places:first_date": "2005-01-01",
+    "erddap-places:last_date": "2005-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:SBNMS/2005.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:SBNMS 2005 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 275180,
+      "file:checksum": "12209c8817e6d6874eae91c151d147b09d6e36afe0db2e5afa4191497bea3686639b"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

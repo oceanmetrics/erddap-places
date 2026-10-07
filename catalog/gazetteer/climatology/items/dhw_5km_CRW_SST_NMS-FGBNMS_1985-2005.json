@@ -1,0 +1,251 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-FGBNMS_1985-2005",
+  "collection": "climatology",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -94.75,
+          27.4
+        ],
+        [
+          -91.55,
+          27.4
+        ],
+        [
+          -91.55,
+          28.75
+        ],
+        [
+          -94.75,
+          28.75
+        ],
+        [
+          -94.75,
+          27.4
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -94.75,
+    27.4,
+    -91.55,
+    28.75
+  ],
+  "properties": {
+    "title": "Flower Garden Banks National Marine Sanctuary — CRW_SST (dhw_5km) day-of-year climatology 1985-2005",
+    "description": "Per-pixel day-of-year mean, standard deviation and count of daily sea surface temperature over 1985-2005 for Flower Garden Banks National Marine Sanctuary (NMS:FGBNMS); 366 bands on the leap-year calendar, same grid as the rasters collection. Raw day-of-year statistics (no smoothing window).",
+    "datetime": null,
+    "start_datetime": "1985-01-01T00:00:00Z",
+    "end_datetime": "2005-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:55Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      27,
+      64
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -94.75,
+      0.0,
+      -0.05,
+      28.75
+    ],
+    "proj:bbox": [
+      -94.75,
+      27.4,
+      -91.55,
+      28.75
+    ],
+    "erddap-places:place_id": "NMS:FGBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:baseline": [
+      1985,
+      2005
+    ],
+    "erddap-places:window_days": 0,
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb, leap years only)"
+  },
+  "assets": {
+    "mean": {
+      "href": "../dhw_5km/CRW_SST/NMS:FGBNMS/1985-2005_mean.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "day-of-year mean, 1985-2005",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1791980,
+      "file:checksum": "122040768ef7937bb0b006b7f6eef653ff8b261094620efcd16aeac63b2338576d30"
+    },
+    "sd": {
+      "href": "../dhw_5km/CRW_SST/NMS:FGBNMS/1985-2005_sd.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "day-of-year sample standard deviation, 1985-2005",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2177536,
+      "file:checksum": "1220aa2273fff4e9e41b9c91ad8832d1411c9a40e500715a35c55d6a357776485eaa"
+    },
+    "n": {
+      "href": "../dhw_5km/CRW_SST/NMS:FGBNMS/1985-2005_n.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "years with a value (uint8, no nodata), 1985-2005",
+      "roles": [
+        "data"
+      ],
+      "file:size": 184495,
+      "file:checksum": "1220a9390fd052f7374b0df73a6120cb04f32feb8beff01f1c3e8a8048b677b16341"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1985.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1986.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1987.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1988.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1989.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1990.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1991.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1992.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1993.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1994.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1995.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1996.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1997.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1998.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_1999.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2000.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2001.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2002.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2003.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2004.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-FGBNMS_2005.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

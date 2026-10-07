@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-HIHWNMS_1994",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -160.0,
+          19.35
+        ],
+        [
+          -155.4,
+          19.35
+        ],
+        [
+          -155.4,
+          22.7
+        ],
+        [
+          -160.0,
+          22.7
+        ],
+        [
+          -160.0,
+          19.35
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -160.0,
+    19.35,
+    -155.4,
+    22.7
+  ],
+  "properties": {
+    "title": "Hawaiian Islands Humpback Whale National Marine Sanctuary — CRW_SST (dhw_5km), 1994, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 1994 on the 0.05 deg CRW grid over a 20 %-buffered box around Hawaiian Islands Humpback Whale National Marine Sanctuary (NMS:HIHWNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days in the archive, 1994-01-01 to 1994-12-31, 365 with any value.",
+    "datetime": null,
+    "start_datetime": "1994-01-01T00:00:00Z",
+    "end_datetime": "1994-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:54Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      67,
+      92
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -160.0,
+      0.0,
+      -0.05,
+      22.7
+    ],
+    "proj:bbox": [
+      -160.0,
+      19.35,
+      -155.4,
+      22.7
+    ],
+    "erddap-places:place_id": "NMS:HIHWNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 1994,
+    "erddap-places:n_days": 365,
+    "erddap-places:n_days_valid": 365,
+    "erddap-places:first_date": "1994-01-01",
+    "erddap-places:last_date": "1994-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:HIHWNMS/1994.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:HIHWNMS 1994 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 3302272,
+      "file:checksum": "122050e7130f01c4da51a449f07496f9f0cbf9d59fb950b0e53ccc22554242dc97f4"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 // the pure rules of the precompute: the request window, the chunking, the file/id naming, the
 // rendered SQL and the item geometry. everything here runs offline against tiny fixtures.
 import { describe, expect, it } from 'vitest'
-import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, statsHref, window } from './stats'
+import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, statsHref, window, EXTENT_ATTEMPTS } from './stats'
 import { buildCollection, buildItem, datasetProviders, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
 import { TARGETS, placesFor } from './targets'
@@ -138,7 +138,7 @@ describe('liveExtent: retry, then fail soft', () => {
     const e = await extentOrSkip(ds, 'CRW_SST', ['NMS:CBNMS', 'NMS:PMNM'], failed, { fetchFn: fetchFn as any, wait, log })
     err.mockRestore()
     expect(e).toBeNull()
-    expect(fetchFn).toHaveBeenCalledTimes(3)
+    expect(fetchFn).toHaveBeenCalledTimes(EXTENT_ATTEMPTS)
     expect(failed).toEqual(['earlier/x/NMS:A', 'dhw_5km/CRW_SST/NMS:CBNMS', 'dhw_5km/CRW_SST/NMS:PMNM'])
   })
   it('does not retry a 404 (a wrong dataset id is not transient)', async () => {

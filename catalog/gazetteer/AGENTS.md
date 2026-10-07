@@ -37,6 +37,16 @@ The last 365 days (the full record for the monthly sanctuaries series), refreshe
 
 Full walkthrough: [`erddap/AGENTS.md`](erddap/AGENTS.md).
 
+## 4. Then vs Now: decades of daily SST for a sanctuary
+
+- daily area means 1985–now: `read_parquet('https://storage.oceanmetrics.io/gazetteer/series/dhw_5km/CRW_SST/NMS:FKNMS.parquet')`
+- a day's map: band `dayofyear(make_date(2000, month(d), day(d)))` of
+  `rasters/dhw_5km/CRW_SST/<place_id>/<year>.tif` (366 bands, band 60 = 29 Feb)
+- the baseline map for that day: the same band of `climatology/dhw_5km/CRW_SST/<place_id>/1985-2005_mean.tif`
+
+See [`rasters/AGENTS.md`](rasters/AGENTS.md), [`climatology/AGENTS.md`](climatology/AGENTS.md),
+[`series/AGENTS.md`](series/AGENTS.md).
+
 ## Collections
 
 - [`places/`](places/) — the gazetteer (GeoParquet + PMTiles).
@@ -48,6 +58,8 @@ Full walkthrough: [`erddap/AGENTS.md`](erddap/AGENTS.md).
   CMEMS biogeochemistry/physics, precipitation, NPP); `erddap/jplMURSST41mday`,
   `erddap/jplMURSST41anom1day` are pending. See [`erddap/README.md`](erddap/README.md).
 - [`stats/`](stats/) — precomputed place statistics (Parquet + STAC Items).
+- [`rasters/`](rasters/), [`climatology/`](climatology/), [`series/`](series/) — Then vs Now:
+  sanctuary SST since 1985 as day-of-year COGs, baselines and area series.
 
 ## License
 
