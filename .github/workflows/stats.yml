@@ -42,9 +42,16 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-          cache-dependency-path: precompute/package-lock.json
+          cache-dependency-path: |
+            precompute/package-lock.json
+            app/package-lock.json
       - run: npm ci
         working-directory: precompute
+      # the precompute tests import the app's TypeScript (extent, gazetteer), and esbuild resolves
+      # those files against app/tsconfig.app.json, which extends @tsconfig/svelte: the app's
+      # dependencies must be installed too, or vitest fails with TSCONFIG_ERROR before any test runs
+      - run: npm ci
+        working-directory: app
       - name: unit tests (window, chunking, naming, STAC shape)
         run: npm test
         working-directory: precompute
