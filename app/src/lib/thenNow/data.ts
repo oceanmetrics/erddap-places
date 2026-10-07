@@ -29,12 +29,13 @@ export const seriesUrl = (root: string, ds: string, v: string, place: string) =>
 
 /** the files a Then selection reads: one climatology, or one year file per year of the range. */
 export function thenSources(root: string, ds: string, v: string, place: string, then: string,
-                            years: [number, number] | null, baselines: readonly string[] = BASELINES): { kind: 'baseline' | 'custom'; urls: string[]; years: number[] } {
+                            years: [number, number] | null, baselines: readonly string[] = BASELINES,
+                            skip: ReadonlySet<number> = new Set()): { kind: 'baseline' | 'custom'; urls: string[]; years: number[] } {
   const r = parseRange(then)
   if (!r) throw new Error(`not a Then selection: ${then}`)
   if (isBaseline(then, baselines)) return { kind: 'baseline', urls: [climUrl(root, ds, v, place, then)], years: range(r[0], r[1]) }
   const lo = years ? Math.max(r[0], years[0]) : r[0], hi = years ? Math.min(r[1], years[1]) : r[1]
-  const ys = range(lo, hi)
+  const ys = range(lo, hi).filter((y) => !skip.has(y))       // all-NaN archive years are not read
   return { kind: 'custom', urls: ys.map((y) => rasterUrl(root, ds, v, place, y)), years: ys }
 }
 const range = (a: number, b: number) => (b >= a ? Array.from({ length: b - a + 1 }, (_, i) => a + i) : [])
@@ -78,4 +79,34 @@ export function parseRasterCollection(col: any): RasterCatalog {
 /** the place ids with cubes for a dataset/variable. */
 export function placesWith(c: RasterCatalog | null, ds: string, v: string): Set<string> {
   return c?.places.get(ds)?.get(v) ?? new Set()
+}
+
+/**
+ * The per-year Item links of one place in the rasters collection (`./items/<ds>_<var>_NMS-FKNMS_<year>.json`,
+ * the colon of the place id written as `-`), with their years.
+ */
+export function placeItemLinks(col: any, ds: string, v: string, place: string): { year: number; href: string }[] {
+  const stem = `${ds}_${v}_${place.replace(/:/g, '-')}_`
+  const out: { year: number; href: string }[] = []
+  for (const l of col?.links ?? []) {
+    if (l.rel !== 'item') continue
+    const href = String(l.href)
+    const m = new RegExp(`(?:^|/)${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\d{4})\\.json$`).exec(href)
+    if (m) out.push({ year: Number(m[1]), href })
+  }
+  return out.sort((a, b) => a.year - b.year)
+}
+
+/**
+ * The years whose raster holds no valid day at all (`erddap-places:n_days_valid: 0`: gaps in the
+ * climate-dashboard archive, e.g. MBNMS 2015). The Now picker greys them and a custom Then skips them.
+ */
+export function emptyYears(items: any[]): Set<number> {
+  const out = new Set<number>()
+  for (const it of items) {
+    const p = it?.properties ?? {}
+    if (Number(p['erddap-places:n_days_valid']) === 0 && Number.isFinite(Number(p['erddap-places:year'])))
+      out.add(Number(p['erddap-places:year']))
+  }
+  return out
 }

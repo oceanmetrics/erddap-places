@@ -10,7 +10,7 @@ import { bandDate, bandToMd, dateToBand, isLeap, mdLabel, mdToBand, stepMd } fro
 import { DEFAULTS, decodeThenNow, encodeThenNow, isThenNowHash, parseRange, type ThenNowState } from './state'
 import { CogReader, diffBands, latticeAxes, latticeWeights, meanBands, sameLattice, valueAt } from './cog'
 import { gridMask } from '../gridMask'
-import { climUrl, parseRasterCollection, placesWith, rasterUrl, seriesUrl, thenSources } from './data'
+import { climUrl, emptyYears, parseRasterCollection, placeItemLinks, placesWith, rasterUrl, seriesUrl, thenSources } from './data'
 import { anomalyDomain, colorize, exceedance, lut, paletteStops, sharedDomain } from './scale'
 import { seriesSql } from './series'
 
@@ -103,6 +103,20 @@ describe('data paths and the rasters collection', () => {
     expect(b.kind).toBe('baseline'); expect(b.urls).toHaveLength(1); expect(b.years).toHaveLength(21)
     const c = thenSources(ROOT, 'dhw_5km', 'CRW_SST', P, '1980-1987', [1985, 2025])
     expect(c.kind).toBe('custom'); expect(c.years).toEqual([1985, 1986, 1987])   // clipped to the archive
+  })
+  it('finds a place\'s year Items and the all-NaN years among them', () => {
+    const col = { links: [
+      { rel: 'item', href: './items/dhw_5km_CRW_SST_NMS-MBNMS_2014.json' },
+      { rel: 'item', href: './items/dhw_5km_CRW_SST_NMS-MBNMS_2015.json' },
+      { rel: 'item', href: './items/dhw_5km_CRW_SST_NMS-MNMS_2015.json' },     // another place
+      { rel: 'item', href: './items/dhw_5km_CRW_SST_NMS-MBNMSX_2015.json' },   // a prefix is not a match
+      { rel: 'self', href: './collection.json' }] }
+    expect(placeItemLinks(col, 'dhw_5km', 'CRW_SST', 'NMS:MBNMS').map((l) => l.year)).toEqual([2014, 2015])
+    const items = [2014, 2015].map((y) => ({ properties: { 'erddap-places:year': y, 'erddap-places:n_days_valid': y === 2015 ? 0 : 365 } }))
+    const empty = emptyYears(items)
+    expect([...empty]).toEqual([2015])
+    // a custom Then skips the empty year instead of averaging a band of NaN
+    expect(thenSources(ROOT, 'dhw_5km', 'CRW_SST', 'NMS:MBNMS', '2013-2016', [1985, 2026], undefined, empty).years).toEqual([2013, 2014, 2016])
   })
   it('reads places from summaries, item links or asset hrefs', () => {
     // the shape catalog/build_then_now.py publishes

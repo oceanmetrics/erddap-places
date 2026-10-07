@@ -47,8 +47,8 @@ any custom year range averaged in the browser) and **Now** (the latest archived 
 and swipe between the two maps on one shared colour scale; toggle the **anomaly** (Now − Then, with
 the pixels and km² above +1 °C inside the sanctuary); read the day-of-year chart of every year (Then
 years blue, Now red, the chosen day marked) and the Now year's anomaly series. Rasters are 366-band
-COGs read one band at a time with geotiff.js over HTTP range requests (4 requests and 32 kB for a
-first view of the fixture); the chart is one DuckDB-WASM query over the place's series Parquet. Everything is in the hash,
+COGs read one band at a time with geotiff.js over HTTP range requests (FKNMS on S3: 6 requests,
+56 kB for a first view, 16 kB per further day); the chart is one DuckDB-WASM query over the place's series Parquet. Everything is in the hash,
 so every view is a permalink. The code is a lazy chunk in `src/lib/thenNow/`; the mapping from the
 Shiny controls, the design decisions and what is not done are in [`docs/then-now.md`](docs/then-now.md),
 the data contract in [`AGENTS.md`](AGENTS.md).

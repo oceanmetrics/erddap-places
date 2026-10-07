@@ -48,7 +48,7 @@ export class CogReader {
   meter = new Meter()
   private tiffs = new Map<string, Promise<GeoTIFF>>()
   private bands = new Map<string, Promise<Band>>()
-  constructor(private fetcher: typeof fetch = (...a) => fetch(...a)) {}
+  constructor(private fetcher: typeof fetch = (...a) => fetch(...a), private blockSize = 8192) {}
 
   open(url: string): Promise<GeoTIFF> {
     let t = this.tiffs.get(url)
@@ -57,14 +57,20 @@ export class CogReader {
       // header (~35 kB on the published files: 366 tile offsets per IFD) is one request, and a
       // band's tile (~6 kB) costs one or two blocks instead of a 16 kB one on every day change. a server that ignores Range (Vite's dev
       // server, for the fixture) answers with the whole file, which geotiff then slices itself
-      t = fromCustomClient(new CountingClient(url, this.meter, this.fetcher) as any, { blockSize: 8192, maxRanges: 0, allowFullFile: true } as any)
+      t = fromCustomClient(new CountingClient(url, this.meter, this.fetcher) as any, { blockSize: this.blockSize, maxRanges: 0, allowFullFile: true } as any)
       t.catch(() => this.tiffs.delete(url))
       this.tiffs.set(url, t)
     }
     return t
   }
 
-  /** band `band` (1-based) of the full-resolution image. */
+  /**
+   * band `band` (1-based) of the full-resolution image.
+   *
+   * Reads are memoised and shared between views, so do **not** pass a per-view AbortSignal: a
+   * superseded view aborting a read that a newer view awaits from the cache leaves geotiff's promise
+   * unsettled, and the newer view hangs (seen on S3 2026-10-08). Callers drop stale results instead.
+   */
   read(url: string, band: number, signal?: AbortSignal): Promise<Band> {
     const k = `${url}#${band}`
     let b = this.bands.get(k)

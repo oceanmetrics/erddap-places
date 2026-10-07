@@ -37,6 +37,11 @@ the bucket URL rather than the `storage.oceanmetrics.io` redirect, to save a 302
   `erddap-places:place_id` (lists), `erddap-places:baselines`, `year.minimum/maximum`
   (`parseRasterCollection()` in `src/lib/thenNow/data.ts`).
 - Place ids keep their colon in the object key; the app requests it as `%3A`.
+- `rasters/items/<ds>_<var>_<NMS-XXX>_<year>.json` carry `erddap-places:n_days_valid`; 0 = an all-NaN
+  year (`placeItemLinks()` / `emptyYears()` in `data.ts`). TBNMS has no rasters (not in the summaries).
+- `CogReader` reads are memoised and shared: never pass a per-view AbortSignal into them.
+- `src/lib/thenNow/thenNow.live.test.ts` reads FKNMS from S3 (skipped offline) and asserts the cost:
+  ≤ 4 requests and < 64 kB for a first band, ≤ 16 kB for the next.
 - Band ↔ month-day: `src/lib/thenNow/doy.ts` (`mdToBand`, `bandToMd`, `bandDate`).
 
 The test fixture (`src/lib/thenNow/fixtures/`, < 1 MB) has the same layout for one 20 × 20 px place

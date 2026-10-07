@@ -11,7 +11,7 @@
   import { engine } from '../engine'
   import { Runs, isAbort } from '../runToken'
   import { CogReader, diffBands, latticeAxes, latticeWeights, meanBands, sameLattice, valueAt, type Band } from './cog'
-  import { parseRasterCollection, placesWith, rasterUrl, seriesUrl, thenSources, type RasterCatalog } from './data'
+  import { emptyYears, parseRasterCollection, placeItemLinks, placesWith, rasterUrl, seriesUrl, thenSources, type RasterCatalog } from './data'
   import { bandDate, bandToMd, isLeap, mdLabel, mdToBand, stepMd } from './doy'
   import { loadSanctuaries, type LitePlace } from './places'
   import { anomalyDomain, colorize, exceedance, lut, paletteStops, sharedDomain, ticks } from './scale'
@@ -31,6 +31,7 @@
 
   let catalog   = $state.raw<RasterCatalog | null>(null)
   let catNote   = $state('')
+  let catDone   = $state(false)                  // the catalog attempt is over (found or not)
   let places    = $state.raw<LitePlace[]>([])
   let years     = $state.raw<[number, number] | null>(null)
   let status    = $state('loading the catalog…')
@@ -123,6 +124,7 @@
     if (ps.status === 'fulfilled') places = ps.value
     if (cat.status === 'fulfilled' && cat.value) catalog = cat.value
     else catNote = 'no rasters collection in the catalog yet: every sanctuary is listed and the files are probed'
+    catDone = true
     // a place that is only in the data root (the dev fixture) still needs an entry in the picker
     if (!places.some((p) => p.place_id === s.place))
       places = [...places, { place_id: s.place, name: s.place, bbox: [0, 0, 0, 0] }]
@@ -157,6 +159,36 @@
     return null
   }
 
+  // ── empty archive years ─────────────────────────────────────────────────────
+  // `erddap-places:n_days_valid: 0` marks a place-year whose raster is all NaN (archive gaps, e.g.
+  // MBNMS 2015). it is only in the per-year Items, so the place's Items (~40 × 3 kB) are read once
+  // per place, in parallel with the first band reads; the view waits for them, so a custom Then never
+  // averages an empty year and the Now picker can grey them
+  let empty     = $state.raw<Set<number>>(new Set())
+  let emptyFor  = $state('')
+  let emptyNote = $state('')
+  const emptyCache = new Map<string, Promise<Set<number>>>()
+  function loadEmpty(id: string): Promise<Set<number>> {
+    let p = emptyCache.get(id)
+    if (!p) {
+      const col = catalog?.collection
+      const links = placeItemLinks(col, s.dataset, s.variable, id)
+      const base = new URL(`${root}rasters/collection.json`, location.href).href
+      const t0 = performance.now()
+      p = mapLimit(links, 8, async (l) => (await fetch(new URL(l.href, base).href)).json())
+        .then((items) => { const e = emptyYears(items); emptyNote = `${links.length} Items in ${Math.round(performance.now() - t0)} ms`; return e })
+        .catch((e) => { console.warn('then-now: Items unreadable', e); return new Set<number>() })
+      emptyCache.set(id, p)
+    }
+    return p
+  }
+  $effect(() => {
+    const id = s.place, c = catalog
+    if (!catDone) return
+    if (!c) { emptyFor = id; return }               // no catalog: nothing to grey (the files are probed)
+    untrack(() => loadEmpty(id).then((e) => { if (s.place === id) { empty = e; emptyFor = id } }))
+  })
+
   // ── the view ────────────────────────────────────────────────────────────────
   const thenCache = new Map<string, { data: Float32Array; lattice: Band; years: number[]; n: number }>()
 
@@ -168,7 +200,7 @@
   const allNaN = (a: Float32Array) => { for (let i = 0; i < a.length; i++) if (a[i] === a[i]) return false; return true }
 
   async function loadView() {
-    if (!years || nowYear === null) return
+    if (!years || nowYear === null || emptyFor !== s.place) return
     const h = runs.start()
     busy = true; error = ''; note = ''
     const t0 = performance.now()
@@ -178,25 +210,33 @@
       // Now: a year of the archive. 29 Feb in a non-leap year falls back to 28 Feb, and a day past
       // the end of a partial latest year falls back to the year before, as the Shiny app does
       let y = nowYear, b = band
+      // an empty archive year: `latest` walks back to the last year with data, a picked year is refused
+      if (empty.has(y)) {
+        if (s.now !== 'latest') throw new Error(`the archive has no ${s.variable} for ${place?.name ?? s.place} in ${y} (all NaN)`)
+        while (empty.has(y) && y > years[0]) y--
+        notes.push(`${nowYear} is empty in the archive: Now is ${y}`)
+      }
       if (b === 60 && !isLeap(y)) { b = 59; notes.push(`${y} has no 29 Feb: Now shows 28 Feb`) }
       status = `reading ${s.place} ${y}, band ${b}…`
-      let now = await reader.read(rasterUrl(root, s.dataset, s.variable, s.place, y), b, h.signal)
+      let now = await reader.read(rasterUrl(root, s.dataset, s.variable, s.place, y), b)
       if (h.stale()) return
-      if (allNaN(now.data) && s.now === 'latest' && y > years[0]) {
+      if (allNaN(now.data) && s.now === 'latest' && y - 1 >= years[0] && !empty.has(y - 1)) {
         notes.push(`no ${mdLabel(bandToMd(b))} in ${y} yet: Now is ${y - 1}`)
         y -= 1
         if (b === 59 && isLeap(y) && band === 60) b = 60
-        now = await reader.read(rasterUrl(root, s.dataset, s.variable, s.place, y), b, h.signal)
+        now = await reader.read(rasterUrl(root, s.dataset, s.variable, s.place, y), b)
         if (h.stale()) return
       }
       // Then: one climatology band, or the band from every year of a custom range, averaged
-      const src = thenSources(root, s.dataset, s.variable, s.place, s.then, years, baselines)
-      const key = `${root}|${s.dataset}|${s.variable}|${s.place}|${s.then}|${band}`
+      const src = thenSources(root, s.dataset, s.variable, s.place, s.then, years, baselines, empty)
+      const skipped = src.kind === 'custom' ? [...empty].filter((yy) => { const r = parseRange(s.then)!; return yy >= r[0] && yy <= r[1] }) : []
+      if (skipped.length) notes.push(`Then skips ${skipped.sort().join(', ')} (no data in the archive)`)
+      const key = `${root}|${s.dataset}|${s.variable}|${s.place}|${s.then}|${band}|${[...empty].join(',')}`
       let then = thenCache.get(key)
       if (!then) {
         if (src.kind === 'baseline') {
           status = `reading the ${s.then} climatology, band ${band}…`
-          const c = await reader.read(src.urls[0], band, h.signal)
+          const c = await reader.read(src.urls[0], band)
           then = { data: c.data, lattice: c, years: src.years, n: src.years.length }
         } else {
           // 29 Feb exists only in leap years: skip the reads that would be all NaN
@@ -204,7 +244,7 @@
           const ys = src.years.filter((yy) => bandDate(yy, band) !== null)
           if (!ys.length) throw new Error(`no leap year in ${s.then}, so no 29 Feb to average`)
           status = `averaging band ${band} over ${ys.length} year files (${ys[0]}–${ys[ys.length - 1]})…`
-          const bs = await mapLimit(ys, 6, (yy) => reader.read(rasterUrl(root, s.dataset, s.variable, s.place, yy), band, h.signal))
+          const bs = await mapLimit(ys, 6, (yy) => reader.read(rasterUrl(root, s.dataset, s.variable, s.place, yy), band))
           if (h.stale()) return
           then = { data: meanBands(bs), lattice: bs[0], years: [src.years[0], src.years[src.years.length - 1]], n: ys.length }
         }
@@ -217,8 +257,8 @@
       anom  = diffBands(now.data, then.data)
       const m = reader.meter, ms = performance.now() - t0
       footer = m.requests
-        ? `this view: ${m.requests} range request${m.requests > 1 ? 's' : ''}, ${(m.bytes / 1024).toFixed(1)} kB, ` +
-          `${Math.round(m.ms)} ms on the network, ${Math.round(ms)} ms in all`
+        ? `this view: ${m.requests} range request${m.requests > 1 ? 's' : ''}, ${(m.bytes / 1024).toFixed(1)} kB in ` +
+          `${Math.round(ms)} ms (request times summed: ${Math.round(m.ms)} ms)`
         : `this view: from cache, ${Math.round(ms)} ms`
       note = notes.join('; ')
       status = `${place?.name ?? s.place}: ${mdLabel(s.md)}, Then ${s.then} vs Now ${y}`
@@ -231,7 +271,7 @@
   }
   $effect(() => {
     // the inputs of a view; the load itself is untracked so what it writes cannot re-trigger it
-    void [s.place, s.variable, s.md, s.then, s.now, root, years, nowYear]
+    void [s.place, s.variable, s.md, s.then, s.now, root, years, nowYear, empty, emptyFor]
     untrack(() => loadView())
   })
 
@@ -368,7 +408,7 @@
     <label>Now
       <select value={String(s.now)} onchange={(e) => { const v = e.currentTarget.value; s.now = v === 'latest' ? 'latest' : Number(v) }}>
         <option value="latest">latest{years ? ` (${years[1]})` : ''}</option>
-        {#each yearList as y}<option value={String(y)}>{y}</option>{/each}
+        {#each yearList as y}<option value={String(y)} disabled={empty.has(y)}>{y}{empty.has(y) ? ' (no data)' : ''}</option>{/each}
       </select>
     </label>
     <label>palette
@@ -420,7 +460,7 @@
   <div bind:this={chartEl} class="chart"></div>
   <div bind:this={anomEl} class="chart"></div>
 
-  <footer class="meta">{footer}{footer && seriesNote ? ' · ' : ''}{seriesNote} · data: {root}</footer>
+  <footer class="meta">{footer}{footer && seriesNote ? ' · ' : ''}{seriesNote}{emptyNote ? ` · year validity: ${emptyNote}` : ''} · data: {root}</footer>
 </main>
 
 <style>

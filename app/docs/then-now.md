@@ -49,12 +49,36 @@ Open it with `#mode=then-now` (or the "Then vs Now →" link beside the title).
   (S3 maps it back to the key).
 - **Band reads** (`src/lib/thenNow/cog.ts`): geotiff.js 3 on a counting `fetch` client with 8 kB
   blocks (consecutive blocks merge into one range request). A band is one tile (INTERLEAVE=BAND).
-  Measured on the fixture: the first view is 4 range requests, 32 kB (header + tile, for Now and
-  Then); a revisited day costs nothing (headers and bands are memoised). The published files have a
-  ~35 kB header (366 tile offsets per IFD) and ~6 kB tiles, so the first FKNMS view should be about
-  2 × (40 + 8) ≈ 100 kB and each further day about 2 × 8–16 kB; a custom 20-year Then adds about 20
-  headers the first time (~0.8 MB), then ~20 tiles per day. Not yet measured against S3: the
-  sample was not published when this was written.
+  The published files carry a ~147 kB header (IFD + band descriptions + STATISTICS_*), but geotiff
+  only reads the tags it needs, so opening a file costs 2 requests / 24 kB, not 147 kB: measured
+  against S3 from Node, 8 kB blocks give 3 requests / 32 kB for the first band of a file and
+  1 request / 8 kB per further band; 64 kB blocks 192 kB, 192 kB blocks 384 kB for the same read.
+  Headers and bands are memoised, so a revisited day costs nothing. Reads are shared between views
+  and therefore take no per-view AbortSignal (an aborted shared read left geotiff's promise unsettled
+  and hung the next view; fixed 2026-10-08).
+- **Year validity**: `erddap-places:n_days_valid: 0` marks the all-NaN place-years of the archive
+  (MBNMS 2015; MNMS 1991/1999/2015; NMSAS 1991; OCNMS 1999; SBNMS 2005/2010/2019). It is only in the
+  per-year Items, so the place's ~42 Items (3 kB each) are read once per place; the Now picker greys
+  those years (`latest` walks back past one, a picked one is refused with a message) and a custom
+  Then skips them and says so.
+## Measured against S3 (2026-10-08, headless Chrome on the dev server, bucket in us-east-1)
+
+| view (FKNMS unless noted) | band reads | other | page load → map + chart |
+|---|---|---|---|
+| default: 05 Aug, Then 1985–2005 climatology, Now latest (2026) | 6 range requests, 56 kB, 0.9–1.1 s | 42 Items 1.1–1.3 s; series 662 kB parquet 0.9 s + DuckDB 0.4 s | 4.6–6.7 s |
+| next day (→) | 2 requests, 16 kB, 0.3 s | — | 0.3 s |
+| custom Then 1990–2000 (11 year files averaged) | 36 requests, 368 kB, 1.6 s wall (6.3 s summed) | as default | 5.1 s |
+| anomaly on | 6 requests, 56 kB, 0.9 s | as default | 4.6 s |
+| MBNMS, custom Then 2010–2020 (2015 empty, skipped) | 33 requests, 328 kB, 1.6 s | series 641 kB | 5.3 s |
+| MBNMS, Now = 2015 (empty) | none: refused with "the archive has no CRW_SST … in 2015 (all NaN)" | 2015 greyed in the picker | 3.6 s |
+
+The first-view time is dominated by things other than the rasters: DuckDB-WASM start-up and the
+series (≈1.3 s), the Items (≈1.2 s, which the view waits for), the catalog and the sanctuary list.
+The sanctuary mask for the > +1 °C count needs the 4 MB `places.parquet` geometry column and arrives
+≈7.5 s after load (FKNMS 05 Aug 2026 vs 1985–2005: 334 of 458 pixels, 7,435 of 9,780 km², 76 %);
+until then the count is over the raster box and says so. The data URLs go straight to the bucket
+with the colon as `%3A`, so the `storage.oceanmetrics.io` 302 is never in the band-read path.
+
 - **Why not `@geomatico/maplibre-cog-protocol`** (0.10): it only reads EPSG:3857 COGs (no
   reprojection; these are EPSG:4326) and colours whole tiles, so it can neither address band *d* of a
   366-band cube nor hand back the numbers the anomaly, the shared colour domain and the readout need.
