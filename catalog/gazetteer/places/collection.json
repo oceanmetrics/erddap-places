@@ -2,17 +2,19 @@
   "type": "Collection",
   "id": "places",
   "stac_version": "1.1.0",
-  "description": "20 marine place polygons (18 NOAA National Marine Sanctuaries, 1 MarineRegions EEZ, 1 ProtectedSeas MPA) as GeoParquet and PMTiles, for computing place statistics against the erddap/ collections.",
+  "description": "20 marine place polygons (18 NOAA National Marine Sanctuaries, 1 MarineRegions EEZ, 1 ProtectedSeas MPA) as GeoParquet and PMTiles, for computing place statistics against the erddap/ collections. Provenance: the 18 sanctuary boundaries are the official NOAA ONMS shapefile downloads listed at https://sanctuaries.noaa.gov/library/imast_gis.html (zones unioned to one multipolygon per site, made valid, transformed to EPSG:4326 from NAD83 or, for Florida Keys, NAD27); the EEZ is MarineRegions MRGID 8439 and the MPA is ProtectedSeas PSGID 939. Each row records its download in source_url and source_date. Built by catalog/build_places.R.",
   "links": [
     {
       "rel": "root",
       "href": "../catalog.json",
-      "type": "application/json"
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
     },
     {
       "rel": "parent",
       "href": "../catalog.json",
-      "type": "application/json"
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
     },
     {
       "rel": "agents",
@@ -38,7 +40,7 @@
       "rel": "via",
       "href": "https://sanctuaries.noaa.gov/library/imast_gis.html",
       "type": "text/html",
-      "title": "Upstream sources: NOAA sanctuary boundaries, MarineRegions.org, ProtectedSeas"
+      "title": "Upstream sources: official NOAA ONMS sanctuary boundary downloads (also MarineRegions.org, ProtectedSeas)"
     }
   ],
   "stac_extensions": [
@@ -73,6 +75,16 @@
       "description": "polygon area in square kilometers"
     },
     {
+      "name": "source_url",
+      "type": "string",
+      "description": "URL the boundary was downloaded from (official NOAA ONMS zip, MarineRegions gazetteer record or ProtectedSeas API)"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date (ISO 8601) the boundary was downloaded from source_url"
+    },
+    {
       "name": "bbox",
       "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
       "description": "GeoParquet bbox-covering column, added by portolan for query pushdown"
@@ -83,16 +95,27 @@
       "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
     }
   ],
+  "updated": "2026-10-07T17:08:14Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 12,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -83.2763669,
+    45.057993,
+    12
+  ],
+  "pmtiles:layers": [
+    "places"
+  ],
   "title": "Places",
-  "updated": "2026-09-15T00:00:00Z",
   "extent": {
     "spatial": {
       "bbox": [
         [
           -180.0,
-          -28.4247039,
+          -28.424704,
           180.0,
-          48.5058899
+          48.50589
         ]
       ]
     },
@@ -109,22 +132,34 @@
   "providers": [
     {
       "name": "NOAA Office of National Marine Sanctuaries",
-      "roles": ["producer", "licensor"],
+      "roles": [
+        "producer",
+        "licensor"
+      ],
       "url": "https://sanctuaries.noaa.gov"
     },
     {
       "name": "MarineRegions.org (Flanders Marine Institute)",
-      "roles": ["producer", "licensor"],
+      "roles": [
+        "producer",
+        "licensor"
+      ],
       "url": "https://www.marineregions.org"
     },
     {
       "name": "ProtectedSeas",
-      "roles": ["producer", "licensor"],
+      "roles": [
+        "producer",
+        "licensor"
+      ],
       "url": "https://protectedseas.net"
     },
     {
       "name": "Ocean Metrics LLC",
-      "roles": ["processor", "host"],
+      "roles": [
+        "processor",
+        "host"
+      ],
       "url": "https://oceanmetrics.io"
     }
   ],
@@ -132,8 +167,8 @@
     "places": {
       "href": "./places.parquet",
       "type": "application/vnd.apache.parquet",
-      "file:size": 4183823,
-      "file:checksum": "12208be0ce1b0a11c30ae6febed2c3c29405ba7cb4ff4160fbb4533615dc5c1f1da5",
+      "file:size": 4185432,
+      "file:checksum": "1220c063822e93576a1b9f6ef79b93f8560129fcdb47c14a485842e2579e32910d8d",
       "roles": [
         "data"
       ]
@@ -142,31 +177,40 @@
       "href": "./places.pmtiles",
       "type": "application/vnd.pmtiles",
       "title": "places (vector tiles)",
+      "file:size": 2321182,
+      "file:checksum": "12207ada4a1021ba6f819f15bec6879379e648c4425b3d7929cab89f9e6f0ffd14ba",
       "roles": [
         "visual"
-      ],
-      "file:size": 1810141,
-      "file:checksum": "1220aba1283e43bd2d2ec39e2a5a54ac2b9ac390f9dfc406cf2a74c921fbf2fe55e1"
+      ]
     },
     "styles/default": {
       "href": "./styles/default.json",
       "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 451,
+      "file:checksum": "1220cd2635d8d2a98c92aa2a602480b275adfd87b84c7fc5c95588a43702f355b538",
       "roles": [
         "style",
         "default"
-      ],
-      "title": "Default",
-      "file:size": 451,
-      "file:checksum": "1220cd2635d8d2a98c92aa2a602480b275adfd87b84c7fc5c95588a43702f355b538"
+      ]
     },
     "thumbnail": {
       "href": "./places.thumb.jpg",
       "type": "image/jpeg",
+      "file:size": 2323,
+      "file:checksum": "12202d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a",
       "roles": [
         "thumbnail"
-      ],
-      "file:size": 2323,
-      "file:checksum": "12202d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 2565,
+      "file:checksum": "12206bb65b2ca6827380fca96b0b9285c019758a8c028524022a029df98c548d143a",
+      "roles": [
+        "documentation"
+      ]
     }
   }
 }

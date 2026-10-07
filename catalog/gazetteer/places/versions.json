@@ -1,6 +1,6 @@
 {
   "spec_version": "1.0.0",
-  "current_version": "1.0.1",
+  "current_version": "1.1.0",
   "versions": [
     {
       "version": "1.0.0",
@@ -53,6 +53,43 @@
         "places.thumb.jpg"
       ],
       "message": "Generated PMTiles and thumbnail: places.pmtiles, places.thumb.jpg"
+    },
+    {
+      "version": "1.1.0",
+      "created": "2026-10-07T17:08:42.834925Z",
+      "breaking": false,
+      "assets": {
+        "places.parquet": {
+          "sha256": "c063822e93576a1b9f6ef79b93f8560129fcdb47c14a485842e2579e32910d8d",
+          "size_bytes": 4185432,
+          "href": "places/places.parquet",
+          "mtime": 1791392894.0026813
+        },
+        "places.pmtiles": {
+          "sha256": "7ada4a1021ba6f819f15bec6879379e648c4425b3d7929cab89f9e6f0ffd14ba",
+          "size_bytes": 2321182,
+          "href": "places/places.pmtiles",
+          "mtime": 1791392887.104334
+        },
+        "places.thumb.jpg": {
+          "sha256": "2d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a",
+          "size_bytes": 2323,
+          "href": "places/places.thumb.jpg",
+          "mtime": 1789480341.935538
+        }
+      },
+      "changes": [
+        "places.parquet",
+        "places.pmtiles"
+      ],
+      "schema": {
+        "type": "unknown",
+        "fingerprint": {
+          "columns": [],
+          "types": {}
+        }
+      },
+      "message": "Sanctuaries rebuilt from official NOAA ONMS boundary downloads (imast_gis.html); add source_url, source_date columns"
     }
   ]
 }

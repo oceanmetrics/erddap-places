@@ -1,8 +1,9 @@
-# build a gazetteer of 20 marine places (18 noaa sanctuaries + 1 marineregions eez + 1 protectedseas mpa)
+# build a gazetteer of 20 marine places (18 noaa sanctuaries from the official onms boundary downloads
+# + 1 marineregions eez + 1 protectedseas mpa), each with source_url and source_date
 # run with: Rscript catalog/build_places.R
 
 librarian::shelf(
-  sf, dplyr, mregions2, sfarrow, jsonlite, glue, geojsonsf, here, fs, stringr, units, readr,
+  sf, dplyr, purrr, mregions2, sfarrow, jsonlite, glue, geojsonsf, here, fs, stringr, units, readr,
   quiet = TRUE)
 
 sf::sf_use_s2(TRUE)
@@ -30,40 +31,62 @@ finalize_geom <- function(x) {
     sf::st_cast("MULTIPOLYGON")
 }
 
-# 1. noaa sanctuaries ----------------------------------------------------------------------
+# 1. noaa sanctuaries (official onms boundary downloads) -----------------------------------
 
-dir_sanct <- "~/Github/noaa-onms/onmsR/data-raw/sanctuary_polygons" |>
-  path.expand()
-files_sanct <- fs::dir_ls(dir_sanct, glob = "*.geojson") |>
-  sort()
-
-# authoritative sanctuary names, keyed by nms code (avoids inconsistent geojson properties) ----
+# official boundaries are the zipped shapefiles listed at
+#   https://sanctuaries.noaa.gov/library/imast_gis.html
+# sanctuaries.csv (onmsR) holds the authoritative name and the download url (url_zip) per nms code.
+# zips are cached in catalog/cache/imast/<NMS>.zip (git-ignored); delete a zip to re-download it.
 sanctuaries <- readr::read_csv(
   "~/Github/noaa-onms/onmsR/data-raw/sanctuaries.csv" |> path.expand(),
   show_col_types = FALSE)
 
-read_sanctuary <- function(f) {
-  stem <- fs::path_ext_remove(fs::path_file(f))
-  x    <- sf::st_read(f, quiet = TRUE)
+dir_imast <- fs::path(dir_cache, "imast")
+fs::dir_create(dir_imast)
 
-  sanctuary <- sanctuaries$sanctuary[match(stem, sanctuaries$nms)]
-  nm <- if (stem == "PMNM") {
+read_sanctuary <- function(nms, sanctuary, url_zip) {
+  f_zip <- fs::path(dir_imast, glue::glue("{nms}.zip"))
+  if (!fs::file_exists(f_zip)) {
+    download.file(url_zip, f_zip, mode = "wb", quiet = TRUE)
+  }
+
+  # pick the geographic shapefile; skip macos resource forks and the projected albers twin (pmnm)
+  shp <- unzip(f_zip, list = TRUE)$Name |>
+    stringr::str_subset("\\.shp$") |>
+    stringr::str_subset("__MACOSX|Albers", negate = TRUE)
+  stopifnot(length(shp) == 1)
+  x <- sf::st_read(paste0("/vsizip/", f_zip, "/", shp), quiet = TRUE) |>
+    sf::st_zm(drop = TRUE)
+
+  # every zip ships a .prj (nad83, except fknms "GCS_Assumed_Geographic_1" = nad27), so
+  # st_transform() below applies the right datum shift; fail loudly if one ever arrives without
+  stopifnot(!is.na(sf::st_crs(x)))
+
+  nm <- if (nms == "PMNM") {
     glue::glue("{sanctuary} Marine National Monument")
   } else {
     glue::glue("{sanctuary} National Marine Sanctuary")
   }
 
-  # union multi-feature files (e.g. CINMS has 2 polygons) into one multipolygon per sanctuary
-  geom <- sf::st_union(sf::st_geometry(x))
+  # union all zones / polygons in the zip into one multipolygon per site
+  geom <- x |>
+    sf::st_make_valid() |>
+    sf::st_transform(4326) |>
+    sf::st_geometry() |>
+    sf::st_union()
 
   sf::st_sf(
-    place_id  = glue::glue("NMS:{stem}"),
-    gazetteer = "NMS",
-    name      = nm,
-    geometry  = geom)
+    place_id    = glue::glue("NMS:{nms}"),
+    gazetteer   = "NMS",
+    name        = nm,
+    source_url  = url_zip,
+    source_date = format(as.Date(fs::file_info(f_zip)$modification_time)),
+    geometry    = geom)
 }
 
-places_nms <- lapply(files_sanct, read_sanctuary) |>
+places_nms <- purrr::pmap(
+  sanctuaries |> select(nms, sanctuary, url_zip),
+  read_sanctuary) |>
   bind_rows()
 
 # 2. marineregions mrgid 8439 (pitcairn eez) ------------------------------------------------
@@ -75,10 +98,12 @@ geom_mrgid <- tryCatch(
 name_mrgid <- mregions2::gaz_search(mrgid)$preferredGazetteerName
 
 place_mrgid <- sf::st_sf(
-  place_id  = glue::glue("MRGID:{mrgid}"),
-  gazetteer = "MRGID",
-  name      = name_mrgid,
-  geometry  = sf::st_geometry(geom_mrgid))
+  place_id    = glue::glue("MRGID:{mrgid}"),
+  gazetteer   = "MRGID",
+  name        = name_mrgid,
+  source_url  = glue::glue("https://marineregions.org/gazetteer.php?p=details&id={mrgid}"),
+  source_date = format(Sys.Date()),
+  geometry    = sf::st_geometry(geom_mrgid))
 
 # 3. protectedseas psgid 939 (tortugas ecological reserve) --------------------------------
 
@@ -102,10 +127,12 @@ col_name_ps <- pick_col(x_ps, c("site_name", "SITE_NAME", "name", "NAME"))
 name_ps <- if (is.na(col_name_ps)) "Tortugas Ecological Reserve" else as.character(x_ps[[col_name_ps]][1])
 
 place_psgid <- sf::st_sf(
-  place_id  = glue::glue("PSGID:{psgid}"),
-  gazetteer = "PSGID",
-  name      = name_ps,
-  geometry  = sf::st_union(sf::st_geometry(x_ps)))
+  place_id    = glue::glue("PSGID:{psgid}"),
+  gazetteer   = "PSGID",
+  name        = name_ps,
+  source_url  = as.character(url_ps),
+  source_date = format(as.Date(fs::file_info(f_cache)$modification_time)),
+  geometry    = sf::st_union(sf::st_geometry(x_ps)))
 
 # combine, finalize geometry, compute area and bbox --------------------------------------
 
@@ -123,7 +150,7 @@ places <- places |>
       b <- sf::st_bbox(g)
       jsonlite::toJSON(as.numeric(b), digits = 6)
     })) |>
-  select(place_id, gazetteer, name, area_km2, bbox, geometry) |>
+  select(place_id, gazetteer, name, area_km2, bbox, source_url, source_date, geometry) |>
   arrange(gazetteer, place_id)
 
 # outputs ------------------------------------------------------------------------------
@@ -143,7 +170,7 @@ if (fs::file_exists(f_parquet)) fs::file_delete(f_parquet)
 system(glue::glue(
   "duckdb -c \"",
   "INSTALL spatial; LOAD spatial; ",
-  "COPY (SELECT place_id, gazetteer, name, area_km2, bbox, geom AS geometry FROM ST_Read('{f_tmp_geojson}')) ",
+  "COPY (SELECT place_id, gazetteer, name, area_km2, bbox, source_url, CAST(source_date AS DATE) AS source_date, geom AS geometry FROM ST_Read('{f_tmp_geojson}')) ",
   "TO '{f_parquet}' (FORMAT PARQUET);\""))
 fs::file_delete(f_tmp_geojson)
 
