@@ -1,10 +1,10 @@
 # refresh the precomputed place statistics (catalog/gazetteer/stats/) and publish the whole gazetteer
 # to s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
 #
-# needs two repo secrets (Settings > Secrets and variables > Actions):
-#   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  - an IAM user with s3:PutObject, s3:DeleteObject,
-#                                               s3:ListBucket on arn:aws:s3:::oceanmetrics.io-public/*
-# without them the precompute and the validation still run; only the sync step is skipped.
+# runs on the self-hosted runner `msens` (labels self-hosted, msens; see catalog/README.md "Where it
+# runs"): node 22 (NodeSource), python3 + pip and the aws cli are installed on the host, and the S3
+# sync uses the host's AWS profile (~ubuntu/.aws). The repository holds no AWS secrets; if the
+# two secrets AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are ever added they take precedence.
 name: stats
 
 on:
@@ -31,20 +31,20 @@ concurrency:
 
 jobs:
   stats:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, msens]
     timeout-minutes: 240
     env:
       AWS_DEFAULT_REGION: us-east-1
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: |
-            precompute/package-lock.json
-            app/package-lock.json
+      # node 22 comes from the host (NodeSource apt package), no actions/setup-node
+      - name: host tools
+        run: |
+          node --version
+          python3 --version
+          aws --version
+          free -g
       - run: npm ci
         working-directory: precompute
       # the precompute tests import the app's TypeScript (extent, gazetteer), and esbuild resolves
@@ -56,10 +56,11 @@ jobs:
         run: npm test
         working-directory: precompute
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install rashid
+      # host python3 (3.10); rashid lives in the runner user's ~/.local
+      - name: install rashid
+        run: |
+          python3 -m pip install --user --upgrade --quiet rashid
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # the long pole: ~1 h of polite griddap requests (<=2 concurrent, one place at a time)
       # one transient ERDDAP fetch failure (e.g. PacIOOS "fetch failed" after retries on 2026-10-07)
@@ -86,10 +87,11 @@ jobs:
           AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
+          # no secrets: fall back to the host's AWS profile (IAM user on msens)
           if [ -z "$AWS_ACCESS_KEY_ID" ]; then
-            echo "::warning::AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are not set; skipping the S3 sync"
-            exit 0
+            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
+          aws sts get-caller-identity
           # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file
           aws s3 sync catalog/gazetteer/ s3://oceanmetrics.io-public/gazetteer/ \
             --delete --exclude '.portolan/*' --exclude 'stats/*'
@@ -113,3 +115,6 @@ jobs:
         run: |
           echo "::error::the precompute reported failed items (see its log); the successful items were published"
           exit 1
+      - name: memory after the run
+        if: always()
+        run: free -g

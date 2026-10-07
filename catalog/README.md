@@ -50,16 +50,40 @@ aws s3 sync catalog/gazetteer/ s3://oceanmetrics.io-public/gazetteer/ --delete -
 
 Public base URL: `https://storage.oceanmetrics.io/gazetteer/`.
 
-### CI credentials (Ben: these still need adding)
+### Where it runs
 
-`.github/workflows/stats.yml` refreshes the statistics weekly and syncs the whole gazetteer to S3.
-It needs two **repository secrets** (Settings → Secrets and variables → Actions → New repository
-secret) — nothing in this repo creates them:
+`.github/workflows/stats.yml` refreshes the statistics weekly (Mondays 09:17 UTC) and syncs the whole
+gazetteer to S3. It runs on a **self-hosted runner on the msens VM** (`ssh msens`), not on a
+GitHub-hosted machine:
 
-| Secret | Value |
-|--------|-------|
-| `AWS_ACCESS_KEY_ID` | access key of an IAM user with `s3:PutObject`, `s3:DeleteObject`, `s3:ListBucket` on `arn:aws:s3:::oceanmetrics.io-public/*` |
-| `AWS_SECRET_ACCESS_KEY` | its secret |
+- runner name `msens`, labels `self-hosted, linux, x64, msens`, installed in
+  `/share/github/oceanmetrics/actions-runner` as the systemd service
+  `actions.runner.oceanmetrics-erddap-places.msens` (user `ubuntu`).
+- host tools: node 22 (NodeSource apt package), `python3` 3.10 + `python3-pip`, `rashid` in
+  `~ubuntu/.local` (the workflow upgrades it each run), aws cli (snap).
+- S3 credentials: the host's AWS profile (`~ubuntu/.aws`, IAM user `ben`). The repository has **no**
+  AWS secrets; if `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` are ever added they take precedence.
 
-Until they exist the workflow still runs the precompute and `rashid check`, logs a warning, and
-skips the sync (the statistics are also uploaded as a build artifact).
+Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`;
+on msens `sudo systemctl status actions.runner.oceanmetrics-erddap-places.msens`.
+
+Re-register (e.g. after the VM is rebuilt or the runner was removed in Settings → Actions → Runners):
+
+```bash
+# on the laptop (repo admin)
+gh api -X POST repos/oceanmetrics/erddap-places/actions/runners/registration-token --jq .token
+# on msens, in /share/github/oceanmetrics/actions-runner
+sudo ./svc.sh stop && sudo ./svc.sh uninstall && ./config.sh remove --token <token>
+./config.sh --unattended --url https://github.com/oceanmetrics/erddap-places --token <token> \
+  --name msens --labels self-hosted,linux,x64,msens --work _work
+sudo ./svc.sh install ubuntu && sudo ./svc.sh start
+```
+
+Run by hand: prefer `gh workflow run stats -R oceanmetrics/erddap-places -f dataset=<id> -f publish=false`
+(blank `dataset` = every target). The runner's checkout under `actions-runner/_work/` is **not** a
+place to work in (it is wiped by the next run); for a manual precompute on msens `git clone` the repo
+elsewhere and follow "Precomputed statistics" above, then the `aws s3 sync` commands from the workflow.
+
+### CI credentials
+
+None needed in the repository: the self-hosted runner uses the msens host profile (see above).
