@@ -29,6 +29,7 @@
     "@turf/boolean-point-in-polygon": "^7.4.0",
     "@turf/helpers": "^7.4.0",
     "apache-arrow": "^17.0.0",
+    "geotiff": "^3.0.5",
     "hyparquet": "^1.30.1",
     "hyparquet-compressors": "^1.1.1",
     "maplibre-gl": "^5.24.0",

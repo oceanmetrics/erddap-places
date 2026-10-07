@@ -1,0 +1,64 @@
+{
+  "type": "Collection",
+  "id": "rasters",
+  "stac_version": "1.1.0",
+  "description": "366-band day-of-year COGs per dataset / variable / place / year (band i = day-of-year i of a leap year; band 60 = 29 Feb, NaN in non-leap years). Test fixture.",
+  "license": "CC0-1.0",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -81,
+          24.5,
+          -80,
+          25.5
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2024-01-01T00:00:00Z",
+          "2025-12-31T00:00:00Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "erddap-places:dataset_id": [
+      "dhw_5km"
+    ],
+    "erddap-places:variable": [
+      "CRW_SST"
+    ],
+    "erddap-places:place_id": [
+      "NMS:TEST"
+    ],
+    "erddap-places:baselines": [
+      "2024-2025"
+    ],
+    "year": {
+      "minimum": 2024,
+      "maximum": 2025
+    }
+  },
+  "cube:variables": {
+    "CRW_SST": {
+      "type": "data",
+      "unit": "Celsius",
+      "description": "sea surface temperature"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    }
+  ]
+}

@@ -461,7 +461,7 @@
 </script>
 
 <main>
-  <h1>erddap-places</h1>
+  <h1>erddap-places <a class="mode" href="#mode=then-now">Then vs Now →</a></h1>
   <p class="sub">Key statistics for a gazetteer place from an ERDDAP™ griddap dataset — masked, fetched
      and aggregated entirely in this browser with DuckDB-WASM.</p>
 
@@ -603,6 +603,7 @@
 <style>
   main    { max-width: 900px; margin: 2rem auto; padding: 0 1rem; font: 15px/1.5 system-ui, sans-serif; color: #222; }
   h1      { font-size: 1.4rem; margin: 0 0 .25rem; }
+  h1 .mode { font-size: 13px; font-weight: 400; margin-left: .75rem; }
   .sub    { color: #555; margin: 0 0 1rem; }
   .controls { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; margin-bottom: .25rem; }
   .controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 2px; }

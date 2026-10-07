@@ -1,0 +1,10 @@
+{
+  "type": "Catalog",
+  "id": "then-now-fixture",
+  "stac_version": "1.1.0",
+  "description": "Test fixture for the then-now mode: the same layout as the published gazetteer catalog (rasters/, climatology/, series/), one 20 x 20 px place, two years.",
+  "links": [
+    { "rel": "root",  "href": "./catalog.json", "type": "application/json" },
+    { "rel": "child", "href": "./rasters/collection.json", "type": "application/json", "title": "Day-of-year rasters" }
+  ]
+}
