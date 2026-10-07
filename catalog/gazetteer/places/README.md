@@ -2,6 +2,26 @@
 
 Places
 
+## Sources
+
+- **NOAA National Marine Sanctuaries (18, `NMS:*`)**: the official boundary shapefiles listed at
+  [sanctuaries.noaa.gov/library/imast_gis.html](https://sanctuaries.noaa.gov/library/imast_gis.html).
+  All zones in a download are unioned to one multipolygon per site, made valid and transformed to
+  EPSG:4326 (from NAD83; Florida Keys ships NAD27). Names come from onmsR `sanctuaries.csv`.
+- **MarineRegions (`MRGID:8439`)**: Pitcairn EEZ via `mregions2`.
+- **ProtectedSeas (`PSGID:939`)**: Tortugas Ecological Reserve via the Navigator API.
+
+Built by [`catalog/build_places.R`](../../build_places.R).
+
+## Changes
+
+- **1.1.0 (2026-10-07)**: sanctuary polygons now built directly from the official NOAA ONMS
+  downloads (previously the onmsR `sanctuary_polygons/*.geojson` copies) and new columns
+  `source_url`, `source_date`. Geometries and areas are unchanged to within 0.1 km² (same upstream
+  shapefiles); Papahānaumokuākea remains two lobes split at ±180 (1,511,736 km²).
+- **1.0.1 (2026-09-15)**: PMTiles and thumbnail.
+- **1.0.0 (2026-09-15)**: first release, 20 places.
+
 ## Spatial Coverage
 
 - **Bounding Box**: [-180.0, -28.4247039, 180.0, 48.5058899]
@@ -19,6 +39,8 @@ Places
 | gazetteer | string | source gazetteer: `NMS` (NOAA sanctuary), `MRGID` (MarineRegions), `PSGID` (ProtectedSeas) |
 | name | string | human-readable place name |
 | area_km2 | double | polygon area in square kilometers |
+| source_url | string | URL the boundary was downloaded from (official NOAA ONMS zip, MarineRegions gazetteer record, ProtectedSeas API) |
+| source_date | date | date (ISO 8601) the boundary was downloaded |
 | bbox | struct<xmin,ymin,xmax,ymax: double> | GeoParquet bbox-covering column (added by `portolan add` for query pushdown) |
 | geometry | binary (WKB) | MULTIPOLYGON, EPSG:4326, split at ±180 antimeridian |
 

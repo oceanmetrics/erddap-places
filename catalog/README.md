@@ -1,8 +1,11 @@
 # catalog/
 
 - `build_places.R` — builds `places/places.parquet` and `places/places.pmtiles` (20 marine place
-  polygons: NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID). Run with
-  `Rscript catalog/build_places.R`.
+  polygons: NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID). Sanctuary boundaries are the
+  official NOAA ONMS shapefile downloads (urls in onmsR `sanctuaries.csv`, cached in `cache/imast/`,
+  git-ignored; delete a zip to re-download). Run with `Rscript catalog/build_places.R`, copy
+  `places/places.{parquet,pmtiles}` into `gazetteer/places/`, then `portolan add places/` and
+  `portolan version bump places <x.y.z>` from `gazetteer/`.
 - `places/` — build output directory. `gazetteer/places/` is the published copy tracked by
   Portolan (currently synced by hand after each rebuild; not auto-linked).
 - `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` collections).
