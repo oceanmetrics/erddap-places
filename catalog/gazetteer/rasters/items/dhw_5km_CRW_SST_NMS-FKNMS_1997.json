@@ -42,11 +42,11 @@
   ],
   "properties": {
     "title": "Florida Keys National Marine Sanctuary — CRW_SST (dhw_5km), 1997, one band per day",
-    "description": "Daily sea surface temperature (degree_C) for 1997 on the 0.05 deg CRW grid over a 20 %-buffered box around Florida Keys National Marine Sanctuary (NMS:FKNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days with data, 1997-01-01 to 1997-12-31.",
+    "description": "Daily sea surface temperature (degree_C) for 1997 on the 0.05 deg CRW grid over a 20 %-buffered box around Florida Keys National Marine Sanctuary (NMS:FKNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days in the archive, 1997-01-01 to 1997-12-31, 365 with any value.",
     "datetime": null,
     "start_datetime": "1997-01-01T00:00:00Z",
     "end_datetime": "1997-12-31T23:59:59Z",
-    "created": "2026-10-07T22:00:53Z",
+    "created": "2026-10-07T22:18:54Z",
     "proj:code": "EPSG:4326",
     "proj:shape": [
       43,
@@ -71,6 +71,7 @@
     "erddap-places:variable": "CRW_SST",
     "erddap-places:year": 1997,
     "erddap-places:n_days": 365,
+    "erddap-places:n_days_valid": 365,
     "erddap-places:first_date": "1997-01-01",
     "erddap-places:last_date": "1997-12-31",
     "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"

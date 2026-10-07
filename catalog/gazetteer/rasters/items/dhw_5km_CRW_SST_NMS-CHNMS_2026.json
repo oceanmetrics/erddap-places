@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-CHNMS_2026",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -122.65,
+          33.45
+        ],
+        [
+          -119.8,
+          33.45
+        ],
+        [
+          -119.8,
+          35.95
+        ],
+        [
+          -122.65,
+          35.95
+        ],
+        [
+          -122.65,
+          33.45
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -122.65,
+    33.45,
+    -119.8,
+    35.95
+  ],
+  "properties": {
+    "title": "Chumash Heritage National Marine Sanctuary — CRW_SST (dhw_5km), 2026, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2026 on the 0.05 deg CRW grid over a 20 %-buffered box around Chumash Heritage National Marine Sanctuary (NMS:CHNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 277 days in the archive, 2026-01-01 to 2026-10-04, 277 with any value.",
+    "datetime": null,
+    "start_datetime": "2026-01-01T00:00:00Z",
+    "end_datetime": "2026-10-04T23:59:59Z",
+    "created": "2026-10-07T22:18:54Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      50,
+      57
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -122.65,
+      0.0,
+      -0.05,
+      35.95
+    ],
+    "proj:bbox": [
+      -122.65,
+      33.45,
+      -119.8,
+      35.95
+    ],
+    "erddap-places:place_id": "NMS:CHNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2026,
+    "erddap-places:n_days": 277,
+    "erddap-places:n_days_valid": 277,
+    "erddap-places:first_date": "2026-01-01",
+    "erddap-places:last_date": "2026-10-04",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:CHNMS/2026.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:CHNMS 2026 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1668646,
+      "file:checksum": "12208d601ae306c47a181eb0d4213bc2f7a2a31e48e59ee215e16875e410b8748711"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

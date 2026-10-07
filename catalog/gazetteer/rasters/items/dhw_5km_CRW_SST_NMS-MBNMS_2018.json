@@ -1,0 +1,126 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-MBNMS_2018",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -123.6,
+          35.1
+        ],
+        [
+          -120.65,
+          35.1
+        ],
+        [
+          -120.65,
+          38.25
+        ],
+        [
+          -123.6,
+          38.25
+        ],
+        [
+          -123.6,
+          35.1
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -123.6,
+    35.1,
+    -120.65,
+    38.25
+  ],
+  "properties": {
+    "title": "Monterey Bay National Marine Sanctuary — CRW_SST (dhw_5km), 2018, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2018 on the 0.05 deg CRW grid over a 20 %-buffered box around Monterey Bay National Marine Sanctuary (NMS:MBNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days in the archive, 2018-01-01 to 2018-12-31, 365 with any value.",
+    "datetime": null,
+    "start_datetime": "2018-01-01T00:00:00Z",
+    "end_datetime": "2018-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:55Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      63,
+      59
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -123.6,
+      0.0,
+      -0.05,
+      38.25
+    ],
+    "proj:bbox": [
+      -123.6,
+      35.1,
+      -120.65,
+      38.25
+    ],
+    "erddap-places:place_id": "NMS:MBNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2018,
+    "erddap-places:n_days": 365,
+    "erddap-places:n_days_valid": 365,
+    "erddap-places:first_date": "2018-01-01",
+    "erddap-places:last_date": "2018-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:MBNMS/2018.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:MBNMS 2018 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2279256,
+      "file:checksum": "12209e01b801c41b3f33a16a9f90f177c3078eccdd1bda61fb369c65319a25179fbe"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

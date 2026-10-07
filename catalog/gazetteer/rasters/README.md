@@ -8,7 +8,7 @@ year file and in every [climatology](../climatology/README.md) file, with no shi
 
 Currently: NOAA Coral Reef Watch CoralTemp daily SST (`noaacrwsstDaily` `analysed_sst` on NOAA
 CoastWatch ERDDAP, the product PacIOOS re-serves as `dhw_5km` `CRW_SST`, our
-[`erddap/dhw_5km`](../erddap/dhw_5km/collection.json)), 1985 to the archive's last day, for 14
+[`erddap/dhw_5km`](../erddap/dhw_5km/collection.json)), 1985 to the archive's last day (2026-10-04 at build time), for 13
 sanctuaries.
 
 ## Files
@@ -91,5 +91,16 @@ float64 → float32 (the source values carry two decimals), bands moved onto the
 the transform snapped from its float32 noise (0.04999998°) to the exact 0.05° grid. Archive folder
 `CPNMS` (the proposed name) is `NMS:CHNMS`; `MBNMS-david` and `MBNMS-main` (sub-units) have no
 gazetteer place and are not published.
+
+## Gaps in the source archive
+
+- **Whole years that are all NaN** in the old pipeline's output (its fetch failed; the CSV is all
+  `NA` too): MBNMS 2015; MNMS 1991, 1999, 2015; NMSAS 1991; OCNMS 1999; SBNMS 2005, 2010, 2019. The
+  files exist (366 NaN bands) and their Items say `erddap-places:n_days_valid: 0`; the
+  climatologies simply have one year fewer there (see `_n.tif`). Re-running the old pipeline for
+  those place-years on `mbon` and then `build_then_now.py --codes <NMS> --years <y> <y>` (plus
+  `--steps climatology,series,stac` for the place) would fill them.
+- **TBNMS (Thunder Bay, Lake Huron) is not published**: CRW CoralTemp has no SST over the Great
+  Lakes, so its archive is all NaN (bar a spurious 0 on 2022-12-01).
 
 License: CC-BY-4.0 for these derived files; the CRW data are NOAA, public domain.

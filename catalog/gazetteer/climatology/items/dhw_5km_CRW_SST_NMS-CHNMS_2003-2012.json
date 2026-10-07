@@ -1,0 +1,196 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-CHNMS_2003-2012",
+  "collection": "climatology",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -122.65,
+          33.45
+        ],
+        [
+          -119.8,
+          33.45
+        ],
+        [
+          -119.8,
+          35.95
+        ],
+        [
+          -122.65,
+          35.95
+        ],
+        [
+          -122.65,
+          33.45
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -122.65,
+    33.45,
+    -119.8,
+    35.95
+  ],
+  "properties": {
+    "title": "Chumash Heritage National Marine Sanctuary — CRW_SST (dhw_5km) day-of-year climatology 2003-2012",
+    "description": "Per-pixel day-of-year mean, standard deviation and count of daily sea surface temperature over 2003-2012 for Chumash Heritage National Marine Sanctuary (NMS:CHNMS); 366 bands on the leap-year calendar, same grid as the rasters collection. Raw day-of-year statistics (no smoothing window).",
+    "datetime": null,
+    "start_datetime": "2003-01-01T00:00:00Z",
+    "end_datetime": "2012-12-31T23:59:59Z",
+    "created": "2026-10-07T22:18:55Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      50,
+      57
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -122.65,
+      0.0,
+      -0.05,
+      35.95
+    ],
+    "proj:bbox": [
+      -122.65,
+      33.45,
+      -119.8,
+      35.95
+    ],
+    "erddap-places:place_id": "NMS:CHNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:baseline": [
+      2003,
+      2012
+    ],
+    "erddap-places:window_days": 0,
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb, leap years only)"
+  },
+  "assets": {
+    "mean": {
+      "href": "../dhw_5km/CRW_SST/NMS:CHNMS/2003-2012_mean.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "day-of-year mean, 2003-2012",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2530875,
+      "file:checksum": "1220301e5e1e44f7d6f064beb2bf7a22febbbab8c306c00e39d5e26ae380428fc085"
+    },
+    "sd": {
+      "href": "../dhw_5km/CRW_SST/NMS:CHNMS/2003-2012_sd.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "day-of-year sample standard deviation, 2003-2012",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2954117,
+      "file:checksum": "1220c64ba0e91360b63647bbcece180d208e47133c32ec11cf4dbbcbea4186cd8f0e"
+    },
+    "n": {
+      "href": "../dhw_5km/CRW_SST/NMS:CHNMS/2003-2012_n.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "years with a value (uint8, no nodata), 2003-2012",
+      "roles": [
+        "data"
+      ],
+      "file:size": 213775,
+      "file:checksum": "1220e5f6a479513e544bc247e936337441d11639619fddd83a722fde04211e091eb9"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2003.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2004.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2005.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2006.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2007.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2008.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2009.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2010.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2011.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "derived_from",
+      "href": "../../rasters/items/dhw_5km_CRW_SST_NMS-CHNMS_2012.json",
+      "type": "application/geo+json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

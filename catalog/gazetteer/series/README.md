@@ -32,8 +32,11 @@ the fraction of it covered by the polygon (rasterised on a 20 × 20 sub-grid per
 coverage weighting as `terra::zonal(exact = TRUE)` and as `mean_wt` in the app's live
 [`stats/`](../stats/README.md) (note: there `mean` is the unweighted one; here `mean` is weighted
 because it is the number to chart). No cos(latitude) factor, like terra. Against `mean_shiny` the
-recomputed `mean` agrees to ≤ 0.002 °C for FKNMS (r = 1.0000); per-place agreement is logged by the
-build.
+recomputed `mean` agrees to ≤ 0.003 °C (r = 1.0000) for 11 places and ≤ 0.017 °C for GRNMS (6 cells);
+for **CHNMS** it differs by a median 0.12 °C (max 0.85, r = 0.997) because the old app averaged
+over the *proposed* Chumash boundary (`CPNMS`) and `mean` uses the designated one. Years that are
+all NaN in the source archive (see [`../rasters/README.md`](../rasters/README.md#gaps-in-the-source-archive))
+have no rows.
 
 ## Read
 

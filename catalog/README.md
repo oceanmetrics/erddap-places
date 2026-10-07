@@ -53,7 +53,7 @@ STAC and docs are tracked) and are uploaded from the Mac mini, where the 1.1 GB 
 prefixes from its `--delete` sync.
 
 ```bash
-# on the mini (`ssh macmini`); ~75 s per sanctuary, ~20 min for all 14
+# on the mini (`ssh macmini`); ~60-150 s per sanctuary, ~16 min for all 13
 rsync -a mbon:/share/data/noaa-onms/climate-dashboard-app/erddap_sst ~/data/noaa-onms/climate-dashboard-app/
 uv run catalog/build_then_now.py --src ~/data/noaa-onms/climate-dashboard-app/erddap_sst \
   --gazetteer catalog/gazetteer                       # [--codes FKNMS ...] [--steps rasters,climatology,series,stac]
@@ -66,7 +66,8 @@ aws s3 cp catalog/gazetteer/catalog.json s3://oceanmetrics.io-public/gazetteer/c
 ```
 
 No `--delete`: a rebuild overwrites in place. Archive folders without a gazetteer place are skipped
-(`MBNMS-david`, `MBNMS-main`); `CPNMS` is `NMS:CHNMS`. The current year is partial: re-run for that
+(`MBNMS-david`, `MBNMS-main`), as is `TBNMS` (no CRW SST over the Great Lakes); `CPNMS` is
+`NMS:CHNMS`. Nine place-years are all NaN in the archive: see `gazetteer/rasters/README.md`. The current year is partial: re-run for that
 year (`--years 2026 2026 --steps rasters,series,stac` after a fresh rsync) to extend it.
 `erddap_sss/` (SMOS 3-day SSS, 2010–) and `erddap_precip/` (IMERG monthly, 1998–) have the same
 layout and are not converted yet.

@@ -22,10 +22,10 @@
     "spatial": {
       "bbox": [
         [
-          -83.55,
-          23.9,
-          -79.65,
-          26.05
+          -171.5,
+          -15.75,
+          -69.55,
+          48.9
         ]
       ]
     },
@@ -71,7 +71,19 @@
       "CRW_SST"
     ],
     "erddap-places:place_id": [
-      "NMS:FKNMS"
+      "NMS:CBNMS",
+      "NMS:CHNMS",
+      "NMS:CINMS",
+      "NMS:FGBNMS",
+      "NMS:FKNMS",
+      "NMS:GFNMS",
+      "NMS:GRNMS",
+      "NMS:HIHWNMS",
+      "NMS:MBNMS",
+      "NMS:MNMS",
+      "NMS:NMSAS",
+      "NMS:OCNMS",
+      "NMS:SBNMS"
     ],
     "erddap-places:baselines": [
       "1985-2005",
@@ -94,7 +106,7 @@
       "file:checksum": "12208742906cad0b54f9ada304728d0f138edd4b029678549b48752908caf5f30d34"
     }
   },
-  "updated": "2026-10-07T22:00:53Z",
+  "updated": "2026-10-07T22:18:55Z",
   "links": [
     {
       "rel": "root",
@@ -148,6 +160,1014 @@
       "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
       "type": "text/html",
       "title": "source: noaacrwsstDaily (NOAA CoastWatch ERDDAP)"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2026"
     },
     {
       "rel": "item",
@@ -400,6 +1420,2022 @@
       "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2026.json",
       "type": "application/geo+json",
       "title": "dhw_5km_CRW_SST_NMS-FKNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2026"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2026"
     }
   ]
 }

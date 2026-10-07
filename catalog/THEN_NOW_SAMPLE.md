@@ -1,7 +1,8 @@
 # Then vs Now: FKNMS sample (interim, for the app)
 
-The Florida Keys (`NMS:FKNMS`) SST cube is on S3. The other 13 sanctuaries follow under the same
-paths. Base URL: `https://storage.oceanmetrics.io/gazetteer/`. It answers with a 302 to
+The Florida Keys (`NMS:FKNMS`) SST cube is on S3. Update 2026-10-08: the other 12 sanctuaries are
+also there, under the same paths (13 in all; TBNMS has no CRW data and is not published).
+`summaries["erddap-places:place_id"]` in each collection lists them. Base URL: `https://storage.oceanmetrics.io/gazetteer/`. It answers with a 302 to
 `https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/...`, which serves range
 requests (206) with `Access-Control-Allow-Origin: *` and exposes `Content-Range`. The S3 key keeps
 the literal colon (`NMS:FKNMS`). A request for `NMS%3AFKNMS` or `NMS:FKNMS` reaches the same object

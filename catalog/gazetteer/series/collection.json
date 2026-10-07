@@ -21,10 +21,10 @@
     "spatial": {
       "bbox": [
         [
-          -83.149885,
-          24.300408,
-          -80.066471,
-          25.650458
+          -171.140903,
+          -15.38615,
+          -70.035064,
+          48.50589
         ]
       ]
     },
@@ -70,7 +70,19 @@
       "CRW_SST"
     ],
     "erddap-places:place_id": [
-      "NMS:FKNMS"
+      "NMS:CBNMS",
+      "NMS:CHNMS",
+      "NMS:CINMS",
+      "NMS:FGBNMS",
+      "NMS:FKNMS",
+      "NMS:GFNMS",
+      "NMS:GRNMS",
+      "NMS:HIHWNMS",
+      "NMS:MBNMS",
+      "NMS:MNMS",
+      "NMS:NMSAS",
+      "NMS:OCNMS",
+      "NMS:SBNMS"
     ]
   },
   "table:columns": [
@@ -147,7 +159,7 @@
       "file:checksum": "12203903019fc3e48ba121aabe896c8d74c306e631144e45c7be666811e0eef42389"
     }
   },
-  "updated": "2026-10-07T22:00:54Z",
+  "updated": "2026-10-07T22:18:56Z",
   "links": [
     {
       "rel": "root",
@@ -204,9 +216,81 @@
     },
     {
       "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS"
+    },
+    {
+      "rel": "item",
       "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS.json",
       "type": "application/geo+json",
       "title": "dhw_5km_CRW_SST_NMS-FKNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS"
     }
   ]
 }

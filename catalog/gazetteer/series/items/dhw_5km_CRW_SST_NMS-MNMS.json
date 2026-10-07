@@ -1,0 +1,164 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-MNMS",
+  "collection": "series",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -75.417921,
+          34.998235
+        ],
+        [
+          -75.401255,
+          34.998235
+        ],
+        [
+          -75.401255,
+          35.014901
+        ],
+        [
+          -75.417921,
+          35.014901
+        ],
+        [
+          -75.417921,
+          34.998235
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -75.417921,
+    34.998235,
+    -75.401255,
+    35.014901
+  ],
+  "properties": {
+    "title": "Monitor National Marine Sanctuary — CRW_SST (dhw_5km) daily area series",
+    "description": "Daily statistics of sea surface temperature over the Monitor National Marine Sanctuary (NMS:MNMS) polygon from the rasters collection, 1985-01-01 to 2026-10-04: area-weighted mean (cell coverage fraction), unweighted mean, sd, min, max, n_cells, plus the climate-dashboard-app's own mean for comparison.",
+    "datetime": null,
+    "start_datetime": "1985-01-01T00:00:00Z",
+    "end_datetime": "2026-10-04T23:59:59Z",
+    "created": "2026-10-07T22:18:56Z",
+    "table:row_count": 14157,
+    "erddap-places:place_id": "NMS:MNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:MNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "CRW_SST daily area series for Monitor National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "area-weighted mean over the place polygon: each 0.05 deg cell weighted by the fraction of it inside the polygon (as terra::zonal(exact=TRUE) and the app's mean_wt)"
+        },
+        {
+          "name": "mean_unwt",
+          "type": "double",
+          "description": "unweighted mean over the cells that touch the polygon"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation over those cells (unweighted)"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum over those cells"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum over those cells"
+        },
+        {
+          "name": "n_cells",
+          "type": "int32",
+          "description": "cells with a value that touch the polygon"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the coverage weights of those cells (cell-equivalents of polygon area)"
+        },
+        {
+          "name": "mean_shiny",
+          "type": "double",
+          "description": "the climate-dashboard-app's own daily mean (its CSV; terra::zonal(exact=TRUE) over its sanctuary polygon), for comparison"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:FKNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "gazetteer dataset id, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "gazetteer variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 359769,
+      "file:checksum": "122077093434993382338ed93a75c615fa72b8f0115cc8e379258e13a56c4df193c1"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

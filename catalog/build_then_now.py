@@ -60,6 +60,8 @@ BASE_URL  = "https://storage.oceanmetrics.io/gazetteer/"
 
 # archive folder -> gazetteer place id (CPNMS was the proposed name of Chumash Heritage)
 CODE_TO_PLACE = {"CPNMS": "NMS:CHNMS"}
+# archive folders with a gazetteer place but no usable data
+NO_DATA = {"TBNMS": "CRW CoralTemp has no SST over the Great Lakes: the archive is all NaN (bar a spurious 0 on 2022-12-01)"}
 
 PRODUCTS = {
   "erddap_sst": {
@@ -535,6 +537,7 @@ def build_stac(gaz: Path, prod: dict, places: dict):
     with rasterio.open(f) as ds:
       tags = ds.tags()
       pp = proj_props(ds)
+      n_valid = sum(float(ds.tags(b).get("STATISTICS_VALID_PERCENT", 0)) > 0 for b in range(1, ds.count + 1))
     first, last = dt.date.fromisoformat(tags["FIRST_DATE"]), dt.date.fromisoformat(tags["LAST_DATE"])
     iid = f"{ds_id}_{var}_{safe_id(place)}_{y}"
     bb = pp["proj:bbox"]
@@ -543,12 +546,12 @@ def build_stac(gaz: Path, prod: dict, places: dict):
       "id": iid, "collection": "rasters", "geometry": bbox_geom(bb), "bbox": bb,
       "properties": {
         "title": f"{places[place]['name']} — {var} ({ds_id}), {y}, one band per day",
-        "description": f"Daily {prod['long_name']} ({prod['units']}) for {y} on the 0.05 deg CRW grid over a 20 %-buffered box around {places[place]['name']} ({place}): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). {tags['N_DAYS']} days with data, {first} to {last}.",
+        "description": f"Daily {prod['long_name']} ({prod['units']}) for {y} on the 0.05 deg CRW grid over a 20 %-buffered box around {places[place]['name']} ({place}): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). {tags['N_DAYS']} days in the archive, {first} to {last}, {n_valid} with any value" + (" (this year is all NaN in the source archive)" if n_valid == 0 else "") + ".",
         "datetime": None, "start_datetime": iso(first), "end_datetime": iso(last, end=True),
         "created": now_iso(),
         **pp,
         "erddap-places:place_id": place, "erddap-places:dataset_id": ds_id, "erddap-places:variable": var,
-        "erddap-places:year": y, "erddap-places:n_days": int(tags["N_DAYS"]),
+        "erddap-places:year": y, "erddap-places:n_days": int(tags["N_DAYS"]), "erddap-places:n_days_valid": n_valid,
         "erddap-places:first_date": str(first), "erddap-places:last_date": str(last),
         "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)",
       },
@@ -685,6 +688,9 @@ def main():
   if skipped:
     log(f"no gazetteer place for {skipped}: skipped")
   codes = [c for c in codes if place_of(c) in places]
+  for c in [c for c in codes if c in NO_DATA]:
+    log(f"{c}: skipped, {NO_DATA[c]}")
+  codes = [c for c in codes if c not in NO_DATA]
   years = list(range(a.years[0], a.years[1] + 1))
   steps = a.steps.split(",")
   t0 = time.time()

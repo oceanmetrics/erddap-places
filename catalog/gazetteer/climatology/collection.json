@@ -22,10 +22,10 @@
     "spatial": {
       "bbox": [
         [
-          -83.55,
-          23.9,
-          -79.65,
-          26.05
+          -171.5,
+          -15.75,
+          -69.55,
+          48.9
         ]
       ]
     },
@@ -71,7 +71,19 @@
       "CRW_SST"
     ],
     "erddap-places:place_id": [
-      "NMS:FKNMS"
+      "NMS:CBNMS",
+      "NMS:CHNMS",
+      "NMS:CINMS",
+      "NMS:FGBNMS",
+      "NMS:FKNMS",
+      "NMS:GFNMS",
+      "NMS:GRNMS",
+      "NMS:HIHWNMS",
+      "NMS:MBNMS",
+      "NMS:MNMS",
+      "NMS:NMSAS",
+      "NMS:OCNMS",
+      "NMS:SBNMS"
     ],
     "erddap-places:baselines": [
       "1985-2005",
@@ -93,7 +105,7 @@
       "file:checksum": "12207d3f25b9117ba35a4e8e1c87e8cbc5c57ccfe3f324de5c34590e153dd1713c94"
     }
   },
-  "updated": "2026-10-07T22:00:54Z",
+  "updated": "2026-10-07T22:18:55Z",
   "links": [
     {
       "rel": "root",
@@ -150,6 +162,54 @@
     },
     {
       "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CBNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CHNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-CINMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FGBNMS_2003-2012"
+    },
+    {
+      "rel": "item",
       "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1985-2005.json",
       "type": "application/geo+json",
       "title": "dhw_5km_CRW_SST_NMS-FKNMS_1985-2005"
@@ -159,6 +219,102 @@
       "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2003-2012.json",
       "type": "application/geo+json",
       "title": "dhw_5km_CRW_SST_NMS-FKNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GFNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-GRNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-HIHWNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MBNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-MNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-NMSAS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-OCNMS_2003-2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-SBNMS_2003-2012"
     }
   ]
 }
