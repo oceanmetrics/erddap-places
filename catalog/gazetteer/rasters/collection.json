@@ -1,0 +1,405 @@
+{
+  "type": "Collection",
+  "id": "rasters",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "title": "Then vs Now: daily rasters",
+  "description": "Daily grids of noaacrwsstDaily analysed_sst (NOAA Coral Reef Watch CoralTemp 5 km SST, the product PacIOOS re-serves as dhw_5km/CRW_SST) around each sanctuary, one cloud-optimized GeoTIFF per place and year: 366 bands, band i = day-of-year i of a leap-year calendar, so a month-day is the same band in every year (band 60 = 29 Feb is NaN in non-leap years). Float32, nodata NaN, INTERLEAVE=BAND, 256 px tiles, DEFLATE with the floating-point predictor, EPSG:4326, 0.05 deg cells; every grid fits one tile, so reading one day for one place is one HTTP range request of a few kB. Converted from the archive of the NOAA ONMS climate-dashboard-app (extractr::ed_extract over a 20 %-buffered bounding box per sanctuary) by catalog/build_then_now.py. Read a band with geotiff.js; average the same band across year files for a custom 'Then'.",
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "sea surface temperature",
+    "Coral Reef Watch",
+    "COG",
+    "day of year",
+    "marine protected areas",
+    "then vs now"
+  ],
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -83.55,
+          23.9,
+          -79.65,
+          26.05
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1985-01-01T00:00:00Z",
+          "2026-10-04T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "providers": [
+    {
+      "name": "NOAA Coral Reef Watch (CRW)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://coralreefwatch.noaa.gov"
+    },
+    {
+      "name": "NOAA ONMS climate-dashboard-app (MarineBON)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://github.com/noaa-onms/climate-dashboard-app"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "summaries": {
+    "erddap-places:dataset_id": [
+      "dhw_5km"
+    ],
+    "erddap-places:variable": [
+      "CRW_SST"
+    ],
+    "erddap-places:place_id": [
+      "NMS:FKNMS"
+    ],
+    "erddap-places:baselines": [
+      "1985-2005",
+      "2003-2012"
+    ],
+    "year": {
+      "minimum": 1985,
+      "maximum": 2026
+    }
+  },
+  "assets": {
+    "thumbnail": {
+      "href": "./rasters.thumb.png",
+      "type": "image/png",
+      "title": "NMS:FKNMS SST on 2025-08-15 (band 228)",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 13772,
+      "file:checksum": "12208742906cad0b54f9ada304728d0f138edd4b029678549b48752908caf5f30d34"
+    }
+  },
+  "updated": "2026-10-07T22:00:53Z",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "related",
+      "href": "../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "related",
+      "href": "../climatology/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: day-of-year climatologies"
+    },
+    {
+      "rel": "related",
+      "href": "../series/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily area series"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily (NOAA CoastWatch ERDDAP)"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1985.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1985"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1986.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1986"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1987.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1987"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1988.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1988"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1989.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1989"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1990.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1990"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1991.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1991"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1992.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1992"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1993.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1993"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1994.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1994"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1995.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1995"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1996.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1996"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1997.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1997"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1998.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1998"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1999.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1999"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2000.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2000"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2001.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2001"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2002.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2002"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2003.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2003"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2004.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2004"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2006.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2006"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2007.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2007"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2008.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2008"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2009.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2009"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2010.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2010"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2011.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2011"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2012"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2013.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2013"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2014.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2014"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2015.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2015"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2016.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2016"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2017.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2017"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2018.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2018"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2019.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2019"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2020.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2020"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2021.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2021"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2022.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2022"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2023.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2023"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2024.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2024"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2025.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2025"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2026.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2026"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+# the data files are built by catalog/build_then_now.py on the Mac mini and published to
+# s3://oceanmetrics.io-public/gazetteer/; only the STAC (collection.json, items/) and the docs are
+# tracked in git (see catalog/README.md "Then vs Now data").
+*.tif
+*.parquet

@@ -19,6 +19,11 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
   18 NMS places), refreshed weekly, computed with exactly the mask and SQL
   the browser app runs live.
 
+- [`rasters/`](rasters/collection.json), [`climatology/`](climatology/collection.json),
+  [`series/`](series/collection.json) — **Then vs Now**: daily CRW SST since 1985 per sanctuary as
+  366-band COGs (band = day of year), 1985–2005 and 2003–2012 day-of-year climatologies, and daily
+  polygon area means as Parquet. See [`rasters/README.md`](rasters/README.md).
+
 ## How to read
 
 - Places: `SELECT * FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/places/places.parquet')`
@@ -28,6 +33,9 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
 - Statistics, precomputed (cheapest):
   `SELECT * FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/stats/dhw_5km/CRW_SST/NMS:HIHWNMS.parquet')`
   — note the colon in `place_id` is kept in the object key. See [`stats/README.md`](stats/README.md).
+- Then vs Now: one day of one year is one band of
+  `rasters/dhw_5km/CRW_SST/NMS:FKNMS/2024.tif` (geotiff.js range read, ~6 kB); the daily area means
+  are `series/dhw_5km/CRW_SST/NMS:FKNMS.parquet`.
 
 ---
 

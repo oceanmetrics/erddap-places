@@ -1,0 +1,125 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "id": "dhw_5km_CRW_SST_NMS-FKNMS_2009",
+  "collection": "rasters",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -83.55,
+          23.9
+        ],
+        [
+          -79.65,
+          23.9
+        ],
+        [
+          -79.65,
+          26.05
+        ],
+        [
+          -83.55,
+          26.05
+        ],
+        [
+          -83.55,
+          23.9
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -83.55,
+    23.9,
+    -79.65,
+    26.05
+  ],
+  "properties": {
+    "title": "Florida Keys National Marine Sanctuary — CRW_SST (dhw_5km), 2009, one band per day",
+    "description": "Daily sea surface temperature (degree_C) for 2009 on the 0.05 deg CRW grid over a 20 %-buffered box around Florida Keys National Marine Sanctuary (NMS:FKNMS): 366 bands, band i = day-of-year i of a leap-year calendar (band 60 = 29 Feb, NaN in non-leap years). 365 days with data, 2009-01-01 to 2009-12-31.",
+    "datetime": null,
+    "start_datetime": "2009-01-01T00:00:00Z",
+    "end_datetime": "2009-12-31T23:59:59Z",
+    "created": "2026-10-07T22:00:53Z",
+    "proj:code": "EPSG:4326",
+    "proj:shape": [
+      43,
+      78
+    ],
+    "proj:transform": [
+      0.05,
+      0.0,
+      -83.55,
+      0.0,
+      -0.05,
+      26.05
+    ],
+    "proj:bbox": [
+      -83.55,
+      23.9,
+      -79.65,
+      26.05
+    ],
+    "erddap-places:place_id": "NMS:FKNMS",
+    "erddap-places:dataset_id": "dhw_5km",
+    "erddap-places:variable": "CRW_SST",
+    "erddap-places:year": 2009,
+    "erddap-places:n_days": 365,
+    "erddap-places:first_date": "2009-01-01",
+    "erddap-places:last_date": "2009-12-31",
+    "erddap-places:bands": "band i = day-of-year i of a leap year (band 60 = 29 Feb)"
+  },
+  "assets": {
+    "data": {
+      "href": "../dhw_5km/CRW_SST/NMS:FKNMS/2009.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "CRW_SST NMS:FKNMS 2009 (366-band COG, degree_C)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2404349,
+      "file:checksum": "1220bd56a56f18a98569de4527cc13bf3f32e32f255e3a652557859eec8c26c2929f"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily analysed_sst (NOAA CoastWatch ERDDAP)"
+    }
+  ]
+}

@@ -92,9 +92,13 @@ jobs:
             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
           aws sts get-caller-identity
-          # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file
+          # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file.
+          # rasters/, climatology/ and series/ (Then vs Now) are built on the Mac mini by
+          # catalog/build_then_now.py and uploaded from there; their data files are not in git, so
+          # this sync must neither delete them nor overwrite their STAC from a checkout without data
           aws s3 sync catalog/gazetteer/ s3://oceanmetrics.io-public/gazetteer/ \
-            --delete --exclude '.portolan/*' --exclude 'stats/*'
+            --delete --exclude '.portolan/*' --exclude 'stats/*' \
+            --exclude 'rasters/*' --exclude 'climatology/*' --exclude 'series/*'
           aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
             --exclude '.portolan/*'
 

@@ -1,0 +1,212 @@
+{
+  "type": "Collection",
+  "id": "series",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "title": "Then vs Now: daily area series",
+  "description": "Daily area statistics per place for the Then vs Now day-of-year chart: one Parquet per (dataset, variable, place) over the full record, computed from the rasters collection over the gazetteer polygon (places.parquet) with each 0.05 deg cell weighted by the fraction of it inside the polygon (the same weighting as terra::zonal(exact=TRUE) in the climate-dashboard-app and mean_wt in the app's live statistics). `mean` is that area-weighted mean; `mean_shiny` keeps the old app's CSV value (its own sanctuary polygon) for comparison.",
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "sea surface temperature",
+    "time series",
+    "zonal statistics",
+    "day of year",
+    "then vs now"
+  ],
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -83.149885,
+          24.300408,
+          -80.066471,
+          25.650458
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1985-01-01T00:00:00Z",
+          "2026-10-04T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "providers": [
+    {
+      "name": "NOAA Coral Reef Watch (CRW)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://coralreefwatch.noaa.gov"
+    },
+    {
+      "name": "NOAA ONMS climate-dashboard-app (MarineBON)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://github.com/noaa-onms/climate-dashboard-app"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "summaries": {
+    "erddap-places:dataset_id": [
+      "dhw_5km"
+    ],
+    "erddap-places:variable": [
+      "CRW_SST"
+    ],
+    "erddap-places:place_id": [
+      "NMS:FKNMS"
+    ]
+  },
+  "table:columns": [
+    {
+      "name": "date",
+      "type": "date",
+      "description": "UTC day"
+    },
+    {
+      "name": "mean",
+      "type": "double",
+      "description": "area-weighted mean over the place polygon: each 0.05 deg cell weighted by the fraction of it inside the polygon (as terra::zonal(exact=TRUE) and the app's mean_wt)"
+    },
+    {
+      "name": "mean_unwt",
+      "type": "double",
+      "description": "unweighted mean over the cells that touch the polygon"
+    },
+    {
+      "name": "sd",
+      "type": "double",
+      "description": "sample standard deviation over those cells (unweighted)"
+    },
+    {
+      "name": "min",
+      "type": "double",
+      "description": "minimum over those cells"
+    },
+    {
+      "name": "max",
+      "type": "double",
+      "description": "maximum over those cells"
+    },
+    {
+      "name": "n_cells",
+      "type": "int32",
+      "description": "cells with a value that touch the polygon"
+    },
+    {
+      "name": "weight_sum",
+      "type": "double",
+      "description": "sum of the coverage weights of those cells (cell-equivalents of polygon area)"
+    },
+    {
+      "name": "mean_shiny",
+      "type": "double",
+      "description": "the climate-dashboard-app's own daily mean (its CSV; terra::zonal(exact=TRUE) over its sanctuary polygon), for comparison"
+    },
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "gazetteer place id, e.g. NMS:FKNMS"
+    },
+    {
+      "name": "dataset_id",
+      "type": "string",
+      "description": "gazetteer dataset id, e.g. dhw_5km"
+    },
+    {
+      "name": "variable",
+      "type": "string",
+      "description": "gazetteer variable, e.g. CRW_SST"
+    }
+  ],
+  "assets": {
+    "thumbnail": {
+      "href": "./series.thumb.png",
+      "type": "image/png",
+      "title": "NMS:FKNMS daily mean SST: every year (grey), 1985-2005 mean (black), 2025 (red)",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 30215,
+      "file:checksum": "12203903019fc3e48ba121aabe896c8d74c306e631144e45c7be666811e0eef42389"
+    }
+  },
+  "updated": "2026-10-07T22:00:54Z",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "related",
+      "href": "../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "related",
+      "href": "../rasters/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily rasters"
+    },
+    {
+      "rel": "related",
+      "href": "../climatology/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: day-of-year climatologies"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily (NOAA CoastWatch ERDDAP)"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "type": "Catalog",
   "id": "oceanmetrics-gazetteer",
   "stac_version": "1.1.0",
-  "description": "Marine place polygons (NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID) as GeoParquet + PMTiles, plus ERDDAP dataset descriptions for computing place statistics in the browser (DuckDB-WASM).",
+  "description": "Marine place polygons (NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID) as GeoParquet + PMTiles, plus ERDDAP dataset descriptions for computing place statistics in the browser (DuckDB-WASM), plus daily rasters, day-of-year climatologies and area series of sanctuary SST since 1985 (Then vs Now).",
   "links": [
     {
       "rel": "root",
@@ -141,6 +141,24 @@
       "href": "./stats/collection.json",
       "type": "application/json",
       "title": "Precomputed place statistics"
+    },
+    {
+      "rel": "child",
+      "href": "./rasters/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily rasters"
+    },
+    {
+      "rel": "child",
+      "href": "./climatology/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: day-of-year climatologies"
+    },
+    {
+      "rel": "child",
+      "href": "./series/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily area series"
     }
   ],
   "title": "Ocean Metrics gazetteer",

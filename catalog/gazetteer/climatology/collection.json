@@ -1,0 +1,164 @@
+{
+  "type": "Collection",
+  "id": "climatology",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "title": "Then vs Now: day-of-year climatologies",
+  "description": "Day-of-year climatologies of the rasters collection: for each place and baseline, three 366-band COGs (`<y0>-<y1>_mean.tif`, `_sd.tif`, `_n.tif`) holding the per-pixel mean, sample standard deviation and number of years with a value for each calendar day (band i = day-of-year i of a leap year; band 60 = 29 Feb from the leap years only). Raw day-of-year statistics, no smoothing window (catalog/build_then_now.py --window N pools +-N days if ever wanted). Baselines: 1985-2005 (the climate-dashboard-app's default first 20 years) and 2003-2012 (the NMS EcoIndicators baseline). Same grid, encoding and reading pattern as the rasters collection: one band = one HTTP range request.",
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "sea surface temperature",
+    "climatology",
+    "baseline",
+    "COG",
+    "day of year",
+    "then vs now"
+  ],
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -83.55,
+          23.9,
+          -79.65,
+          26.05
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "1985-01-01T00:00:00Z",
+          "2012-12-31T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "providers": [
+    {
+      "name": "NOAA Coral Reef Watch (CRW)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://coralreefwatch.noaa.gov"
+    },
+    {
+      "name": "NOAA ONMS climate-dashboard-app (MarineBON)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://github.com/noaa-onms/climate-dashboard-app"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "summaries": {
+    "erddap-places:dataset_id": [
+      "dhw_5km"
+    ],
+    "erddap-places:variable": [
+      "CRW_SST"
+    ],
+    "erddap-places:place_id": [
+      "NMS:FKNMS"
+    ],
+    "erddap-places:baselines": [
+      "1985-2005",
+      "2003-2012"
+    ],
+    "erddap-places:window_days": [
+      0
+    ]
+  },
+  "assets": {
+    "thumbnail": {
+      "href": "./climatology.thumb.png",
+      "type": "image/png",
+      "title": "NMS:FKNMS SST 1985-2005 mean for 08-15 (band 228)",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 13474,
+      "file:checksum": "12207d3f25b9117ba35a4e8e1c87e8cbc5c57ccfe3f324de5c34590e153dd1713c94"
+    }
+  },
+  "updated": "2026-10-07T22:00:54Z",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "related",
+      "href": "../erddap/dhw_5km/collection.json",
+      "type": "application/json",
+      "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW"
+    },
+    {
+      "rel": "related",
+      "href": "../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "rel": "related",
+      "href": "../rasters/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily rasters"
+    },
+    {
+      "rel": "related",
+      "href": "../series/collection.json",
+      "type": "application/json",
+      "title": "Then vs Now: daily area series"
+    },
+    {
+      "rel": "via",
+      "href": "https://coastwatch.noaa.gov/erddap/griddap/noaacrwsstDaily.html",
+      "type": "text/html",
+      "title": "source: noaacrwsstDaily (NOAA CoastWatch ERDDAP)"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_1985-2005.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_1985-2005"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS_2003-2012.json",
+      "type": "application/geo+json",
+      "title": "dhw_5km_CRW_SST_NMS-FKNMS_2003-2012"
+    }
+  ]
+}
