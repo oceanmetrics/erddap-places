@@ -1,13 +1,16 @@
 // the pure rules of the precompute: the request window, the chunking, the file/id naming, the
 // rendered SQL and the item geometry. everything here runs offline against tiny fixtures.
 import { describe, expect, it } from 'vitest'
-import { chunkDaysFor, chunks, fileSafe, itemId, statsHref, window } from './stats'
-import { buildCollection, buildItem, lobeBoxGeometry, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
+import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, statsHref, window } from './stats'
+import { buildCollection, buildItem, datasetProviders, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
+import { griddapUrl } from '../../app/src/lib/erddap'
+import { TARGETS, placesFor } from './targets'
 import { readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { render } from './sql'
 import { MAX_CHUNK_DAYS } from './targets'
+import { vi } from 'vitest'
 import type { TimeExtent } from '../../app/src/lib/extent'
 import type { Place } from '../../app/src/lib/gazetteer'
 import type { Provenance } from './stats'
@@ -23,6 +26,13 @@ describe('window', () => {
   it('never starts before a short dataset does', () => {
     expect(window(ext('2026-08-01T12:00:00Z', '2026-09-14T12:00:00Z'), 365))
       .toEqual({ start: '2026-08-01', end: '2026-09-14' })
+  })
+})
+
+describe('window: full record', () => {
+  it("'all' starts at the dataset's first time step", () => {
+    expect(window(ext('2002-07-31T00:00:00Z', '2023-12-31T00:00:00Z', 30.5), 'all'))
+      .toEqual({ start: '2002-07-31', end: '2023-12-31' })
   })
 })
 
@@ -52,6 +62,89 @@ describe('chunkDaysFor', () => {
   })
   it('counts an 8-day product in days, not steps', () => {
     expect(chunkDaysFor(250_000, 8)).toBe(64)                       // 8 steps x 8 days
+  })
+})
+
+describe('chunkDaysFor: monthly', () => {
+  it('counts up to MAX_CHUNK_DAYS time steps for a monthly product, not 90 days', () => {
+    expect(chunkDaysFor(100, 30)).toBe(MAX_CHUNK_DAYS * 30)         // 90 months in one request
+  })
+  it('still shrinks a monthly product under the row cap', () => {
+    expect(chunkDaysFor(100_000, 30)).toBe(600)                      // 20 steps x 30 days
+  })
+})
+
+describe('targets', () => {
+  const ids = ['MRGID:8439', 'NMS:CBNMS', 'NMS:PMNM', 'PSGID:939']
+  it("'nms' picks the NMS:* places only", () => {
+    expect(placesFor({ places: 'nms' }, ids)).toEqual(['NMS:CBNMS', 'NMS:PMNM'])
+    expect(placesFor({ places: 'all' }, ids)).toEqual(ids)
+    expect(placesFor({ places: ['PSGID:939'] }, ids)).toEqual(['PSGID:939'])
+  })
+  it('keeps the daily targets on the default window and runs the sanctuaries series over the full record', () => {
+    expect(TARGETS.find((t) => t.variable === 'CRW_SST')!.days).toBeUndefined()
+    const series = TARGETS.filter((t) => t.days === 'all')
+    expect(series.map((t) => t.variable).sort()).toEqual(
+      ['chl', 'dissic', 'fe', 'mlotst', 'no3', 'npp', 'nppv', 'o2', 'ph', 'phyc', 'po4', 'precipitation', 'si', 'so', 'spco2', 'tob', 'zooc'])
+    expect(series.every((t) => t.places === 'nms')).toBe(true)
+  })
+  it('targets no pending or known-NaN dataset, and every target names a real collection variable', () => {
+    for (const t of TARGETS) {
+      const ds = loadDataset(t.dataset)
+      expect(ds.status).toBeUndefined()
+      expect(ds.variables.map((v) => v.name)).toContain(t.variable)
+    }
+    expect(TARGETS.some((t) => t.dataset === 'CMEMS_PHY_MONTHLY')).toBe(false)
+  })
+})
+
+describe('depth: the surface slice of a 4-D CMEMS grid', () => {
+  it('reads erddap-places:depth and puts one depth constraint between time and latitude', () => {
+    const ds = loadDataset('cmems_biogeochem_phyto')
+    expect(ds.depth).toBeCloseTo(0.494, 3)
+    const url = griddapUrl({ base: ds.baseUrl, datasetId: ds.datasetId, variable: 'chl', time: ['a', 'b'],
+      lat: [31, 32], lon: [-81, -80], latDescending: ds.latDescending, depth: ds.depth, format: 'parquet' })
+    expect(url).toContain(`chl%5B(a):1:(b)%5D%5B(${ds.depth}):1:(${ds.depth})%5D%5B(31):1:(32)%5D`)
+  })
+  it('a 3-D grid has no depth', () => {
+    expect(loadDataset('cmems_biogeochem_co2').depth).toBeUndefined()
+    expect(loadDataset('dhw_5km').depth).toBeUndefined()
+  })
+})
+
+describe('liveExtent: retry, then fail soft', () => {
+  const ds = loadDataset('dhw_5km')
+  const info = { table: { columnNames: ['Row Type', 'Variable Name', 'Attribute Name', 'Data Type', 'Value'], rows: [
+    ['attribute', 'time', 'actual_range', 'double', '1.0E9, 1.1E9'],
+    ['dimension', 'time', '', 'double', 'nValues=10, evenlySpaced=true, averageSpacing=1 day'],
+  ] } }
+  const ok = () => new Response(JSON.stringify(info), { status: 200 })
+  const wait = vi.fn(async () => {})
+  const log = () => {}
+  it('survives two connect failures and returns the extent on the third try', async () => {
+    const fetchFn = vi.fn()
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockRejectedValueOnce(new TypeError('fetch failed'))
+      .mockResolvedValueOnce(ok())
+    const e = await liveExtent(ds, { fetchFn: fetchFn as any, wait, log })
+    expect(fetchFn).toHaveBeenCalledTimes(3)
+    expect(e.start).toBe('2001-09-09T01:46:40Z')
+    expect(e.stepLabel).toBe('daily')
+  })
+  it('gives up after the last attempt and lists every place of the target as failed', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new TypeError('fetch failed'))
+    const failed: string[] = ['earlier/x/NMS:A']
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const e = await extentOrSkip(ds, 'CRW_SST', ['NMS:CBNMS', 'NMS:PMNM'], failed, { fetchFn: fetchFn as any, wait, log })
+    err.mockRestore()
+    expect(e).toBeNull()
+    expect(fetchFn).toHaveBeenCalledTimes(3)
+    expect(failed).toEqual(['earlier/x/NMS:A', 'dhw_5km/CRW_SST/NMS:CBNMS', 'dhw_5km/CRW_SST/NMS:PMNM'])
+  })
+  it('does not retry a 404 (a wrong dataset id is not transient)', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(new Response('nope', { status: 404, statusText: 'Not Found' }))
+    await expect(liveExtent(ds, { fetchFn: fetchFn as any, wait, log })).rejects.toThrow(/404/)
+    expect(fetchFn).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -167,6 +260,23 @@ describe('buildCollection', () => {
     expect(col['table:columns']).toBe(DAILY_COLUMNS)
     expect(col.stac_extensions.join(' ')).toContain('table')
     expect(col.stac_extensions.join(' ')).not.toContain('datacube')
+  })
+})
+
+describe('partial runs keep the other items', () => {
+  const r = (dataset_id: string, variable: string, place_id: string) =>
+    ({ dataset_id, variable, place_id, start_datetime: '2025-01-01T00:00:00Z', end_datetime: '2025-12-01T00:00:00Z' })
+  it('adds the earlier items this run did not recompute, if they are still targets', () => {
+    const fresh   = [r('cmems_biogeochem_phyto', 'chl', 'NMS:CBNMS')]
+    const earlier = [r('cmems_biogeochem_phyto', 'chl', 'NMS:CBNMS'), r('dhw_5km', 'CRW_SST', 'NMS:CBNMS'), r('gone', 'x', 'NMS:CBNMS')]
+    const all = mergeItems(fresh, earlier, (d) => d !== 'gone')
+    expect(all.map((x) => `${x.dataset_id}/${x.variable}`)).toEqual(['cmems_biogeochem_phyto/chl', 'dhw_5km/CRW_SST'])
+  })
+  it('credits every source dataset producer, Ocean Metrics last as host', () => {
+    const p = datasetProviders(['dhw_5km', 'cmems_biogeochem_phyto', 'cmems_biogeochem_pp'])
+    expect(p.map((x) => x.name)).toEqual([
+      'NOAA Coral Reef Watch (CRW)', 'Copernicus Marine Service (CMEMS) / Mercator Ocean International', 'Ocean Metrics LLC'])
+    expect(p.at(-1)!.roles).toContain('host')
   })
 })
 

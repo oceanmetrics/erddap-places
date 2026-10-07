@@ -22,7 +22,7 @@ SELECT * FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/stats/dhw_
 ORDER BY date;
 ```
 
-The last 365 days, refreshed weekly, `place_id` colon and all. See [`stats/AGENTS.md`](stats/AGENTS.md).
+The last 365 days (the full record for the monthly sanctuaries series), refreshed weekly, `place_id` colon and all. See [`stats/AGENTS.md`](stats/AGENTS.md).
 
 ## 3. Fresh statistics for a place
 
@@ -43,6 +43,10 @@ Full walkthrough: [`erddap/AGENTS.md`](erddap/AGENTS.md).
 - [`erddap/dhw_5km/`](erddap/dhw_5km/) — NOAA Coral Reef Watch SST + DHW (live).
 - [`erddap/jplMURSST41/`](erddap/jplMURSST41/) — JPL MUR SST v4.1 (mirror not yet live; use the
   `griddap_upstream` asset).
+- `erddap/cmems_*`, `erddap/CMEMS_PHY_MONTHLY`, `erddap/IMERG_monthly_global_precip`,
+  `erddap/moda_npp_mo_glob` — USF IMaRS datasets re-served on erddap.oceanmetrics.io (monthly
+  CMEMS biogeochemistry/physics, precipitation, NPP); `erddap/jplMURSST41mday`,
+  `erddap/jplMURSST41anom1day` are pending. See [`erddap/README.md`](erddap/README.md).
 - [`stats/`](stats/) — precomputed place statistics (Parquet + STAC Items).
 
 ## License

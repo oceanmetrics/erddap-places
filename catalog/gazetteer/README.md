@@ -15,7 +15,8 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
 - [`erddap/jplMURSST41/`](erddap/jplMURSST41/collection.json) — JPL MUR SST v4.1, 0.01° daily
   (upstream NOAA CoastWatch is live; our re-serving mirror is not yet live).
 - [`stats/`](stats/collection.json) — **precomputed** statistics: one Parquet per (dataset,
-  variable, place) for the last 365 days, refreshed weekly, computed with exactly the mask and SQL
+  variable, place) for the last 365 days (the full record for the monthly sanctuaries series on the
+  18 NMS places), refreshed weekly, computed with exactly the mask and SQL
   the browser app runs live.
 
 ## How to read

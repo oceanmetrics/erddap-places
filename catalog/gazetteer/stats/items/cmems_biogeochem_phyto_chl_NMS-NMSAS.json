@@ -1,0 +1,187 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "cmems_biogeochem_phyto_chl_NMS-NMSAS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -171.1409031,
+            -15.3861496
+          ],
+          [
+            -167.2835263,
+            -15.3861496
+          ],
+          [
+            -167.2835263,
+            -10.9975996
+          ],
+          [
+            -171.1409031,
+            -10.9975996
+          ],
+          [
+            -171.1409031,
+            -15.3861496
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -171.1409031,
+    -15.3861496,
+    -167.2835263,
+    -10.9975996
+  ],
+  "properties": {
+    "title": "American Samoa National Marine Sanctuary — chl (cmems_biogeochem_phyto)",
+    "description": "Precomputed daily statistics of chl from CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton over American Samoa National Marine Sanctuary (NMS:NMSAS), 2021-10-16 to 2025-02-15.",
+    "datetime": null,
+    "start_datetime": "2021-10-16T12:00:00Z",
+    "end_datetime": "2025-02-15T00:00:00Z",
+    "created": "2026-10-07T17:33:56Z",
+    "table:row_count": 41,
+    "erddap-places:place_id": "NMS:NMSAS",
+    "erddap-places:dataset_id": "cmems_biogeochem_phyto",
+    "erddap-places:variable": "chl",
+    "erddap-places:categorical": false,
+    "erddap-places:mask_cells": 64,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/cmems_biogeochem_phyto.parquet?chl%5B(2021-10-16T12:00:00Z):1:(2025-02-15T00:00:00Z)%5D%5B(0.49402538):1:(0.49402538)%5D%5B(-15.5):1:(-11)%5D%5B(-171.25):1:(-167.25)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../cmems_biogeochem_phyto/chl/NMS:NMSAS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "chl statistics for American Samoa National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells with a non-null value on that day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "unweighted mean over the masked cells"
+        },
+        {
+          "name": "mean_wt",
+          "type": "double",
+          "description": "area-weighted mean (partial boundary cells count for their overlap)"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum"
+        },
+        {
+          "name": "p10",
+          "type": "double",
+          "description": "10th percentile (continuous)"
+        },
+        {
+          "name": "p90",
+          "type": "double",
+          "description": "90th percentile (continuous)"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the cell area weights contributing to the day"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 3880,
+      "file:checksum": "1220774f574b4433c4ef33a1d21e8c9fb837a4acf893e577b7ac40e22dfccab66c47"
+    },
+    "provenance": {
+      "href": "../../cmems_biogeochem_phyto/chl/NMS:NMSAS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 2639,
+      "file:checksum": "1220269b3537859879e1785689ffa8b327c0b1ec8904f649817708ef8b9c0439ba9d"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_biogeochem_phyto/index.html",
+      "title": "cmems_biogeochem_phyto (source, USF IMaRS ERDDAP)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

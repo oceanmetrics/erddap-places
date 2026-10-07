@@ -1,0 +1,407 @@
+{
+  "type": "Collection",
+  "id": "erddap/cmems_altimetry",
+  "stac_version": "1.1.0",
+  "description": "Two-dimensional daily-mean fields from the CMEMS global ocean physics analysis and forecast (1/12 degree): mixed layer depth (mlotst), sea bottom temperature (tob) and salinity (sob), sea surface height (zos), sea floor pressure (pbo) and sea ice variables. The re-served time axis is irregular (about every 2-3 days), not monthly. Hosted on the USF IMaRS ERDDAP (https://erddap.marine.usf.edu/erddap) and re-served with CORS and Parquet by erddap.oceanmetrics.io, referenced in place for computing place statistics in the browser via griddap.parquet.",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "via",
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_altimetry/index.html",
+      "type": "text/html",
+      "title": "cmems_altimetry (source, USF IMaRS ERDDAP)"
+    },
+    {
+      "rel": "about",
+      "href": "https://doi.org/10.48670/moi-00016",
+      "type": "text/html",
+      "title": "CMEMS GLOBAL_ANALYSISFORECAST_PHY_001_024"
+    },
+    {
+      "rel": "license",
+      "href": "https://marine.copernicus.eu/user-corner/service-commitments-and-licence",
+      "type": "text/html",
+      "title": "Copernicus Marine Service licence"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/datacube/v2.2.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "updated": "2026-10-07T00:00:00Z",
+  "title": "CMEMS Global Ocean Physics — 2-D fields (MLD, bottom T, SSH, sea ice)",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180,
+          -80,
+          179.9167,
+          90
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2022-06-01T12:00:00Z",
+          "2025-05-18T12:00:00Z"
+        ]
+      ]
+    }
+  },
+  "license": "other",
+  "providers": [
+    {
+      "name": "Copernicus Marine Service (CMEMS) / Mercator Ocean International",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://marine.copernicus.eu"
+    },
+    {
+      "name": "USF Institute for Marine Remote Sensing (IMaRS), source ERDDAP",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://erddap.marine.usf.edu/erddap"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "cube:dimensions": {
+    "time": {
+      "type": "temporal",
+      "description": "Time (hours since 1950-01-01)",
+      "extent": [
+        "2022-06-01T12:00:00Z",
+        "2025-05-18T12:00:00Z"
+      ],
+      "step": null
+    },
+    "latitude": {
+      "type": "spatial",
+      "axis": "y",
+      "description": "Latitude",
+      "extent": [
+        -80,
+        90
+      ],
+      "step": 0.083333,
+      "reference_system": 4326
+    },
+    "longitude": {
+      "type": "spatial",
+      "axis": "x",
+      "description": "Longitude",
+      "extent": [
+        -180,
+        179.9167
+      ],
+      "step": 0.083333,
+      "reference_system": 4326
+    }
+  },
+  "cube:variables": {
+    "sialb": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "percent",
+      "description": "Mean albedo over sea ice"
+    },
+    "siage": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "years",
+      "description": "Mean sea ice age"
+    },
+    "siconc": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "1",
+      "description": "Ice concentration"
+    },
+    "ist": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "degree_C",
+      "description": "sea ice surface temperature"
+    },
+    "sivelo": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m s-1",
+      "description": "Sea ice speed"
+    },
+    "sithick": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m",
+      "description": "Sea ice thickness"
+    },
+    "sisnthick": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m",
+      "description": "Surface snow thickness"
+    },
+    "mlotst": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m",
+      "description": "Mixed Layer Depth (|dT| = 0.01 wrt 10m)"
+    },
+    "pbo": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "dbar",
+      "description": "Sea Water Pressure at Sea Floor"
+    },
+    "sob": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "1e-3",
+      "description": "Sea bottom salinity"
+    },
+    "zos": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m",
+      "description": "Sea surface height"
+    },
+    "tob": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "degree_C",
+      "description": "Sea bottom temperature"
+    },
+    "usi": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m s-1",
+      "description": "Sea ice eastward velocity"
+    },
+    "vsi": {
+      "dimensions": [
+        "time",
+        "latitude",
+        "longitude"
+      ],
+      "type": "data",
+      "unit": "m s-1",
+      "description": "Sea ice northward velocity"
+    }
+  },
+  "erddap:base_url": "https://erddap.oceanmetrics.io/erddap",
+  "erddap:upstream_url": "https://erddap.marine.usf.edu/erddap",
+  "erddap:dataset_id": "cmems_altimetry",
+  "erddap:protocol": "griddap",
+  "erddap:version": "2.31.1",
+  "erddap:cors": true,
+  "erddap:formats": [
+    "parquet",
+    "csvp",
+    "json"
+  ],
+  "erddap:lon_range": [
+    -180,
+    179.9167
+  ],
+  "erddap:lat_descending": false,
+  "assets": {
+    "griddap": {
+      "href": "https://erddap.oceanmetrics.io/erddap/griddap/cmems_altimetry.parquet?{variable}[({t0}):1:({t1})][({lat_min}):1:({lat_max})][({lon_min}):1:({lon_max})]",
+      "type": "application/vnd.apache.parquet",
+      "title": "griddap query template (percent-encode each constraint separately); latitude ascends on this grid",
+      "roles": [
+        "data",
+        "external"
+      ],
+      "table:columns": [
+        {
+          "name": "time",
+          "type": "timestamp",
+          "description": "Time (hours since 1950-01-01)"
+        },
+        {
+          "name": "latitude",
+          "type": "double",
+          "description": "Latitude, degrees_north"
+        },
+        {
+          "name": "longitude",
+          "type": "double",
+          "description": "Longitude, degrees_east"
+        },
+        {
+          "name": "sialb",
+          "type": "double",
+          "description": "Mean albedo over sea ice, percent"
+        },
+        {
+          "name": "siage",
+          "type": "double",
+          "description": "Mean sea ice age, years"
+        },
+        {
+          "name": "siconc",
+          "type": "double",
+          "description": "Ice concentration, 1"
+        },
+        {
+          "name": "ist",
+          "type": "double",
+          "description": "sea ice surface temperature, degree_C"
+        },
+        {
+          "name": "sivelo",
+          "type": "double",
+          "description": "Sea ice speed, m s-1"
+        },
+        {
+          "name": "sithick",
+          "type": "double",
+          "description": "Sea ice thickness, m"
+        },
+        {
+          "name": "sisnthick",
+          "type": "double",
+          "description": "Surface snow thickness, m"
+        },
+        {
+          "name": "mlotst",
+          "type": "double",
+          "description": "Mixed Layer Depth (|dT| = 0.01 wrt 10m), m"
+        },
+        {
+          "name": "pbo",
+          "type": "double",
+          "description": "Sea Water Pressure at Sea Floor, dbar"
+        },
+        {
+          "name": "sob",
+          "type": "double",
+          "description": "Sea bottom salinity, 1e-3"
+        },
+        {
+          "name": "zos",
+          "type": "double",
+          "description": "Sea surface height, m"
+        },
+        {
+          "name": "tob",
+          "type": "double",
+          "description": "Sea bottom temperature, degree_C"
+        },
+        {
+          "name": "usi",
+          "type": "double",
+          "description": "Sea ice eastward velocity, m s-1"
+        },
+        {
+          "name": "vsi",
+          "type": "double",
+          "description": "Sea ice northward velocity, m s-1"
+        }
+      ]
+    },
+    "griddap_upstream": {
+      "href": "https://erddap.marine.usf.edu/erddap/griddap/cmems_altimetry.parquet?{variable}[({t0}):1:({t1})][({lat_min}):1:({lat_max})][({lon_min}):1:({lon_max})]",
+      "type": "application/vnd.apache.parquet",
+      "title": "griddap query template on the source USF IMaRS server",
+      "roles": [
+        "data",
+        "external"
+      ]
+    },
+    "metadata": {
+      "href": "https://erddap.oceanmetrics.io/erddap/info/cmems_altimetry/index.json",
+      "type": "application/json",
+      "title": "ERDDAP dataset metadata (info endpoint)",
+      "roles": [
+        "metadata",
+        "external"
+      ]
+    }
+  }
+}

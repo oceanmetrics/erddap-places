@@ -33,6 +33,10 @@ export interface Dataset {
   variables    : CubeVariable[]
   timeStep    ?: string           // e.g. P1D, P8D
   timeExtent  ?: [string | null, string | null]
+  /** `erddap-places:depth`: the depth level (m) to slice on a grid with a depth axis (the surface) */
+  depth       ?: number
+  /** `erddap-places:status`: 'pending' when the server does not serve it yet (list it, greyed out) */
+  status      ?: string
   format       : Format           // best format this server can serve us
   collection   : any              // the raw STAC Collection
 }
@@ -113,6 +117,9 @@ export function toDataset(c: any): Dataset {
     variables    : vars,
     timeStep     : time.step,
     timeExtent   : time.extent,
+    depth        : Number.isFinite(Number(c['erddap-places:depth'])) && c['erddap-places:depth'] != null
+                     ? Number(c['erddap-places:depth']) : undefined,
+    status       : c['erddap-places:status'] ?? undefined,
     format       : pickFormat({ erddap: { cors: c['erddap:cors'], formats: c['erddap:formats'] } }),
     collection   : c,
   }
@@ -137,4 +144,15 @@ export function toDatasetLon(lon: number, range: [number, number]): number {
   if (range[1] > 180 && lon < 0)  return lon + 360
   if (range[0] < 0   && lon > 180) return lon - 360
   return lon
+}
+
+/**
+ * A lobe's longitude span in the dataset's own frame, [min, max], clamped to `erddap:lon_range`:
+ * a lobe that runs to 180 on a grid ending at 179.75 (CMEMS 0.25°) would otherwise ask for a
+ * longitude past the axis maximum, which ERDDAP refuses (404).
+ */
+export function lobeLonSpan(bbox: [number, number, number, number] | number[], range: [number, number]): [number, number] {
+  const lo = toDatasetLon(bbox[0], range), hi = toDatasetLon(bbox[2], range)
+  const clamp = (x: number) => Math.min(Math.max(x, range[0]), range[1])
+  return [clamp(Math.min(lo, hi)), clamp(Math.max(lo, hi))]
 }

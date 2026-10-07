@@ -1,0 +1,187 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "cmems_biogeochem_phyto_phyc_NMS-MNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -75.4179214,
+            34.9982346
+          ],
+          [
+            -75.4012546,
+            34.9982346
+          ],
+          [
+            -75.4012546,
+            35.0149014
+          ],
+          [
+            -75.4179214,
+            35.0149014
+          ],
+          [
+            -75.4179214,
+            34.9982346
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -75.4179214,
+    34.9982346,
+    -75.4012546,
+    35.0149014
+  ],
+  "properties": {
+    "title": "Monitor National Marine Sanctuary — phyc (cmems_biogeochem_phyto)",
+    "description": "Precomputed daily statistics of phyc from CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton over Monitor National Marine Sanctuary (NMS:MNMS), 2021-10-16 to 2025-02-15.",
+    "datetime": null,
+    "start_datetime": "2021-10-16T12:00:00Z",
+    "end_datetime": "2025-02-15T00:00:00Z",
+    "created": "2026-10-07T19:22:51Z",
+    "table:row_count": 41,
+    "erddap-places:place_id": "NMS:MNMS",
+    "erddap-places:dataset_id": "cmems_biogeochem_phyto",
+    "erddap-places:variable": "phyc",
+    "erddap-places:categorical": false,
+    "erddap-places:mask_cells": 1,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/cmems_biogeochem_phyto.parquet?phyc%5B(2021-10-16T12:00:00Z):1:(2025-02-15T00:00:00Z)%5D%5B(0.49402538):1:(0.49402538)%5D%5B(35):1:(35)%5D%5B(-75.5):1:(-75.5)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../cmems_biogeochem_phyto/phyc/NMS:MNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "phyc statistics for Monitor National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells with a non-null value on that day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "unweighted mean over the masked cells"
+        },
+        {
+          "name": "mean_wt",
+          "type": "double",
+          "description": "area-weighted mean (partial boundary cells count for their overlap)"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum"
+        },
+        {
+          "name": "p10",
+          "type": "double",
+          "description": "10th percentile (continuous)"
+        },
+        {
+          "name": "p90",
+          "type": "double",
+          "description": "90th percentile (continuous)"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the cell area weights contributing to the day"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 3363,
+      "file:checksum": "1220e3fc5e72949f262cf6d47f68ad4861a7948d63029b1e5bcea8f8990eaae5224a"
+    },
+    "provenance": {
+      "href": "../../cmems_biogeochem_phyto/phyc/NMS:MNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 2641,
+      "file:checksum": "122045644fb761104b55cc8d7b67396dea0282f911c2146d0613b4ffdcf1d9aa8cd0"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_biogeochem_phyto/index.html",
+      "title": "cmems_biogeochem_phyto (source, USF IMaRS ERDDAP)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

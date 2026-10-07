@@ -8,7 +8,7 @@
   import { fetchAxis, fetchSlab, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
   import { gazetteerBase, loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
-  import { loadDatasets, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
+  import { loadDatasets, lobeLonSpan, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
   import MapView from './lib/MapView.svelte'
@@ -199,7 +199,7 @@
     try {
       const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
       places = ps; datasets = ds
-      if (!datasets.some((d) => d.id === dsId)) dsId = datasets[0]?.id ?? ''
+      if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
       pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
       status = `gazetteer: ${places.length} places, ${datasets.length} ERDDAP datasets (${gazetteerBase()})`
       await run()
@@ -297,10 +297,10 @@
           urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
           continue
         }
-        const lo = toDatasetLon(lobe.bbox[0], ds.lonRange), hi = toDatasetLon(lobe.bbox[2], ds.lonRange)
+        const [lo, hi] = lobeLonSpan(lobe.bbox, ds.lonRange)
         status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
         const [lonSrv, lat] = await Promise.all([
-          fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', Math.min(lo, hi), Math.max(lo, hi), false, h.signal),
+          fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false, h.signal),
           fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending, h.signal),
         ])
         if (h.stale()) return
@@ -315,7 +315,7 @@
           base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name,
           time: [timeInstant(start, ext, noonZ), timeInstant(end, ext, noonZ)],
           lat : [lat[lat.length - 1], lat[0]], lon: [lonSrv[0], lonSrv[lonSrv.length - 1]],
-          latDescending: ds.latDescending, format: ds.format,
+          latDescending: ds.latDescending, depth: ds.depth, format: ds.format,
         })
         status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
         const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
@@ -477,7 +477,7 @@
     </label>
     <label>dataset
       <select bind:value={dsId} disabled={!datasets.length}>
-        {#each datasets as d}<option value={d.id}>{d.title}</option>{/each}
+        {#each datasets as d}<option value={d.id} disabled={d.status === 'pending'}>{d.title}{d.status === 'pending' ? ' (pending: not served yet)' : ''}</option>{/each}
       </select>
     </label>
     {#if through}<span class="through">{through}</span>{/if}

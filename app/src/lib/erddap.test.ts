@@ -28,6 +28,14 @@ describe('griddapUrl', () => {
     const url = griddapUrl({ base: BASE, datasetId: 'd', variable: 'v', time: ['a', 'b'], lat: [1, 2], lon: [3, 4], latDescending: false })
     expect(url).toContain('%5B(1):1:(2)%5D%5B(3):1:(4)%5D')
   })
+  it('slices a single depth level between time and latitude on a 4-D grid', () => {
+    const url = griddapUrl({ base: BASE, datasetId: 'd', variable: 'chl', time: ['a', 'b'], lat: [1, 2], lon: [3, 4], latDescending: false, depth: 0.4940254 })
+    expect(url).toBe(BASE + '/griddap/d.parquet?chl%5B(a):1:(b)%5D%5B(0.4940254):1:(0.4940254)%5D%5B(1):1:(2)%5D%5B(3):1:(4)%5D')
+  })
+  it('adds no depth constraint to a 3-D grid', () => {
+    const url = griddapUrl({ base: BASE, datasetId: 'd', variable: 'v', time: ['a', 'b'], lat: [1, 2], lon: [3, 4], latDescending: false })
+    expect(url.match(/%5B/g)).toHaveLength(3)
+  })
   it('appends the jsonp callback and uses .json', () => {
     const url = griddapUrl({ base: BASE, datasetId: 'd', variable: 'v', time: ['a', 'b'], lat: [1, 2], lon: [3, 4], format: 'jsonp', callback: 'cb1' })
     expect(url).toContain('/griddap/d.json?')

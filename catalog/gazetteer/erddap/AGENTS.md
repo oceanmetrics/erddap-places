@@ -26,6 +26,20 @@ Guidance for AI agents and LLMs computing fresh place statistics from these ERDD
 `erddap:lat_descending` tells you whether to request `[(lat_max):1:(lat_min)]` (descending, as
 above) or `[(lat_min):1:(lat_max)]` (ascending) — get this backwards and ERDDAP returns an error.
 
+## `erddap-places:*` hints on a collection
+
+- `erddap-places:depth` (number, metres): the grid has a depth axis between time and latitude
+  (4-D: time, depth, latitude, longitude). Request that one level, the surface, as
+  `[(<depth>):1:(<depth>)]` right after the time constraint; the `griddap` template already has it
+  filled in. Absent on 3-D grids. The app and the precompute read it as `Dataset.depth`.
+- `erddap-places:status: "pending"`: the collection is described but `erddap:base_url` does not
+  serve it yet; the app lists it greyed out and the precompute never targets it. Absent = live.
+- `erddap-places:categorical` / `erddap-places:classes` (on a `cube:variables` entry) and
+  `erddap-places:long_format` (tabledap): see the dataset READMEs.
+
+Longitude requests are clamped to `erddap:lon_range`: a lobe ending at 180 on a grid ending at
+179.75 asks for 179.75 (ERDDAP refuses a value past the axis end on a coarse grid).
+
 ## Related
 
 See [`../AGENTS.md`](../AGENTS.md) for the "find a place" pattern.

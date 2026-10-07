@@ -1,0 +1,187 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "cmems_biogeochem_phyto_chl_NMS-GFNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -124.3335001,
+            37.49418
+          ],
+          [
+            -122.62793730000001,
+            37.49418
+          ],
+          [
+            -122.62793730000001,
+            39.0000019
+          ],
+          [
+            -124.3335001,
+            39.0000019
+          ],
+          [
+            -124.3335001,
+            37.49418
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -124.3335001,
+    37.49418,
+    -122.62793730000001,
+    39.0000019
+  ],
+  "properties": {
+    "title": "Greater Farallones National Marine Sanctuary — chl (cmems_biogeochem_phyto)",
+    "description": "Precomputed daily statistics of chl from CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton over Greater Farallones National Marine Sanctuary (NMS:GFNMS), 2021-10-16 to 2025-02-15.",
+    "datetime": null,
+    "start_datetime": "2021-10-16T12:00:00Z",
+    "end_datetime": "2025-02-15T00:00:00Z",
+    "created": "2026-10-07T17:34:18Z",
+    "table:row_count": 41,
+    "erddap-places:place_id": "NMS:GFNMS",
+    "erddap-places:dataset_id": "cmems_biogeochem_phyto",
+    "erddap-places:variable": "chl",
+    "erddap-places:categorical": false,
+    "erddap-places:mask_cells": 30,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/cmems_biogeochem_phyto.parquet?chl%5B(2021-10-16T12:00:00Z):1:(2025-02-15T00:00:00Z)%5D%5B(0.49402538):1:(0.49402538)%5D%5B(37.5):1:(39)%5D%5B(-124.25):1:(-122.75)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../cmems_biogeochem_phyto/chl/NMS:GFNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "chl statistics for Greater Farallones National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells with a non-null value on that day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "unweighted mean over the masked cells"
+        },
+        {
+          "name": "mean_wt",
+          "type": "double",
+          "description": "area-weighted mean (partial boundary cells count for their overlap)"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum"
+        },
+        {
+          "name": "p10",
+          "type": "double",
+          "description": "10th percentile (continuous)"
+        },
+        {
+          "name": "p90",
+          "type": "double",
+          "description": "90th percentile (continuous)"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the cell area weights contributing to the day"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 3937,
+      "file:checksum": "12208b11b0eb0032f7dd533192920c8937b35ea83de98c903f85641bbc23debe2375"
+    },
+    "provenance": {
+      "href": "../../cmems_biogeochem_phyto/chl/NMS:GFNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 2637,
+      "file:checksum": "1220c9921fc5149eb91d20b09bc1dad32450d773f9c3f7a474c7d6f0484acab47bb4"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_biogeochem_phyto/index.html",
+      "title": "cmems_biogeochem_phyto (source, USF IMaRS ERDDAP)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

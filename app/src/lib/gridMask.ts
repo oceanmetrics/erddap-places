@@ -187,6 +187,15 @@ function cellWeights(ps: Part[], inside: Set<number>, ax: Axis, ay: Axis): Map<n
       if (ii >= 0 && ii < ax.val.length && jj >= 0 && jj < ay.val.length) all.add(key(ii, jj))
     }
   }
+  // a polygon smaller than a cell can miss every cell centre (Gray's Reef on a 0.25° grid): then
+  // seed with the cells whose square overlaps a part's bbox, so it still gets its partial cells
+  if (!inside.size) for (const p of ps) {
+    const [px0, py0, px1, py1] = p.bbox
+    for (let i = 0; i < ax.val.length; i++) {
+      if (ax.hi[i] < px0 || ax.lo[i] > px1) continue
+      for (let j = 0; j < ay.val.length; j++) if (!(ay.hi[j] < py0 || ay.lo[j] > py1)) all.add(key(i, j))
+    }
+  }
   for (const k of all) {
     const i = Math.floor(k / 1e7), j = k - i * 1e7
     const x0 = ax.lo[i], x1 = ax.hi[i], y0 = ay.lo[j], y1 = ay.hi[j]

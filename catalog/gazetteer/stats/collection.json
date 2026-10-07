@@ -8,7 +8,7 @@
     "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
   ],
   "title": "Precomputed place statistics",
-  "description": "Precomputed statistics of ERDDAP grid variables over the gazetteer places: one Parquet file per (dataset, variable, place), covering the last 365 days (or the dataset's full extent if shorter). Each file is produced by exactly the code the browser app runs live — the place polygon masks the dataset's own grid (cell centre inside, partial-area weight on the boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a precomputed row and a live in-browser row agree. Use these when you want the answer now; run the live query when you want today.",
+  "description": "Precomputed statistics of ERDDAP grid variables over the gazetteer places: one Parquet file per (dataset, variable, place), covering the last 365 days (or the dataset's full extent if shorter) for the daily and 8-day grids, and the full record for the monthly sanctuaries series. Each file is produced by exactly the code the browser app runs live — the place polygon masks the dataset's own grid (cell centre inside, partial-area weight on the boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a precomputed row and a live in-browser row agree. Use these when you want the answer now; run the live query when you want today.",
   "license": "CC-BY-4.0",
   "keywords": [
     "statistics",
@@ -32,13 +32,21 @@
     "temporal": {
       "interval": [
         [
-          "2025-06-27T12:00:00Z",
+          "2021-10-16T12:00:00Z",
           "2026-09-14T12:00:00Z"
         ]
       ]
     }
   },
   "providers": [
+    {
+      "name": "Copernicus Marine Service (CMEMS) / Mercator Ocean International",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://marine.copernicus.eu"
+    },
     {
       "name": "NOAA Coral Reef Watch (CRW)",
       "roles": [
@@ -66,12 +74,15 @@
   ],
   "summaries": {
     "erddap-places:dataset_id": [
+      "cmems_biogeochem_phyto",
       "dhw_5km",
       "noaa_aoml_seascapes_8day"
     ],
     "erddap-places:variable": [
-      "CRW_SST",
+      "chl",
+      "phyc",
       "CRW_BAA",
+      "CRW_SST",
       "CLASS"
     ],
     "erddap-places:place_id": [
@@ -172,11 +183,11 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 1965,
-      "file:checksum": "1220e9fe8d206494ccf5ad690df2787aefcf0a1f7250ae0ec07d8f094147f5a7fd35"
+      "file:size": 1969,
+      "file:checksum": "1220476263b4338a220455cca5065dc9c1ef8d7608ce2737400dd248f86cbd4bd4f1"
     }
   },
-  "updated": "2026-09-15T21:42:28Z",
+  "updated": "2026-10-07T19:22:52Z",
   "links": [
     {
       "rel": "root",
@@ -203,6 +214,12 @@
     },
     {
       "rel": "related",
+      "href": "../erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "source dataset: cmems_biogeochem_phyto"
+    },
+    {
+      "rel": "related",
       "href": "../erddap/dhw_5km/collection.json",
       "type": "application/json",
       "title": "source dataset: dhw_5km"
@@ -220,6 +237,12 @@
       "title": "Places"
     },
     {
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_biogeochem_phyto/index.html",
+      "title": "cmems_biogeochem_phyto (source, USF IMaRS ERDDAP)",
+      "rel": "via",
+      "type": "text/html"
+    },
+    {
       "href": "https://pae-paha.pacioos.hawaii.edu/erddap/info/dhw_5km/index.html",
       "title": "NOAA Coral Reef Watch — Daily Global 5km SST + DHW",
       "rel": "via",
@@ -233,123 +256,219 @@
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_MRGID-8439.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-CBNMS.json",
       "type": "application/geo+json",
-      "title": "MRGID:8439 — CRW_SST"
+      "title": "NMS:CBNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-MNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:NMSAS — CRW_SST"
+      "title": "NMS:MNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS.json",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-CBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:CINMS — CRW_SST"
+      "title": "NMS:CBNMS — phyc"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-MNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:CHNMS — CRW_SST"
+      "title": "NMS:MNMS — phyc"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-CHNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:CBNMS — CRW_SST"
+      "title": "NMS:CHNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-CINMS.json",
       "type": "application/geo+json",
-      "title": "NMS:FKNMS — CRW_SST"
+      "title": "NMS:CINMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-FGBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:FGBNMS — CRW_SST"
+      "title": "NMS:FGBNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-FKNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:GRNMS — CRW_SST"
+      "title": "NMS:FKNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-GFNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:GFNMS — CRW_SST"
+      "title": "NMS:GFNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-GRNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:HIHWNMS — CRW_SST"
+      "title": "NMS:GRNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-LONMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-HIHWNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:LONMS — CRW_SST"
+      "title": "NMS:HIHWNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-MBPR.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-LONMS.json",
       "type": "application/geo+json",
-      "title": "NMS:MBPR — CRW_SST"
+      "title": "NMS:LONMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-MBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:MNMS — CRW_SST"
+      "title": "NMS:MBNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-MBPR.json",
       "type": "application/geo+json",
-      "title": "NMS:MBNMS — CRW_SST"
+      "title": "NMS:MBPR — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-NMSAS.json",
       "type": "application/geo+json",
-      "title": "NMS:OCNMS — CRW_SST"
+      "title": "NMS:NMSAS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-PMNM.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-OCNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:PMNM — CRW_SST"
+      "title": "NMS:OCNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-PMNM.json",
       "type": "application/geo+json",
-      "title": "NMS:SBNMS — CRW_SST"
+      "title": "NMS:PMNM — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-TBNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-SBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:TBNMS — CRW_SST"
+      "title": "NMS:SBNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_NMS-WSCNMS.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-TBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:WSCNMS — CRW_SST"
+      "title": "NMS:TBNMS — chl"
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_SST_PSGID-939.json",
+      "href": "./items/cmems_biogeochem_phyto_chl_NMS-WSCNMS.json",
       "type": "application/geo+json",
-      "title": "PSGID:939 — CRW_SST"
+      "title": "NMS:WSCNMS — chl"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-CHNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:CHNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-CINMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:CINMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-FGBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:FGBNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-FKNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:FKNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-GFNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:GFNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-GRNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:GRNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-HIHWNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:HIHWNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-LONMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:LONMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-MBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:MBNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-MBPR.json",
+      "type": "application/geo+json",
+      "title": "NMS:MBPR — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-NMSAS.json",
+      "type": "application/geo+json",
+      "title": "NMS:NMSAS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-OCNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:OCNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-PMNM.json",
+      "type": "application/geo+json",
+      "title": "NMS:PMNM — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-SBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:SBNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-TBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:TBNMS — phyc"
+    },
+    {
+      "rel": "item",
+      "href": "./items/cmems_biogeochem_phyto_phyc_NMS-WSCNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:WSCNMS — phyc"
     },
     {
       "rel": "item",
@@ -359,15 +478,9 @@
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-NMSAS.json",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-CBNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:NMSAS — CRW_BAA"
-    },
-    {
-      "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-CINMS.json",
-      "type": "application/geo+json",
-      "title": "NMS:CINMS — CRW_BAA"
+      "title": "NMS:CBNMS — CRW_BAA"
     },
     {
       "rel": "item",
@@ -377,15 +490,9 @@
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-CBNMS.json",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-CINMS.json",
       "type": "application/geo+json",
-      "title": "NMS:CBNMS — CRW_BAA"
-    },
-    {
-      "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-FKNMS.json",
-      "type": "application/geo+json",
-      "title": "NMS:FKNMS — CRW_BAA"
+      "title": "NMS:CINMS — CRW_BAA"
     },
     {
       "rel": "item",
@@ -395,15 +502,21 @@
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-GRNMS.json",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-FKNMS.json",
       "type": "application/geo+json",
-      "title": "NMS:GRNMS — CRW_BAA"
+      "title": "NMS:FKNMS — CRW_BAA"
     },
     {
       "rel": "item",
       "href": "./items/dhw_5km_CRW_BAA_NMS-GFNMS.json",
       "type": "application/geo+json",
       "title": "NMS:GFNMS — CRW_BAA"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-GRNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:GRNMS — CRW_BAA"
     },
     {
       "rel": "item",
@@ -419,6 +532,12 @@
     },
     {
       "rel": "item",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-MBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:MBNMS — CRW_BAA"
+    },
+    {
+      "rel": "item",
       "href": "./items/dhw_5km_CRW_BAA_NMS-MBPR.json",
       "type": "application/geo+json",
       "title": "NMS:MBPR — CRW_BAA"
@@ -431,9 +550,9 @@
     },
     {
       "rel": "item",
-      "href": "./items/dhw_5km_CRW_BAA_NMS-MBNMS.json",
+      "href": "./items/dhw_5km_CRW_BAA_NMS-NMSAS.json",
       "type": "application/geo+json",
-      "title": "NMS:MBNMS — CRW_BAA"
+      "title": "NMS:NMSAS — CRW_BAA"
     },
     {
       "rel": "item",
@@ -473,15 +592,129 @@
     },
     {
       "rel": "item",
-      "href": "./items/noaa_aoml_seascapes_8day_CLASS_NMS-FKNMS.json",
+      "href": "./items/dhw_5km_CRW_SST_MRGID-8439.json",
       "type": "application/geo+json",
-      "title": "NMS:FKNMS — CLASS"
+      "title": "MRGID:8439 — CRW_SST"
     },
     {
       "rel": "item",
-      "href": "./items/noaa_aoml_seascapes_8day_CLASS_PSGID-939.json",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CBNMS.json",
       "type": "application/geo+json",
-      "title": "PSGID:939 — CLASS"
+      "title": "NMS:CBNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CHNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:CHNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-CINMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:CINMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FGBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:FGBNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:FKNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GFNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:GFNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-GRNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:GRNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-HIHWNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:HIHWNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-LONMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:LONMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:MBNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MBPR.json",
+      "type": "application/geo+json",
+      "title": "NMS:MBPR — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-MNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:MNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-NMSAS.json",
+      "type": "application/geo+json",
+      "title": "NMS:NMSAS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-OCNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:OCNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-PMNM.json",
+      "type": "application/geo+json",
+      "title": "NMS:PMNM — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-SBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:SBNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-TBNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:TBNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_NMS-WSCNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:WSCNMS — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/dhw_5km_CRW_SST_PSGID-939.json",
+      "type": "application/geo+json",
+      "title": "PSGID:939 — CRW_SST"
+    },
+    {
+      "rel": "item",
+      "href": "./items/noaa_aoml_seascapes_8day_CLASS_NMS-FKNMS.json",
+      "type": "application/geo+json",
+      "title": "NMS:FKNMS — CLASS"
     },
     {
       "rel": "item",
@@ -500,6 +733,12 @@
       "href": "./items/noaa_aoml_seascapes_8day_CLASS_NMS-PMNM.json",
       "type": "application/geo+json",
       "title": "NMS:PMNM — CLASS"
+    },
+    {
+      "rel": "item",
+      "href": "./items/noaa_aoml_seascapes_8day_CLASS_PSGID-939.json",
+      "type": "application/geo+json",
+      "title": "PSGID:939 — CLASS"
     }
   ]
 }

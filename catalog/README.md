@@ -6,6 +6,10 @@
   git-ignored; delete a zip to re-download). Run with `Rscript catalog/build_places.R`, copy
   `places/places.{parquet,pmtiles}` into `gazetteer/places/`, then `portolan add places/` and
   `portolan version bump places <x.y.z>` from `gazetteer/`.
+- `build_erddap_collections.ts` — (re)generates the `gazetteer/erddap/<id>/` collections (plus
+  README/AGENTS and the `catalog.json` child links) for the datasets re-served from the USF IMaRS
+  ERDDAP, from each server's `info/<id>/index.json`. Run with
+  `cd precompute && npx tsx ../catalog/build_erddap_collections.ts [<id> ...]`.
 - `places/` — build output directory. `gazetteer/places/` is the published copy tracked by
   Portolan (currently synced by hand after each rebuild; not auto-linked).
 - `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` collections).
@@ -13,7 +17,8 @@
 
 ## Precomputed statistics (`gazetteer/stats/`)
 
-One Parquet per (ERDDAP dataset, variable, place) for the last 365 days, built by `../precompute/`
+One Parquet per (ERDDAP dataset, variable, place) for the last 365 days (full record for the monthly
+sanctuaries series), built by `../precompute/`
 with the browser app's own mask and SQL. See [`gazetteer/stats/README.md`](gazetteer/stats/README.md).
 
 ```bash

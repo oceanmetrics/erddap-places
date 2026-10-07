@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isCategorical, loadDatasets, statsTemplate, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
+import { isCategorical, lobeLonSpan, loadDatasets, statsTemplate, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
 
 const DIR = path.dirname(fileURLToPath(import.meta.url))
 const collection = (id: string) =>
@@ -37,6 +37,32 @@ describe('toDataset', () => {
     expect(d.baseUrl).toBe('https://erddap.oceanmetrics.io/erddap')
     expect(d.latDescending).toBe(false)
     expect(d.variables.map((v) => v.name)).toContain('analysed_sst')
+  })
+})
+
+describe('lobeLonSpan', () => {
+  it('clamps a lobe running to 180 to a grid ending at 179.75 (PMNM on CMEMS 0.25°)', () => {
+    expect(lobeLonSpan([177.84, 25, 180, 30], [-180, 179.75])).toEqual([177.84, 179.75])
+  })
+  it('leaves a lobe inside the grid alone, and shifts into a 0..360 frame', () => {
+    expect(lobeLonSpan([-81, 31, -80, 32], [-180, 180])).toEqual([-81, -80])
+    expect(lobeLonSpan([-81, 31, -80, 32], [0, 360])).toEqual([279, 280])
+  })
+})
+
+describe('erddap-places:depth / erddap-places:status', () => {
+  it('reads the surface depth of a 4-D CMEMS grid and none on a 3-D one', () => {
+    expect(toDataset(collection('cmems_biogeochem_nutrients')).depth).toBeCloseTo(0.494, 3)
+    expect(toDataset(collection('moda_npp_mo_glob')).depth).toBeUndefined()
+  })
+  it('flags the not-yet-served MUR products as pending, and live ones not', () => {
+    expect(toDataset(collection('jplMURSST41mday')).status).toBe('pending')
+    expect(toDataset(collection('jplMURSST41anom1day')).status).toBe('pending')
+    expect(toDataset(collection('cmems_biogeochem_phyto')).status).toBeUndefined()
+  })
+  it('reads the descending latitude of the NASA / OSU grids', () => {
+    expect(toDataset(collection('IMERG_monthly_global_precip')).latDescending).toBe(true)
+    expect(toDataset(collection('cmems_salinity')).latDescending).toBe(false)
   })
 })
 

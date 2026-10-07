@@ -54,6 +54,90 @@
     },
     {
       "rel": "child",
+      "href": "./erddap/CMEMS_PHY_MONTHLY/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Ocean Physics — surface salinity (known NaN)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_salinity/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Ocean Physics — monthly salinity (50 depths)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_nutrients/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly nutrients"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_pp/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly primary production + oxygen"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_carbon/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly carbonate system"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_co2/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly surface pCO2"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_zoo/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly zooplankton"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_biogeochem_optics/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly light attenuation (Kd)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/cmems_altimetry/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Ocean Physics — 2-D fields (MLD, bottom T, SSH, sea ice)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/IMERG_monthly_global_precip/collection.json",
+      "type": "application/json",
+      "title": "NASA GPM IMERG — monthly global precipitation"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/moda_npp_mo_glob/collection.json",
+      "type": "application/json",
+      "title": "MODIS-Aqua net primary productivity (VGPM) — monthly global 9 km"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/jplMURSST41mday/collection.json",
+      "type": "application/json",
+      "title": "JPL MUR SST v4.1 — monthly mean (pending)"
+    },
+    {
+      "rel": "child",
+      "href": "./erddap/jplMURSST41anom1day/collection.json",
+      "type": "application/json",
+      "title": "JPL MUR SST v4.1 — daily anomaly (pending)"
+    },
+    {
+      "rel": "child",
       "href": "./stats/collection.json",
       "type": "application/json",
       "title": "Precomputed place statistics"

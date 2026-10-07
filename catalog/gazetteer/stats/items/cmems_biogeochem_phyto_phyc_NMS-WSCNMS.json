@@ -1,0 +1,187 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "cmems_biogeochem_phyto_phyc_NMS-WSCNMS",
+  "collection": "stats",
+  "geometry": {
+    "type": "MultiPolygon",
+    "coordinates": [
+      [
+        [
+          [
+            -87.88778470000001,
+            43.3151851
+          ],
+          [
+            -87.3438818,
+            43.3151851
+          ],
+          [
+            -87.3438818,
+            44.352801
+          ],
+          [
+            -87.88778470000001,
+            44.352801
+          ],
+          [
+            -87.88778470000001,
+            43.3151851
+          ]
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -87.88778470000001,
+    43.3151851,
+    -87.3438818,
+    44.352801
+  ],
+  "properties": {
+    "title": "Wisconsin Shipwreck Coast National Marine Sanctuary — phyc (cmems_biogeochem_phyto)",
+    "description": "Precomputed daily statistics of phyc from CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton over Wisconsin Shipwreck Coast National Marine Sanctuary (NMS:WSCNMS), 2021-10-16 to 2025-02-15.",
+    "datetime": null,
+    "start_datetime": "2021-10-16T12:00:00Z",
+    "end_datetime": "2025-02-15T00:00:00Z",
+    "created": "2026-10-07T18:50:48Z",
+    "table:row_count": 0,
+    "erddap-places:place_id": "NMS:WSCNMS",
+    "erddap-places:dataset_id": "cmems_biogeochem_phyto",
+    "erddap-places:variable": "phyc",
+    "erddap-places:categorical": false,
+    "erddap-places:mask_cells": 11,
+    "erddap-places:lobes": 1,
+    "erddap-places:griddap_urls": [
+      "https://erddap.oceanmetrics.io/erddap/griddap/cmems_biogeochem_phyto.parquet?phyc%5B(2021-10-16T12:00:00Z):1:(2025-02-15T00:00:00Z)%5D%5B(0.49402538):1:(0.49402538)%5D%5B(43.25):1:(44.25)%5D%5B(-88):1:(-87.25)%5D"
+    ]
+  },
+  "assets": {
+    "data": {
+      "href": "../../cmems_biogeochem_phyto/phyc/NMS:WSCNMS.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "phyc statistics for Wisconsin Shipwreck Coast National Marine Sanctuary",
+      "roles": [
+        "data"
+      ],
+      "table:columns": [
+        {
+          "name": "date",
+          "type": "date",
+          "description": "UTC day of the time step"
+        },
+        {
+          "name": "n",
+          "type": "int64",
+          "description": "grid cells with a non-null value on that day"
+        },
+        {
+          "name": "mean",
+          "type": "double",
+          "description": "unweighted mean over the masked cells"
+        },
+        {
+          "name": "mean_wt",
+          "type": "double",
+          "description": "area-weighted mean (partial boundary cells count for their overlap)"
+        },
+        {
+          "name": "sd",
+          "type": "double",
+          "description": "sample standard deviation"
+        },
+        {
+          "name": "min",
+          "type": "double",
+          "description": "minimum"
+        },
+        {
+          "name": "max",
+          "type": "double",
+          "description": "maximum"
+        },
+        {
+          "name": "p10",
+          "type": "double",
+          "description": "10th percentile (continuous)"
+        },
+        {
+          "name": "p90",
+          "type": "double",
+          "description": "90th percentile (continuous)"
+        },
+        {
+          "name": "weight_sum",
+          "type": "double",
+          "description": "sum of the cell area weights contributing to the day"
+        },
+        {
+          "name": "place_id",
+          "type": "string",
+          "description": "gazetteer place id, e.g. NMS:HIHWNMS"
+        },
+        {
+          "name": "dataset_id",
+          "type": "string",
+          "description": "ERDDAP datasetID, e.g. dhw_5km"
+        },
+        {
+          "name": "variable",
+          "type": "string",
+          "description": "ERDDAP variable, e.g. CRW_SST"
+        }
+      ],
+      "file:size": 291,
+      "file:checksum": "12202e885e04b2785128f134150d0dffa6cadf33ba0fbaf2b29fe2d2ed95973c5d22"
+    },
+    "provenance": {
+      "href": "../../cmems_biogeochem_phyto/phyc/NMS:WSCNMS.provenance.json",
+      "type": "application/json",
+      "title": "the griddap URLs, mask size and SQL this file was built from",
+      "roles": [
+        "metadata"
+      ],
+      "file:size": 2651,
+      "file:checksum": "1220e868517fe1a1d18dd7db51ecfa0215febc71017ea73bf9dc09848e11685c9194"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "related",
+      "href": "../../erddap/cmems_biogeochem_phyto/collection.json",
+      "type": "application/json",
+      "title": "CMEMS Global Biogeochemistry — monthly chlorophyll + phytoplankton"
+    },
+    {
+      "rel": "related",
+      "href": "../../places/collection.json",
+      "type": "application/json",
+      "title": "Places"
+    },
+    {
+      "href": "https://erddap.marine.usf.edu/erddap/info/cmems_biogeochem_phyto/index.html",
+      "title": "cmems_biogeochem_phyto (source, USF IMaRS ERDDAP)",
+      "rel": "via",
+      "type": "text/html"
+    }
+  ]
+}

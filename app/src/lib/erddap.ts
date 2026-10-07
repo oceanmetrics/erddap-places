@@ -3,7 +3,8 @@
 // URL shape (griddap): {base}/griddap/{dataset}.{fmt}?{var}[(t0):1:(t1)][(lat0):1:(lat1)][(lon0):1:(lon1)]
 // each constraint's square brackets are percent-encoded (%5B / %5D); the rest of the query is left
 // literal, because ERDDAP will not accept a fully encoded query string. constraint values go in the
-// axis's own direction (latitude descends on the CRW grid, so [(22.4):1:(18.8)]).
+// axis's own direction (latitude descends on the CRW grid, so [(22.4):1:(18.8)]). a 4-D grid
+// (time, depth, latitude, longitude) gets one more constraint, a single depth level, after time.
 
 export type Format = 'parquet' | 'parquetWMeta' | 'csvp' | 'jsonp'
 /** the two Parquet rungs are handled identically once the bytes are in hand. */
@@ -20,6 +21,8 @@ export interface GriddapSpec {
   lat           : [number, number]  // [min, max], any order; reordered per latDescending
   lon           : [number, number]
   latDescending?: boolean
+  /** a depth axis between time and latitude (CMEMS): the single level to slice, e.g. 0.494 (surface) */
+  depth        ?: number
   format        ?: Format
   callback      ?: string           // jsonp only
 }
@@ -49,6 +52,7 @@ export function griddapUrl(s: GriddapSpec): string {
   const q =
     s.variable +
     constraint(s.time[0], s.time[1]) +
+    (s.depth != null && Number.isFinite(s.depth) ? constraint(s.depth, s.depth) : '') +
     (desc ? constraint(y1, y0) : constraint(y0, y1)) +
     constraint(x0, x1)
   const tail = fmt === 'jsonp' ? `&.jsonp=${s.callback ?? 'erddapCb'}` : ''

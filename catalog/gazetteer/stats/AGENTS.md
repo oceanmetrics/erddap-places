@@ -66,7 +66,8 @@ ORDER BY frac_area DESC;
 `mean` is over grid cells whose **centre** falls inside the polygon; `mean_wt` weights each cell by
 the fraction of its square the polygon covers, so a coastal place with many half-covered cells is
 not biased by them. Antimeridian places (`NMS:PMNM`) are fetched as two lobes and unioned before
-aggregation. The window is the last 365 days of the dataset's live extent, so `end_datetime` is the
+aggregation. The window is the last 365 days of the dataset's live extent (the full record for the monthly
+sanctuaries series), so `end_datetime` is the
 dataset's last time step at the weekly refresh, not today.
 
 ## Do not

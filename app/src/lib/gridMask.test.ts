@@ -86,6 +86,23 @@ describe('gridMask: weights', () => {
   }
 })
 
+describe('gridMask: a polygon smaller than one cell', () => {
+  // a 0.1° square inside one 0.25° cell, between the centres (the Gray's Reef case on CMEMS)
+  const sq: FeatureCollection = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {},
+    geometry: { type: 'Polygon', coordinates: [[[-80.95, 31.3], [-80.85, 31.3], [-80.85, 31.4], [-80.95, 31.4], [-80.95, 31.3]]] } }] }
+  const lon = [-81, -80.75], lat = [31.25, 31.5]
+  it('misses every centre, yet keeps the overlapped cells with their area fraction', () => {
+    const r = gridMask(sq, lon, lat)
+    expect(r.nInside).toBe(0)
+    expect(r.cells.length).toBeGreaterThan(0)
+    const sum = r.cells.reduce((s, c) => s + c.weight, 0)
+    expect(sum).toBeCloseTo(0.16, 2)                       // (0.1 x 0.1) / (0.25 x 0.25)
+  })
+  it('stays empty without weights (centre-inside only)', () => {
+    expect(gridMask(sq, lon, lat, { weights: false }).cells).toHaveLength(0)
+  })
+})
+
 describe('gridMask: auto method and axis order', () => {
   it('picks turf for a small place and scan for a big one', () => {
     expect(gridMask(fixture('HIHWNMS'), ...Object.values(crwAxes(fixture('HIHWNMS'))) as [number[], number[]], { weights: false }).method).toBe('scan') // HIHWNMS has > 5,000 vertices

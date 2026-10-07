@@ -1,7 +1,10 @@
 # Precomputed place statistics
 
 One Parquet file per (ERDDAP dataset, variable, gazetteer place), covering the **last 365 days**
-(or the dataset's full extent, if shorter). Published at
+(or the dataset's full extent, if shorter) for the daily / 8-day grids, and the **full record** for
+the monthly "sanctuaries series" (CMEMS biogeochemistry and physics, IMERG precipitation, VGPM NPP
+over the 18 `NMS:*` places; `days: 'all'` in `precompute/src/targets.ts`). Places outside an ocean
+model's domain (the Great Lakes, Mallows Bay) get a valid, empty file. Published at
 `https://storage.oceanmetrics.io/gazetteer/stats/`, refreshed weekly.
 
 These are the same numbers the [browser app](https://oceanmetrics.io/erddap-places/) computes live:

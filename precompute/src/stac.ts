@@ -1,7 +1,7 @@
 // the STAC side: catalog/gazetteer/stats/ — one Collection, one Item per (dataset, variable, place).
 import { createHash }                     from 'node:crypto'
 import { deflateSync }                    from 'node:zlib'
-import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { join, dirname }                  from 'node:path'
 import type { Place }                     from '../../app/src/lib/gazetteer'
 import { placeLobes, plainPlace }         from '../../app/src/lib/gazetteer'
@@ -80,6 +80,48 @@ export function datasetVia(datasetId: string): { href: string; title: string } |
   const c = JSON.parse(readFileSync(p, 'utf8'))
   const v = (c.links ?? []).find((l: any) => l.rel === 'via' && l.type === 'text/html')
   return v ? { href: v.href, title: v.title ?? datasetId } : null
+}
+
+/**
+ * The stats collection's providers: every producer / licensor of the source datasets' own
+ * collections (in dataset order, once each), then Ocean Metrics as processor + host.
+ */
+export function datasetProviders(datasetIds: string[]): Array<{ name: string; roles: string[]; url?: string }> {
+  const out = new Map<string, { name: string; roles: string[]; url?: string }>()
+  for (const d of datasetIds) {
+    const p = join(GAZETTEER, 'erddap', d, 'collection.json')
+    if (!existsSync(p)) continue
+    for (const pr of JSON.parse(readFileSync(p, 'utf8')).providers ?? []) {
+      const roles = (pr.roles ?? []).filter((r: string) => r === 'producer' || r === 'licensor')
+      if (!roles.length || /ocean metrics/i.test(pr.name) || out.has(pr.name)) continue
+      out.set(pr.name, { name: pr.name, roles, ...(pr.url ? { url: pr.url } : {}) })
+    }
+  }
+  return [...out.values(), { name: 'Ocean Metrics LLC', roles: ['processor', 'host'], url: 'https://oceanmetrics.io' }]
+}
+
+/** what buildCollection needs of an item: its identity and time span. */
+export type ItemRef = Pick<Provenance, 'place_id' | 'dataset_id' | 'variable' | 'start_datetime' | 'end_datetime'>
+
+/** the Items already in stats/items/ (from an earlier run), as ItemRefs. */
+export function existingItems(dir = join(STATS, 'items')): ItemRef[] {
+  if (!existsSync(dir)) return []
+  return readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => {
+    const pr = JSON.parse(readFileSync(join(dir, f), 'utf8')).properties ?? {}
+    return {
+      place_id: pr['erddap-places:place_id'], dataset_id: pr['erddap-places:dataset_id'],
+      variable: pr['erddap-places:variable'], start_datetime: pr.start_datetime, end_datetime: pr.end_datetime,
+    }
+  }).filter((r) => r.place_id && r.dataset_id && r.variable)
+}
+
+/** this run's items, plus the earlier items it did not recompute that `keep` accepts. */
+export function mergeItems(fresh: ItemRef[], earlier: ItemRef[], keep: (dataset: string, variable: string) => boolean): ItemRef[] {
+  const key  = (r: ItemRef) => itemId(r.dataset_id, r.variable, r.place_id)
+  const seen = new Set(fresh.map(key))
+  const kept = earlier.filter((r) => !seen.has(key(r)) && keep(r.dataset_id, r.variable))
+    .sort((a, b) => key(a).localeCompare(key(b)))
+  return [...fresh, ...kept]
 }
 
 // ── thumbnail ─────────────────────────────────────────────────────────────────
@@ -207,7 +249,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
 }
 
 // ── collection ────────────────────────────────────────────────────────────────
-export function buildCollection(provs: Provenance[], places: Map<string, Place>) {
+export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
   const boxes = provs.map((p) => places.get(p.place_id)!.bbox)
   const bbox  = [
     Math.min(...boxes.map((b) => b[0])), Math.min(...boxes.map((b) => b[1])),
@@ -225,7 +267,7 @@ export function buildCollection(provs: Provenance[], places: Map<string, Place>)
     description :
       'Precomputed statistics of ERDDAP grid variables over the gazetteer places: one Parquet file ' +
       'per (dataset, variable, place), covering the last 365 days (or the dataset\'s full extent if ' +
-      'shorter). Each file is produced by exactly the code the browser app runs live — the place ' +
+      'shorter) for the daily and 8-day grids, and the full record for the monthly sanctuaries series. Each file is produced by exactly the code the browser app runs live — the place ' +
       'polygon masks the dataset\'s own grid (cell centre inside, partial-area weight on the ' +
       'boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a ' +
       'precomputed row and a live in-browser row agree. Use these when you want the answer now; run ' +
@@ -237,11 +279,7 @@ export function buildCollection(provs: Provenance[], places: Map<string, Place>)
       temporal: { interval: [[start, end]] },
     },
     // the host provider must be last (PTL-PRV-002)
-    providers: [
-      { name: 'NOAA Coral Reef Watch (CRW)', roles: ['producer', 'licensor'], url: 'https://coralreefwatch.noaa.gov' },
-      { name: 'NOAA Atlantic Oceanographic and Meteorological Laboratory (AOML)', roles: ['producer', 'licensor'], url: 'https://www.aoml.noaa.gov' },
-      { name: 'Ocean Metrics LLC', roles: ['processor', 'host'], url: 'https://oceanmetrics.io' },
-    ],
+    providers: datasetProviders(datasets),
     summaries: {
       'erddap-places:dataset_id': datasets,
       'erddap-places:variable'  : [...new Set(provs.map((p) => p.variable))],
@@ -287,14 +325,19 @@ const writeJson = (path: string, o: unknown) => {
   writeFileSync(path, JSON.stringify(o, null, 2) + '\n')
 }
 
-export function writeStac(provs: Provenance[], places: Map<string, Place>, titles: Map<string, string>) {
+export function writeStac(
+  provs: Provenance[], places: Map<string, Place>, titles: Map<string, string>,
+  keep: (dataset: string, variable: string) => boolean = () => false,
+) {
+  // the items written now, then the earlier ones a partial run (--dataset / --place) did not touch
+  const all = mergeItems(provs, existingItems(), keep).filter((r) => places.has(r.place_id))
   // the thumbnail first: the collection records its size and checksum
-  writeThumbnail(join(STATS, THUMB), [...new Set(provs.map((p) => p.place_id))].map((id) => places.get(id)!))
+  writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))
   for (const p of provs) {
     const item = buildItem(p, places.get(p.place_id)!, titles.get(p.dataset_id) ?? p.dataset_id)
     writeJson(join(STATS, 'items', `${item.id}.json`), item)
   }
-  writeJson(join(STATS, 'collection.json'), buildCollection(provs, places))
+  writeJson(join(STATS, 'collection.json'), buildCollection(all, places))
   linkFromCatalog()
 }
 

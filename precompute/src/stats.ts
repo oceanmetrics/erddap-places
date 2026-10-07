@@ -16,7 +16,7 @@ import { gridMask, type MaskCell }            from '../../app/src/lib/gridMask'
 import { fetchAxis, griddapUrl, noonZ }       from '../../app/src/lib/erddap'
 import { placeLobes, plainPlace, loadPlaces } from '../../app/src/lib/gazetteer'
 import type { Lobe, Place }                   from '../../app/src/lib/gazetteer'
-import { toDataset, toDatasetLon, valueExpr, statsTemplate } from '../../app/src/lib/catalog'
+import { lobeLonSpan, toDataset, toDatasetLon, valueExpr, statsTemplate } from '../../app/src/lib/catalog'
 import type { CubeVariable, Dataset }         from '../../app/src/lib/catalog'
 import { addDays, day, daysBetween, parseInfoExtent, timeInstant } from '../../app/src/lib/extent'
 import type { TimeExtent }                    from '../../app/src/lib/extent'
@@ -57,19 +57,65 @@ export function variableOf(ds: Dataset, name: string): CubeVariable {
   return v
 }
 
-/** the live time extent, straight from `<base>/info/<id>/index.json` (never the possibly-stale STAC one). */
-export async function liveExtent(ds: Dataset): Promise<TimeExtent> {
+/** retry settings for the extent probe: attempts, and the pause before each retry (ms). */
+export const EXTENT_ATTEMPTS = 3
+export const EXTENT_BACKOFF_MS = [5_000, 20_000]
+
+/**
+ * The live time extent, straight from `<base>/info/<id>/index.json` (never the possibly-stale STAC
+ * one). A network error or a 5xx is retried (EXTENT_ATTEMPTS, backing off EXTENT_BACKOFF_MS): CI saw
+ * a transient 10 s connect timeout to PacIOOS abort a whole run. `fetchFn` / `wait` are for tests.
+ */
+export async function liveExtent(
+  ds: Dataset,
+  { fetchFn = fetch, wait = sleep, attempts = EXTENT_ATTEMPTS, log = console.log }:
+    { fetchFn?: typeof fetch; wait?: (ms: number) => Promise<unknown>; attempts?: number; log?: (s: string) => void } = {},
+): Promise<TimeExtent> {
   const url = `${ds.baseUrl.replace(/\/+$/, '')}/info/${ds.datasetId}/index.json`
-  const res = await fetch(url, { signal: AbortSignal.timeout(120_000) })
-  if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
-  const ext = parseInfoExtent(await res.json())
-  if (!ext) throw new Error(`${url}: no time extent in the info table`)
-  return ext
+  let last: unknown
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) {
+      const ms = EXTENT_BACKOFF_MS[Math.min(i - 1, EXTENT_BACKOFF_MS.length - 1)]
+      log(`   extent probe failed (${errText(last)}); retry ${i}/${attempts - 1} in ${ms / 1000} s`)
+      await wait(ms)
+    }
+    let res: Response
+    try { res = await fetchFn(url, { signal: AbortSignal.timeout(120_000) }) }
+    catch (e) { last = e; continue }                                   // network: retry
+    if (res.status >= 500) { last = new Error(`${url}: ${res.status} ${res.statusText}`); continue }
+    if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
+    const ext = parseInfoExtent(await res.json())
+    if (!ext) throw new Error(`${url}: no time extent in the info table`)
+    return ext
+  }
+  throw new Error(`${url}: extent probe failed ${attempts} times: ${errText(last)}`)
+}
+const errText = (e: unknown) => {
+  if (!(e instanceof Error)) return String(e)
+  const cause = (e as any).cause
+  return cause instanceof Error ? `${e.message} (${cause.message})` : e.message
 }
 
-/** the last DAYS days of the dataset, or its full extent when that is shorter. */
-export function window(ext: TimeExtent, days = DAYS): { start: string; end: string } {
+/**
+ * liveExtent(), fail-soft: on failure log it, add every `dataset/variable/place` of this target to
+ * `failed` and return null, so the caller moves on to the next target instead of aborting the run.
+ */
+export async function extentOrSkip(
+  ds: Dataset, variable: string, placeIds: string[], failed: string[],
+  opts: Parameters<typeof liveExtent>[1] = {},
+): Promise<TimeExtent | null> {
+  try { return await liveExtent(ds, opts) }
+  catch (e) {
+    console.error(`   !! ${ds.datasetId}: ${errText(e)}; skipping its ${placeIds.length} place(s)`)
+    for (const id of placeIds) failed.push(`${ds.datasetId}/${variable}/${id}`)
+    return null
+  }
+}
+
+/** the last DAYS days of the dataset, or its full extent when that is shorter (or `days` is 'all'). */
+export function window(ext: TimeExtent, days: number | 'all' = DAYS): { start: string; end: string } {
   const end = day(ext.end)
+  if (days === 'all' || !Number.isFinite(days)) return { start: day(ext.start), end }
   let start = addDays(end, -(days - 1))
   if (daysBetween(day(ext.start), start) < 0) start = day(ext.start)
   return { start, end }
@@ -87,11 +133,17 @@ export function chunks(start: string, end: string, chunkDays: number): Array<[st
   return out
 }
 
-/** days per request: MAX_CHUNK_DAYS, shrunk so one slab stays under MAX_CHUNK_ROWS grid rows. */
+/**
+ * days per request: MAX_CHUNK_DAYS time steps (90 days of a daily grid; a coarser grid's steps are
+ * counted in its own days, so a monthly product asks for up to 90 months at once), shrunk so one slab
+ * stays under MAX_CHUNK_ROWS grid rows.
+ */
 export function chunkDaysFor(cellsPerStep: number, stepDays = 1): number {
-  if (!(cellsPerStep > 0)) return MAX_CHUNK_DAYS
+  const sd  = Math.max(1, stepDays)
+  const cap = Math.floor(MAX_CHUNK_DAYS * sd)
+  if (!(cellsPerStep > 0)) return cap
   const steps = Math.max(1, Math.floor(MAX_CHUNK_ROWS / cellsPerStep))
-  return Math.max(1, Math.min(MAX_CHUNK_DAYS, Math.floor(steps * Math.max(1, stepDays))))
+  return Math.max(1, Math.min(cap, Math.floor(steps * sd)))
 }
 
 // ── the mask, per lobe ────────────────────────────────────────────────────────
@@ -101,9 +153,9 @@ export interface LobeMask { lobe: Lobe; cells: MaskCell[]; lon: number[]; lat: n
 export async function maskLobe(ds: Dataset, lobe: Lobe): Promise<LobeMask> {
   const shifted = ds.lonRange[1] > 180                       // dataset longitudes run 0..360
   const toPoly  = (x: number) => (shifted && x > 180 ? x - 360 : x)
-  const lo = toDatasetLon(lobe.bbox[0], ds.lonRange), hi = toDatasetLon(lobe.bbox[2], ds.lonRange)
+  const [lo, hi] = lobeLonSpan(lobe.bbox, ds.lonRange)
   const [lon, lat] = [
-    await fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', Math.min(lo, hi), Math.max(lo, hi), false),
+    await fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false),
     await fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending),
   ]
   const m = gridMask(lobe.geojson, lon.map(toPoly), lat)
@@ -195,7 +247,7 @@ export interface Provenance {
 }
 
 export async function computeOne(
-  ds: Dataset, v: CubeVariable, place: Place, ext: TimeExtent, days = DAYS, log = console.log,
+  ds: Dataset, v: CubeVariable, place: Place, ext: TimeExtent, days: number | 'all' = DAYS, log = console.log,
 ): Promise<Provenance> {
   const t0    = Date.now()
   const win   = window(ext, days)
@@ -222,7 +274,7 @@ export async function computeOne(
         base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name,
         time: [timeInstant(s, ext, noonZ), timeInstant(e, ext, noonZ)],
         lat : [m.lat[m.lat.length - 1], m.lat[0]], lon: [m.lon[0], m.lon[m.lon.length - 1]],
-        latDescending: ds.latDescending, format: 'parquet',
+        latDescending: ds.latDescending, depth: ds.depth, format: 'parquet',
       })
       const file = join(CACHE, ds.datasetId, v.name, fileSafe(place.place_id), `lobe${i}_${s}_${e}.parquet`)
       urls.push(url); files.push(file)
