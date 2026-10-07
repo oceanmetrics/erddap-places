@@ -1,11 +1,15 @@
 // the then-now view in the URL hash, like the rest of the app:
 //
-//   #mode=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0
+//   #lens=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0
 //
+// (written `lens=then-now` since the lenses share one page; the older `mode=then-now` still reads,
+// and the shell rewrites it on load: see ../view.ts)
 // `then` is a published climatology baseline (`1985-2005`, `2003-2012`) or any custom `y0-y1`
 // range (averaged in the browser); `now` is `latest` (the newest year in the archive) or a year.
 
 export const MODE = 'then-now'
+/** the hash key that names the lens (`mode` before 2026-10, still read) */
+export const LENS_KEY = 'lens'
 export const BASELINES = ['1985-2005', '2003-2012'] as const
 
 export interface ThenNowState {
@@ -32,7 +36,8 @@ export function isThenNowHash(hash: string): boolean {
   const h = String(hash ?? '')
   const i = h.indexOf('#')
   if (i < 0) return false
-  return new URLSearchParams(h.slice(i + 1)).get('mode') === MODE
+  const p = new URLSearchParams(h.slice(i + 1))
+  return (p.get(LENS_KEY) ?? p.get('mode')) === MODE
 }
 
 /** `1985-2005` -> [1985, 2005]; null for anything that is not an ordered pair of years. */
@@ -48,7 +53,7 @@ export const isBaseline = (then: string, baselines: readonly string[] = BASELINE
 
 export function encodeThenNow(s: ThenNowState): string {
   const p = new URLSearchParams()
-  p.set('mode', MODE)
+  p.set(LENS_KEY, MODE)
   p.set('place', s.place)
   if (s.dataset !== DEFAULTS.dataset) p.set('dataset', s.dataset)
   p.set('variable', s.variable)

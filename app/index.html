@@ -3,7 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>erddap-places — place statistics from ERDDAP, in the browser</title>
+    <title>erddap-places — place statistics from ERDDAP, in your browser · MBON</title>
+    <script>
+      // the theme before first paint (?theme= > stored choice > system), as @marinebon/ui's initTheme() decides
+      (function () {
+        var q = new URLSearchParams(location.search).get('theme'), s = null;
+        try { s = localStorage.getItem('mbon-theme'); } catch (e) {}
+        document.documentElement.dataset.theme = q === 'dark' || q === 'light' ? q
+          : s === 'dark' || s === 'light' ? s
+          : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

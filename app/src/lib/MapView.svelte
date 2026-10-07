@@ -5,6 +5,30 @@
     'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}'
   export const OCEAN_ATTRIBUTION =
     'Tiles &copy; Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others'
+  // the dark theme's basemap: Esri's keyless Dark Gray Canvas base, same tile scheme
+  export const DARK_TILES =
+    'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+  export const DARK_ATTRIBUTION = 'Tiles &copy; Esri — Esri, HERE, Garmin, FAO, NOAA, USGS'
+
+  /** both basemaps as raster sources + layers; the theme decides which one is visible. */
+  export function basemapStyle(dark: boolean): Pick<import('maplibre-gl').StyleSpecification, 'sources' | 'layers'> {
+    return {
+      sources: {
+        ocean: { type: 'raster', tiles: [OCEAN_TILES], tileSize: 256, maxzoom: 13, attribution: OCEAN_ATTRIBUTION },
+        dark : { type: 'raster', tiles: [DARK_TILES],  tileSize: 256, maxzoom: 16, attribution: DARK_ATTRIBUTION },
+      },
+      layers: [
+        { id: 'ocean', type: 'raster', source: 'ocean', layout: { visibility: dark ? 'none' : 'visible' } },
+        { id: 'dark',  type: 'raster', source: 'dark',  layout: { visibility: dark ? 'visible' : 'none' } },
+      ],
+    }
+  }
+  /** show the basemap of a theme on a live map (a no-op until its style has the two layers). */
+  export function setBasemap(map: { getLayer(id: string): unknown; setLayoutProperty(id: string, k: string, v: unknown): unknown } | null | undefined, dark: boolean) {
+    if (!map?.getLayer('ocean') || !map.getLayer('dark')) return
+    map.setLayoutProperty('ocean', 'visibility', dark ? 'none' : 'visible')
+    map.setLayoutProperty('dark', 'visibility', dark ? 'visible' : 'none')
+  }
 </script>
 
 <script lang="ts">
@@ -15,7 +39,8 @@
   // basemap: Esri's World Ocean Base raster tiles, which need no key and no account, with their
   // attribution. no geometry ever comes through this component as deep $state — App.svelte passes
   // the squares as a plain object built by cells.ts.
-  import { CircleLayer, FillLayer, GeoJSON, LineLayer, MapLibre, Popup, VectorTileSource } from 'svelte-maplibre'
+  import { CircleLayer, FillLayer, FullscreenControl, GeoJSON, LineLayer, MapLibre, NavigationControl, Popup, ScaleControl, VectorTileSource } from 'svelte-maplibre'
+  import { untrack } from 'svelte'
   import maplibregl, { LngLatBounds, type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl'
   import { Protocol } from 'pmtiles'
   import type { FeatureCollection } from 'geojson'
@@ -39,9 +64,12 @@
     valueLabel?: string
     /** how the hover popup renders a value (a class label, or a number with units) */
     valueText ?: (v: number) => string
-    /** the date of the drawn time step, for the corner caption */
-    stepDate  ?: string
-    legend    ?: { label: string; color: string }[]
+    /** room to leave around a fitted place (the panes float over the map), read once at mount */
+    padding   ?: number | { top: number; bottom: number; left: number; right: number }
+    /** the dark theme's basemap instead of the ocean one */
+    dark      ?: boolean
+    /** the map instance, once it exists (for the PNG of the view) */
+    onmap     ?: (map: maplibregl.Map) => void
     /** what the hover popup calls the weight (the area weight of a cell, the n behind a station) */
     weightLabel?: string
     weightText ?: (v: number) => string
@@ -49,7 +77,7 @@
   let {
     pmtilesUrl, placeId, onselect, bounds = null, squares = null, points = null,
     fillColor = '#1f77b4', valueLabel = 'value', valueText = (v: number) => String(v),
-    stepDate = '', legend = [], weightLabel = 'area weight',
+    dark = false, onmap, padding = 30, weightLabel = 'area weight',
     weightText = (v: number) => v.toFixed(3),
   }: Props = $props()
 
@@ -60,19 +88,8 @@
     ;(globalThis as any).__pmtilesProtocol = protocol
   }
 
-  const style: StyleSpecification = {
-    version: 8,
-    sources: {
-      ocean: {
-        type       : 'raster',
-        tiles      : [OCEAN_TILES],
-        tileSize   : 256,
-        maxzoom    : 13,
-        attribution: OCEAN_ATTRIBUTION,
-      },
-    },
-    layers: [{ id: 'ocean', type: 'raster', source: 'ocean' }],
-  }
+  // the style is built once (the theme at mount); a theme change flips the two basemap layers
+  const style: StyleSpecification = { version: 8, ...basemapStyle(untrack(() => dark)) }
 
   let map = $state.raw<maplibregl.Map | undefined>(undefined)
   const src = $derived(`pmtiles://${pmtilesUrl}`)
@@ -91,7 +108,7 @@
    * wraps longitudes, so it settles after one fit and handles an east-of-180 box (PMNM) too.
    */
   let view = $state.raw<LngLatBoundsLike | undefined>(undefined)
-  const fitBoundsOptions = { padding: 30, maxZoom: 11 }
+  const fitBoundsOptions = { padding: untrack(() => padding), maxZoom: 11 }
   const fittable = (b: typeof bounds): b is [number, number, number, number] =>
     !!b && b[2] > b[0] && b[3] > b[1]
   // this effect writes `view` but never reads it: the map's own write-back cannot restart it
@@ -111,7 +128,10 @@
    * an effect, and it runs once, so nothing reads what it writes.
    */
   let refitted = false
+  // the theme switches the basemap in place: no setStyle, so the place and cell layers stay put
+  $effect(() => { const d = dark, m = map; if (m) setBasemap(m, d) })
   function onload() {
+    if (map) { setBasemap(map, dark); onmap?.(map) }
     if (refitted) return
     refitted = true
     const b = bounds
@@ -134,7 +154,11 @@
 
 <div class="map">
   <MapLibre {style} bind:map bind:bounds={view} {fitBoundsOptions} {onload} class="ml"
-            standardControls attributionControl={{ compact: true }}>
+            attributionControl={{ compact: true }}>
+    <!-- one row of map buttons at the top right; the title and the legend live in the sentence -->
+    <NavigationControl position="top-right" />
+    <FullscreenControl position="top-right" />
+    <ScaleControl position="bottom-left" />
     <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
       <!-- every place, outlined; clicking anywhere in one selects it in the picker -->
       <FillLayer
@@ -175,28 +199,12 @@
       </GeoJSON>
     {/if}
   </MapLibre>
-
-  {#if stepDate}
-    <div class="caption">{valueLabel} — {stepDate}</div>
-  {/if}
-  {#if legend.length}
-    <div class="legend">
-      {#each legend as l}<span class="key"><i style="background:{l.color}"></i>{l.label}</span>{/each}
-    </div>
-  {/if}
 </div>
 
 <style>
-  .map    { position: relative; height: 420px; width: 100%; margin: 1rem 0; border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
+  /* the map is the page: it fills whatever positioned box the lens gives it */
+  .map    { position: absolute; inset: 0; }
   .map :global(.ml) { height: 100%; width: 100%; }
-  .caption { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,.88); padding: 2px 6px;
-             font: 12px system-ui, sans-serif; border-radius: 3px; pointer-events: none; }
-  .legend { position: absolute; bottom: 8px; left: 8px; max-width: 70%; background: rgba(255,255,255,.88);
-            padding: 3px 6px; border-radius: 3px; font: 11px system-ui, sans-serif; pointer-events: none;
-            display: flex; flex-wrap: wrap; gap: 2px 8px; }
-  .key    { display: inline-flex; align-items: center; gap: 4px; }
-  .key i  { width: 10px; height: 10px; display: inline-block; border: 1px solid #999; }
-  .pop    { font: 12px/1.4 system-ui, sans-serif; }
-  .ll     { color: #666; }
-  @media (max-width: 640px) { .map { height: 300px; } }
+  .pop    { font: 12px/1.4 var(--font-sans); color: #0f2230; }
+  .ll     { color: #44606e; font-family: var(--font-mono); }
 </style>

@@ -51,7 +51,8 @@ describe('then-now URL state', () => {
     const s: ThenNowState = { place: 'NMS:FKNMS', dataset: 'dhw_5km', variable: 'CRW_SST', md: '02-29',
       then: '1990-1999', now: 2023, swipe: 0.25, anom: true, pal: 'viridis', data: '' }
     const h = encodeThenNow(s)
-    expect(h).toContain('mode=then-now')
+    expect(h).toContain('lens=then-now')
+    expect(h).not.toContain('mode=')
     expect(h).toContain('place=NMS:FKNMS')            // colon kept literal, like the run permalink
     expect(isThenNowHash(h)).toBe(true)
     expect(decodeThenNow(h)).toEqual(s)
@@ -66,6 +67,9 @@ describe('then-now URL state', () => {
     expect(decodeThenNow('#mode=then-now&then=2005-1985').then).toBe(DEFAULTS.then)
     expect(isThenNowHash('#place=NMS:FKNMS')).toBe(false)
     expect(isThenNowHash('')).toBe(false)
+    // the links written before the lenses shared a page still open Then vs Now
+    expect(isThenNowHash('#mode=then-now&place=NMS:FKNMS')).toBe(true)
+    expect(decodeThenNow('#mode=then-now&place=NMS:CINMS&md=01-15').place).toBe('NMS:CINMS')
     expect(parseRange('1985-2005')).toEqual([1985, 2005])
   })
 })

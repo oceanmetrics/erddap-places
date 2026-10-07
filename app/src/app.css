@@ -1,3 +1,68 @@
-/* minimal reset; the app's styles live in App.svelte */
-body { margin: 0; background: #fff; color: #222; }
-* { box-sizing: border-box; }
+/* page frame shared by both lenses; the kit (@marinebon/ui/styles.css) supplies tokens, fonts and
+   element defaults. the layout: header, the title sentence, the map stage (everything else floats
+   over the map), one footer line. */
+html, body { height: 100%; }
+body { overflow: hidden; }
+#app { height: 100%; }
+
+.lens { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+/* the title sentence: dataset -> place -> method -> time, its chips open the same pickers as Controls */
+.sentence-bar { position: relative; z-index: 30; padding: var(--space-2) var(--space-4) var(--space-2);
+                background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+.sentence-bar .mbon-sentence .line { font-size: var(--text-lg); }
+.sentence-bar .nw { white-space: nowrap; }
+.sentence-bar .nw .pop { white-space: normal; }
+.sentence-bar .paren { font: var(--fw-regular) var(--text-sm)/1.3 var(--font-sans); color: var(--text-muted); letter-spacing: 0; }
+.sentence-bar .num { font-family: var(--font-display); }
+.sentence-bar .counts { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+.sentence-bar .headline { font: var(--fw-semibold) var(--text-sm)/1.3 var(--font-sans); color: var(--text-strong); }
+.sentence-bar .mbon-legend { min-width: 220px; max-width: 320px; }
+
+/* the map stage: the map fills it, the panes float in it. --map-bottom lifts the map's own bottom
+   controls (scale, attribution) above the Time strip */
+.stage { position: relative; flex: 1; min-height: 320px; overflow: hidden; }
+.stage .maplibregl-ctrl-bottom-left, .stage .maplibregl-ctrl-bottom-right { bottom: var(--map-bottom, 0px); }
+.stage .maplibregl-ctrl-top-right { top: 0; }
+
+/* pane content helpers */
+.pane-col  { display: flex; flex-direction: column; gap: var(--space-3); }
+.pane-row  { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.pane-note { margin: 0; font: var(--type-small); color: var(--text-muted); }
+.pane-mono { font: var(--text-xs)/1.5 var(--font-mono); color: var(--text-body); word-break: break-all; }
+.pane-pre  { margin: 0; max-height: 14rem; overflow: auto; font: var(--text-xs)/1.45 var(--font-mono); background: var(--bg-tint);
+             border: 1px solid var(--border); border-radius: var(--radius-sm, 4px); padding: var(--space-2); white-space: pre; }
+.pane-field { display: flex; flex-direction: column; gap: 4px; font: var(--type-small); color: var(--text-body); }
+.pane-field input { font: var(--text-sm)/1.2 var(--font-mono); padding: 4px 6px; border: 1px solid var(--border-strong);
+                    border-radius: var(--radius-sm, 4px); background: var(--control-bg); color: var(--text-strong); }
+.pane-details > summary { cursor: pointer; font: var(--type-label); text-transform: uppercase; letter-spacing: var(--ls-label); color: var(--label-color); }
+.pane-details[open] > summary { margin-bottom: var(--space-2); }
+.tab-label { white-space: normal; text-align: center; line-height: 1.15; }
+.lens-switch { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* tables in the right-edge pane */
+.data-table { border-collapse: collapse; font: var(--text-xs)/1.4 var(--font-mono); width: 100%; color: var(--text-body); }
+.data-table th, .data-table td { padding: 3px 8px; text-align: right; white-space: nowrap; }
+.data-table th { position: sticky; top: 0; background: var(--pane-bg); color: var(--text-muted); font-weight: 500; }
+.data-table tbody tr:nth-child(odd) { background: var(--bg-tint); }
+.data-table th:first-child, .data-table td:first-child { text-align: left; }
+.table-wrap { max-height: 100%; overflow: auto; }
+.swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; }
+
+/* the line legend of the Time charts */
+.chart-key { display: flex; gap: var(--space-3); align-items: center; font: var(--text-xs)/1 var(--font-mono); color: var(--text-muted); }
+.chart-key svg { vertical-align: middle; }
+
+/* the error / note toast over the map */
+.toast { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); z-index: 25; max-width: min(36rem, 92%); }
+
+@media (max-width: 640px) {
+  body { overflow: auto; }
+  .sentence-bar { padding: var(--space-2) var(--space-3); }
+  .sentence-bar .mbon-sentence .line { font-size: var(--text-base); }
+  .sentence-bar .mbon-legend { min-width: 160px; }
+  .stage { min-height: 70vh; }
+}
+@media (max-width: 640px) { .chart-key { display: none; } }
+/* the Time strip sits above the map's own overlays (the swipe handle, captions), below the panes */
+.stage .mbon-timestrip.overlay { z-index: 8; }
