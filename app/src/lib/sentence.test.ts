@@ -21,10 +21,17 @@ describe('the title sentence, in words', () => {
   it('puts words before codes, and drops the categorical note', () => {
     expect(variableWords('bleaching alert area (categorical, 0-4)', 'CRW_BAA')).toBe('Bleaching alert area')
     expect(variableWords('', 'CRW_SST')).toBe('CRW_SST')
+    expect(variableWords("water temperature (measurement_type 'temperature')", 'temperature')).toBe('Water temperature')
     expect(variableWords(undefined, 'CLASS')).toBe('CLASS')
   })
   it('names the producer without its acronym, the grid in km or degrees, and the cadence', () => {
     expect(producer(CRW)).toBe('NOAA Coral Reef Watch')
+    const prod = (name: string) => producer({ providers: [{ name, roles: ['producer'] }] })
+    expect(prod('California Cooperative Oceanic Fisheries Investigations (CalCOFI)')).toBe('CalCOFI')
+    expect(prod('NOAA Atlantic Oceanographic and Meteorological Laboratory (AOML)')).toBe('AOML')
+    expect(prod('Copernicus Marine Service (CMEMS) / Mercator Ocean International')).toBe('Copernicus Marine Service')
+    expect(prod('Oregon State University Ocean Productivity (VGPM, from NASA MODIS-Aqua)')).toBe('Oregon State University Ocean Productivity')
+    expect(prod('NASA JPL PO.DAAC')).toBe('NASA JPL PO.DAAC')
     expect(resolution(CRW)).toBe('5 km')
     expect(resolution({ 'cube:dimensions': { longitude: { step: 0.01 } } })).toBe('1 km')
     expect(resolution({ 'cube:dimensions': { longitude: { step: 0.083333 } } })).toBe('9 km')

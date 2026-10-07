@@ -719,7 +719,7 @@
       {#snippet footer()}{maskInfo ? `${plural(maskInfo.cells, countWord)} · ` : ''}{dataset?.title ?? ''}{busy ? ' · updating…' : ''}{/snippet}
     </Controls>
 
-    <Pane title="table" id="ep-table" anchor="top-right" offset={{ x: 0, y: 160 }} width={440} height={340}
+    <Pane title="table" id="ep-table" anchor="top-right" offset={{ x: 0, y: 130 }} width={380} height={300}
           bind:collapsed={tableFolded} pillLabel={rows.length ? tableLabel : 'Table'}>
       {#snippet actions()}
         <Menu label="⬇" ariaLabel="Export the table" align="end">

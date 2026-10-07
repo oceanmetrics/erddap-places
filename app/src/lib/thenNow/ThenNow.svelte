@@ -627,7 +627,7 @@
       {#snippet footer()}{exceed ? `${exceed.valid} pixels · ` : ''}CoralTemp 5 km{busy ? ' · updating…' : ''}{/snippet}
     </Controls>
 
-    <Pane title="exceedance" id="tn-exceedance" anchor="top-right" offset={{ x: 0, y: 160 }} width={300}
+    <Pane title="exceedance" id="tn-exceedance" anchor="top-right" offset={{ x: 0, y: 130 }} width={300}
           bind:collapsed={sideFolded} pillLabel={s.anom && pct !== null ? `Exceedance · ${Math.round(pct)} % > +1 ${unitLbl}` : 'Exceedance'}>
       <div class="pane-col">
         {#if exceed && pct !== null}

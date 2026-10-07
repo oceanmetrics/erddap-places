@@ -11,18 +11,25 @@ export function shortPlace(name: string): string {
     .trim()
 }
 
-/** "sea surface temperature" -> "Sea surface temperature"; a trailing "(categorical, 0-4)" is dropped. */
+/** "sea surface temperature" -> "Sea surface temperature"; a trailing note in parentheses is dropped. */
 export function variableWords(description: string | undefined, name: string): string {
-  const d = String(description ?? '').replace(/\s*\((categorical)[^)]*\)\s*$/i, '').trim()
+  const d = String(description ?? '').replace(/\s*\([^)]*\)\s*$/, '').trim()
   const s = d && d !== name ? d : name
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-/** the producer, without its parenthetical acronym: "NOAA Coral Reef Watch (CRW)" -> "NOAA Coral Reef Watch". */
+/**
+ * The producer, short: "NOAA Coral Reef Watch (CRW)" -> "NOAA Coral Reef Watch"; a long name with a
+ * one-word acronym becomes the acronym ("California Cooperative … Investigations (CalCOFI)" ->
+ * "CalCOFI"); "A (X) / B" keeps A.
+ */
 export function producer(collection: any): string {
   const ps: any[] = collection?.providers ?? []
   const p = ps.find((x) => (x?.roles ?? []).includes('producer')) ?? ps[0]
-  return String(p?.name ?? '').replace(/\s*\([^)]*\)\s*$/, '').trim()
+  const name = String(p?.name ?? '').split(' / ')[0].trim()
+  const m = /^(.*?)\s*\(([^)]*)\)\s*$/.exec(name)
+  if (!m) return name
+  return m[1].length > 32 && /^[A-Za-z][A-Za-z0-9-]{1,11}$/.test(m[2]) ? m[2] : m[1].trim()
 }
 
 /** grid spacing in words: 0.05° -> "5 km", 0.01° -> "1 km", 0.0833° -> "9 km", 0.25° -> "0.25°". */
