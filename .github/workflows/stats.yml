@@ -62,7 +62,12 @@ jobs:
       - run: pip install rashid
 
       # the long pole: ~1 h of polite griddap requests (<=2 concurrent, one place at a time)
+      # one transient ERDDAP fetch failure (e.g. PacIOOS "fetch failed" after retries on 2026-10-07)
+      # must not throw away the other items: keep going, publish what was produced, and fail the
+      # job at the end so the red run is still visible
       - name: precompute the statistics
+        id: precompute
+        continue-on-error: true
         working-directory: precompute
         run: npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }}
 
@@ -85,14 +90,26 @@ jobs:
             echo "::warning::AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are not set; skipping the S3 sync"
             exit 0
           fi
+          # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file
           aws s3 sync catalog/gazetteer/ s3://oceanmetrics.io-public/gazetteer/ \
-            --delete --exclude '.portolan/*'
+            --delete --exclude '.portolan/*' --exclude 'stats/*'
+          aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
+            --exclude '.portolan/*'
 
+      # place ids contain ':' (MRGID:8439), which upload-artifact rejects in file names: ship a tarball
+      - name: pack the statistics
+        if: always()
+        run: tar czf gazetteer-stats.tgz -C catalog/gazetteer stats
       - name: upload the statistics as an artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gazetteer-stats
-          path: catalog/gazetteer/stats
+          path: gazetteer-stats.tgz
           retention-days: 14
           if-no-files-found: warn
+      - name: fail the job if the precompute reported failures
+        if: ${{ steps.precompute.outcome == 'failure' }}
+        run: |
+          echo "::error::the precompute reported failed items (see its log); the successful items were published"
+          exit 1
