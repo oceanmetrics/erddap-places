@@ -39,6 +39,7 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE: /erddap-places/   # project site sub-path
+      - run: npm run size-budget       # app/README.md "Size budget"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

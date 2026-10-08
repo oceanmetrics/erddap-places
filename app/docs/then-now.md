@@ -1,9 +1,10 @@
-# Then vs Now (`#mode=then-now`)
+# Then vs Now (`#lens=then-now`)
 
 A serverless rebuild of the *Sanctuaries Climate Change* Shiny app
 ([shiny.marinebon.app/nms-cc](https://shiny.marinebon.app/nms-cc), source
 `noaa-onms/climate-dashboard-app/app/{ui,server,functions,global}.R`) as a second view of this app.
-Open it with `#mode=then-now` (or the "Then vs Now →" link beside the title).
+Open it with `#lens=then-now`, or *Then vs Now* in the Controls pane's ③ Method tab (the older
+`#mode=then-now` links still work: the page rewrites them to `lens=`).
 
 ## From the Shiny controls to these
 
@@ -35,7 +36,7 @@ Open it with `#mode=then-now` (or the "Then vs Now →" link beside the title).
 - **Anomaly map** with the area above +1 °C, masked to the sanctuary polygon with the statistics
   mode's own `gridMask()` (boundary pixels by their share).
 - **Permalinks.** Every pick is in the hash:
-  `#mode=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0`
+  `#lens=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0`
   (`pal=viridis` and `data=<root>` only when not the default).
 - **Costs are shown.** The footer prints the range requests, bytes and milliseconds of the view and
   of the series.
@@ -93,7 +94,7 @@ with the colon as `%3A`, so the `storage.oceanmetrics.io` 302 is never in the ba
   (`dayofyear(make_date(2000, month, day))`), an optional centred moving average per year, the
   Then-years mean per band and each day's anomaly against it.
 - **Bundle**: the mode is a lazy chunk (`ThenNow-*.js`, 80 kB, 28 kB gzip) loaded only for
-  `#mode=then-now`; geotiff's DEFLATE decoder (`pako`, 15 kB gzip) loads on first band read. The
+  `#lens=then-now` (formerly `#mode=then-now`); geotiff's DEFLATE decoder (`pako`, 15 kB gzip) loads on first band read. The
   statistics bundle grew by ~6 kB (the mode switch).
 
 ## Not done
@@ -105,7 +106,7 @@ with the colon as `%3A`, so the `storage.oceanmetrics.io` 302 is never in the ba
 ## Offline / development
 
 `npm run dev`, then
-`http://localhost:5179/#mode=then-now&place=NMS:TEST&data=/__then-now-fixture/` serves the
+`http://localhost:5179/#lens=then-now&place=NMS:TEST&data=/__then-now-fixture/` serves the
 committed fixture (`src/lib/thenNow/fixtures/`, rebuilt by `node src/lib/thenNow/fixtures/make_fixture.mjs`)
 through a dev-only middleware in `vite.config.ts`: Vite's own file serving answers 403 to the colon
 in `NMS:TEST`.

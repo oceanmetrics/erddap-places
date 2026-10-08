@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "size-budget": "node scripts/size-budget.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
@@ -23,6 +24,7 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "1.29.0",
+    "@marinebon/ui": "github:marinebon/ui#v0.1.0",
     "@observablehq/plot": "^0.6.17",
     "@turf/area": "^7.4.0",
     "@turf/bbox-clip": "^7.4.0",

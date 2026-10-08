@@ -1,11 +1,18 @@
 <script lang="ts">
-  // #mode=then-now — the "Sanctuaries Climate Change" Shiny app (shiny.marinebon.app/nms-cc) without
+  // the Then vs Now lens (#lens=then-now) — the "Sanctuaries Climate Change" Shiny app (shiny.marinebon.app/nms-cc) without
   // a server: one day of the year, Then (a published climatology or any year range, averaged here)
   // against Now (a year of the archive), as a swipe map with one shared colour scale, an anomaly
   // map, and the day-of-year chart of every year. rasters are 366-band COGs read one band at a time
   // with HTTP range requests (cog.ts); the chart queries the series parquet in DuckDB-WASM.
   import { onMount, untrack } from 'svelte'
   import * as Plot from '@observablehq/plot'
+  import { Button, Chip, Controls, Legend, Notice, Pane, Picker, Select, Sentence, Slider, Stat, TimeStrip, Toggle, type BrushRange, type PickerItem } from '@marinebon/ui'
+  import PlotBox from '../PlotBox.svelte'
+  import { chrome, theme } from '../chrome.svelte'
+  import { copyText, download, toCsv } from '../download'
+  import { decodePanes, encodePanes, fitPadding, initialPanes, paneUrlState, withExtras, type Lens, type Panes } from '../view'
+  import { exceedanceLine, fmtMd, fmtYears, shortPlace, variableWords } from '../sentence'
+  import { grabMap, viewPng } from '../png'
   import { GAZETTEER_FALLBACK, loadPlaces, placeLobes, plainPlace, type Place } from '../gazetteer'
   import { gridMask } from '../gridMask'
   import { engine } from '../engine'
@@ -19,9 +26,23 @@
   import { BASELINES, decodeThenNow, encodeThenNow, isBaseline, parseRange, type ThenNowState } from './state'
   import SwipeMap, { type Img } from './SwipeMap.svelte'
 
-  const s = $state<ThenNowState>(decodeThenNow(typeof location === 'undefined' ? '' : location.hash))
-  // the permalink: every pick is written straight back into the hash
-  $effect(() => { const h = encodeThenNow({ ...s }); if (typeof history !== 'undefined') history.replaceState(null, '', h) })
+  interface Props { setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void }
+  let { setLens }: Props = $props()
+
+  const RAW = typeof location === 'undefined' ? '' : location.hash
+  const s = $state<ThenNowState>(decodeThenNow(RAW))
+  // which panes are open (`show=` / `hide=`); the Exceedance pane starts folded to its pill
+  const PANES0 = decodePanes(RAW, 'then-now')
+  const VW      = typeof innerWidth === 'number' ? innerWidth : 1280
+  const START   = initialPanes(PANES0, VW)
+  let controlsFolded = $state(!START.controls)
+  let timeFolded     = $state(!START.time)
+  let sideFolded     = $state(!START.side)
+  const panes = $derived<Panes>({ controls: !controlsFolded, time: !timeFolded, side: !sideFolded })
+  let tab = $state('method')
+  // the permalink: every pick (and the pane layout) is written straight back into the hash
+  const viewHash = $derived.by(() => { const { show, hide } = encodePanes(paneUrlState(panes, PANES0, VW), 'then-now'); return withExtras(encodeThenNow({ ...s }), { show, hide }) })
+  $effect(() => { const h = viewHash; if (typeof history !== 'undefined' && h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h) })
 
   // data root: the bucket URL itself, not the storage.oceanmetrics.io redirect, which would add a
   // 302 round trip to every range request
@@ -43,7 +64,8 @@
   let nowB      = $state.raw<{ data: Float32Array; lattice: Band; year: number; md: string } | null>(null)
   let anom      = $state.raw<Float32Array | null>(null)
   let note      = $state('')
-  let footer    = $state('')
+  let footer    = $state('')                     // the full cost line (Share → Reproduce)
+  let timing    = $state('')                     // the short one (the page footer)
   let hover     = $state.raw<{ lng: number; lat: number } | null>(null)
   let mdLive    = $state(s.md)                     // the slider's label while dragging
   let smooth    = $state(7)                        // days in the chart's moving average (Shiny default)
@@ -85,6 +107,7 @@
   // is on screen, and only the count waits for it
   let geoms: Promise<Place[]> | null = null
   let maskFor = $state('')
+  let maskFailed = $state('')            // the place whose polygon could not be read (count over the box)
   let weights = $state.raw<Float32Array | null>(null)
   async function loadMask(id: string, b: Band) {
     const key = `${id}|${b.width}x${b.height}|${b.bbox.join(',')}`
@@ -92,11 +115,12 @@
     try {
       geoms ??= loadPlaces()
       const p = (await geoms).find((q) => q.place_id === id)
-      if (!p || s.place !== id) return
+      if (!p) { maskFailed = id; return }    // a place outside the gazetteer (the dev fixture): count over the box
+      if (s.place !== id) return
       const ax = latticeAxes(b), cells = []
       for (const lobe of placeLobes(plainPlace(p))) cells.push(...gridMask(lobe.geojson, ax.lon, ax.lat).cells)
       weights = latticeWeights(b, cells); maskFor = key
-    } catch (e) { console.warn('then-now: no sanctuary mask', e) }
+    } catch (e) { console.warn('then-now: no sanctuary mask', e); maskFailed = id }
   }
   $effect(() => { const b = nowB?.lattice, id = s.place; if (b) untrack(() => loadMask(id, b)) })
   const masked  = $derived(!!weights && !!nowB && maskFor === `${s.place}|${nowB.lattice.width}x${nowB.lattice.height}|${nowB.lattice.bbox.join(',')}`)
@@ -260,6 +284,7 @@
         ? `this view: ${m.requests} range request${m.requests > 1 ? 's' : ''}, ${(m.bytes / 1024).toFixed(1)} kB in ` +
           `${Math.round(ms)} ms (request times summed: ${Math.round(m.ms)} ms)`
         : `this view: from cache, ${Math.round(ms)} ms`
+      timing = m.requests ? `${m.requests} requests · ${(m.bytes / 1024).toFixed(1)} kB · ${Math.round(ms)} ms` : `from cache · ${Math.round(ms)} ms`
       note = notes.join('; ')
       status = `${place?.name ?? s.place}: ${mdLabel(s.md)}, Then ${s.then} vs Now ${y}`
     } catch (e) {
@@ -308,56 +333,75 @@
   }
   $effect(() => { void [s.place, s.variable, root, thenRange[0], thenRange[1], smooth]; untrack(() => loadSeries()) })
 
-  let chartEl = $state<HTMLDivElement | null>(null)
-  let anomEl  = $state<HTMLDivElement | null>(null)
+  // ── the Time strip: the day-of-year chart of every year, or the Now year's anomaly series ────────
   const x = (b: number) => new Date(Date.UTC(2000, 0, b))
-  $effect(() => {
-    if (!chartEl || !series.length) return
+  const PL = 48, PR = 12
+  let stripMode = $state<'years' | 'anomaly'>('years')
+  let stripH    = $state(170)
+  const ink   = $derived(theme.dark ? '#c4d7e0' : '#44606e')
+  const other = $derived(theme.dark ? '#2b5571' : '#c9d6dc')
+  const COL   = { then: '#4a90d9', now: '#d62728', prev: '#f2a33a' }
+  const base  = (width: number, height: number) => ({ width, height, marginLeft: PL, marginRight: PR, marginTop: 8, marginBottom: 22,
+    style: { background: 'transparent', color: ink, fontSize: '10px' } })
+  function doyChart(width: number, height: number): Element | null {
+    if (!series.length) return null
     const ny = nowB?.year ?? nowYear
     const [y0, y1] = thenRange
-    const other = series.filter((r) => r.year !== ny && (r.year < y0 || r.year > y1))
-    const thenR = series.filter((r) => r.year >= y0 && r.year <= y1 && r.year !== ny)
+    const prev = ny === null ? null : ny - 1
+    const otherR = series.filter((r) => r.year !== ny && r.year !== prev && (r.year < y0 || r.year > y1))
+    const thenR = series.filter((r) => r.year >= y0 && r.year <= y1 && r.year !== ny && r.year !== prev)
+    const prevR = series.filter((r) => r.year === prev)
     const nowR  = series.filter((r) => r.year === ny)
     // the Then mean per band is the same on every year's rows: keep one row per band
     const clim  = [...new Map(series.filter((r) => r.clim !== null).map((r) => [r.band, r])).values()].sort((a, b) => a.band - b.band)
-    const nowLbl = `Now ${ny}`, thenLbl = `Then ${y0}–${y1}`
-    const chart = Plot.plot({
-      width: 860, height: 340, marginLeft: 50,
-      x: { label: 'day of year', tickFormat: '%b', type: 'utc' },
-      y: { label: `${s.variable} area mean (${unitLbl})`, grid: true },
-      color: { legend: true, domain: ['other years', thenLbl, 'Then mean', nowLbl], range: ['#bbbbbb', '#4a90d9', '#222222', '#d62728'] },
+    return Plot.plot({
+      ...base(width, height),
+      x: { label: null, tickFormat: '%b', type: 'utc', domain: [x(1), x(367)] },
+      y: { label: null, grid: true },
       marks: [
-        Plot.line(other, { x: (r: any) => x(r.band), y: 'value', z: 'year', stroke: '#bbbbbb', strokeWidth: 0.6 }),
-        Plot.line(thenR, { x: (r: any) => x(r.band), y: 'value', z: 'year', stroke: '#4a90d9', strokeWidth: 0.8, strokeOpacity: 0.7 }),
-        Plot.line(clim, { x: (r: any) => x(r.band), y: 'clim', stroke: '#222', strokeDasharray: '4,3', strokeWidth: 1.2 }),
-        Plot.line(nowR,  { x: (r: any) => x(r.band), y: 'value', stroke: '#d62728', strokeWidth: 2.2 }),
-        Plot.ruleX([x(band)], { stroke: '#333', strokeWidth: 1 }),
+        Plot.line(otherR, { x: (r: any) => x(r.band), y: 'value', z: 'year', stroke: other, strokeWidth: 0.6 }),
+        Plot.line(thenR, { x: (r: any) => x(r.band), y: 'value', z: 'year', stroke: COL.then, strokeWidth: 0.8, strokeOpacity: 0.6 }),
+        Plot.line(clim, { x: (r: any) => x(r.band), y: 'clim', stroke: ink, strokeDasharray: '4,3', strokeWidth: 1.2 }),
+        Plot.line(prevR, { x: (r: any) => x(r.band), y: 'value', stroke: COL.prev, strokeWidth: 1.4 }),
+        Plot.line(nowR,  { x: (r: any) => x(r.band), y: 'value', stroke: COL.now, strokeWidth: 2.2 }),
+        Plot.ruleX([x(band)], { stroke: ink, strokeWidth: 1 }),
         Plot.tip(series, Plot.pointerX({ x: (r: any) => x(r.band), y: 'value',
           title: (r: any) => `${new Date(r.date).toISOString().slice(0, 10)}\n${Number(r.value).toFixed(2)} ${unitLbl}` })),
       ],
     })
-    chartEl.replaceChildren(chart)
-    return () => chart.remove()
-  })
-  $effect(() => {
-    if (!anomEl || !series.length) return
+  }
+  function anomChart(width: number, height: number): Element | null {
+    if (!series.length) return null
     const ny = nowB?.year ?? nowYear
     const nowR = series.filter((r) => r.year === ny && r.anom !== null)
-    const chart = Plot.plot({
-      width: 860, height: 150, marginLeft: 50,
-      x: { label: null, tickFormat: '%b', type: 'utc', domain: [x(1), x(366)] },
-      y: { label: `${ny} − Then mean (${unitLbl})`, grid: true },
+    return Plot.plot({
+      ...base(width, height),
+      x: { label: null, tickFormat: '%b', type: 'utc', domain: [x(1), x(367)] },
+      y: { label: null, grid: true },
       marks: [
         Plot.areaY(nowR, { x: (r: any) => x(r.band), y: (r: any) => Math.max(0, r.anom), fill: '#d6604d', fillOpacity: 0.8 }),
         Plot.areaY(nowR, { x: (r: any) => x(r.band), y: (r: any) => Math.min(0, r.anom), fill: '#4393c3', fillOpacity: 0.8 }),
-        Plot.ruleY([0]),
-        Plot.ruleX([x(band)], { stroke: '#333' }),
+        Plot.ruleY([0], { stroke: ink }),
+        Plot.ruleX([x(band)], { stroke: ink }),
         Plot.tip(nowR, Plot.pointerX({ x: (r: any) => x(r.band), y: 'anom',
           title: (r: any) => `${new Date(r.date).toISOString().slice(0, 10)}\n${r.anom > 0 ? '+' : ''}${Number(r.anom).toFixed(2)} ${unitLbl}` })),
       ],
     })
-    anomEl.replaceChildren(chart)
-    return () => chart.remove()
+  }
+  // a brush on the strip picks the day in its middle (a click-and-drag; the band is then the day)
+  function onbrushend(r: BrushRange) {
+    if (r.v0 === undefined || r.v1 === undefined) return
+    const b = Math.max(1, Math.min(366, Math.round((r.v0 + r.v1) / 2)))
+    s.md = bandToMd(b); mdLive = s.md
+    brush = null
+  }
+  let brush = $state<[number, number] | null>(null)
+  // ▶ steps through the year a day at a time (each further day is one band read, ≤ 16 kB)
+  let playing = $state(false)
+  $effect(() => {
+    if (!playing) return
+    const t = setInterval(() => { if (!busy) { s.md = stepMd(s.md, 1); mdLive = s.md } }, 700)
+    return () => clearInterval(t)
   })
 
   // ── controls ────────────────────────────────────────────────────────────────
@@ -375,122 +419,261 @@
     custom = c; s.then = `${c[0]}-${c[1]}`
   }
   const yearList = $derived(years ? Array.from({ length: years[1] - years[0] + 1 }, (_, i) => years![1] - i) : [])
+
+  // ── the sentence and the footer line ────────────────────────────────────────
+  const varLabel   = $derived(variableWords(catalog?.collection?.['cube:variables']?.[s.variable]?.description
+    ?? (s.variable === 'CRW_SST' ? 'sea surface temperature' : s.variable), s.variable))
+  const placeLabel = $derived(shortPlace(place?.name ?? s.place))
+  const thenText   = $derived(`${fmtYears(thenB ? `${thenB.years[0]}-${thenB.years[thenB.years.length - 1]}` : s.then)} ${isBaseline(s.then, baselines) ? 'climatology' : 'average'}`)
+  const nowText    = $derived(String(nowB?.year ?? nowYear ?? (s.now === 'latest' ? 'latest' : s.now)))
+  const km         = (v: number) => Math.round(v).toLocaleString('en-US')
+  const pct        = $derived(exceed && exceed.validKm2 ? (100 * exceed.km2) / exceed.validKm2 : null)
+  // the headline waits for the sanctuary mask: a count over the raster box would read as the answer
+  const maskDone   = $derived(masked || maskFailed === s.place)
+  const headline   = $derived(pct !== null && maskDone ? exceedanceLine(pct, 1, unitLbl, masked ? 'the sanctuary' : 'the raster box') : '')
+  const titleText  = $derived(`${varLabel} in ${placeLabel} on ${fmtMd(s.md)}: Then ${thenText} vs Now ${nowText}`)
+  const placeItems = $derived<PickerItem[]>(places.map((p) => ({
+    id: p.place_id, label: shortPlace(p.name), keywords: `${p.place_id} ${p.name}`, color: 'var(--facet-place)',
+    disabled: available.size > 0 && !available.has(p.place_id),
+  })))
+  const thenOptions = $derived([...baselines.map((b) => ({ value: b, label: `${fmtYears(b)} (climatology)` })), { value: 'custom', label: 'custom years…' }])
+  const nowOptions  = $derived([{ value: 'latest', label: `latest${years ? ` (${years[1]})` : ''}` },
+    ...yearList.map((y) => ({ value: String(y), label: `${y}${empty.has(y) ? ' (no data)' : ''}`, disabled: empty.has(y) }))])
+  $effect(() => { chrome.busy = busy; chrome.step = busy ? status : '' })
+  $effect(() => { chrome.timing = timing })
+  $effect(() => { chrome.release = `NOAA CRW CoralTemp ${s.variable}${years ? ` ${years[0]}–${years[1]}` : ''} · COGs on S3` })
+
+  // ── share ───────────────────────────────────────────────────────────────────
+  let copied = $state('')
+  let mapA: any = null, mapB: any = null
+  const link = $derived(typeof location === 'undefined' ? '' : location.href.split('#')[0] + viewHash)
+  async function copy(text: string, what: string) {
+    copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
+    setTimeout(() => { copied = '' }, 2500)
+  }
+  const fileBase = $derived(`erddap-places_then-now_${s.place.replace(/[^\w-]+/g, '-')}_${s.variable}_${s.md}_then-${s.then}_now-${nowText}`)
+  function saveCsv() {
+    if (!series.length) return
+    const rows = series.map((r: any) => ({ date: new Date(r.date).toISOString().slice(0, 10), year: r.year, band: r.band,
+      value: r.value, then_mean: r.clim, anomaly: r.anom }))
+    download(toCsv(rows), `${fileBase}_series.csv`, 'text/csv;charset=utf-8')
+  }
+  async function savePng() {
+    if (!mapA || !mapB) return
+    copied = 'drawing the PNG…'
+    try {
+      const a = await grabMap(mapA), layers = [{ canvas: a }]
+      if (!s.anom) layers.push({ canvas: await grabMap(mapB), clip: [s.swipe, 1] } as any)
+      const blob = await viewPng({ layers, title: titleText, dark: theme.dark,
+        sub: s.anom ? `Now − Then${headline ? ` · ${headline}` : ''}` : `left: Then ${thenText} · right: Now ${nowText}`,
+        stamp: [`NOAA Coral Reef Watch CoralTemp (${s.variable}) · Ocean Metrics gazetteer · built by Ocean Metrics for MBON`, link] })
+      download(blob, `${fileBase}.png`, 'image/png'); copied = ''
+    } catch (e) { copied = `PNG failed: ${e instanceof Error ? e.message : String(e)}` }
+  }
+  const cite = $derived(`NOAA Coral Reef Watch. CoralTemp daily global 5 km sea surface temperature (dhw_5km, ${s.variable}), ` +
+    `as daily rasters and day-of-year climatologies for ${place?.name ?? s.place}, Ocean Metrics gazetteer, ${root}, accessed ${new Date().toISOString().slice(0, 10)}.`)
+  const reproduce = $derived([
+    `# erddap-places Then vs Now — ${place?.name ?? s.place} (${s.place}), ${s.variable}, ${s.md}: Then ${s.then} vs Now ${nowText}`,
+    `# permalink: ${link}`,
+    `# Now:  ${rasterUrl(root, s.dataset, s.variable, s.place, Number(nowB?.year ?? nowYear ?? 0))} band ${band}`,
+    `# Then: ${isBaseline(s.then, baselines) ? `${root}climatology/${s.dataset}/${s.variable}/${s.place}/${s.then}_mean.tif band ${band}` : `the band ${band} of every year ${s.then}, averaged`}`,
+    `# series: ${seriesUrl(root, s.dataset, s.variable, s.place)}`,
+    '', seriesSql({ src: 'series.parquet', then: thenRange, smooth }),
+  ].join('\n'))
+  const switchLens = () => setLens?.('stats', { place: s.place, variable: s.variable, panes })
 </script>
 
-<main>
-  <p class="nav"><a href="#mode=stats">← place statistics</a></p>
-  <h1>Then vs Now</h1>
-  <p class="sub">One day of the year in a sanctuary: Then (a climatology or any range of years) against Now, from
-     cloud-optimised GeoTIFFs read band by band in this browser. No server: the
-     <a href="https://shiny.marinebon.app/nms-cc" target="_blank" rel="noreferrer">Shiny app</a>, rebuilt.</p>
-
-  <div class="controls">
-    <label>sanctuary
-      <select bind:value={s.place}>
-        {#each places as p}
-          <option value={p.place_id} disabled={available.size > 0 && !available.has(p.place_id)}>{p.name}{available.size > 0 && !available.has(p.place_id) ? ' (no rasters)' : ''}</option>
-        {/each}
-      </select>
-    </label>
-    <label>variable
-      <select bind:value={s.variable}>{#each variables as v}<option value={v}>{v}</option>{/each}</select>
-    </label>
-    <label>Then
-      <select value={thenChoice} onchange={(e) => pickThen(e.currentTarget.value)}>
-        {#each baselines as b}<option value={b}>{b.replace('-', '–')} (climatology)</option>{/each}
-        <option value="custom">custom years…</option>
-      </select>
-    </label>
+{#snippet placePicker(close?: () => void)}
+  <Picker items={placeItems} value={s.place} label="sanctuaries" placeholder="Search sanctuaries…" maxHeight={close ? '16rem' : '11rem'}
+          onselect={(it) => { s.place = it.id; close?.() }} />
+{/snippet}
+{#snippet thenPanel()}
+  <div class="pane-col">
+    <Select label="Then" value={thenChoice} options={thenOptions} onchange={(v) => pickThen(v)} />
     {#if thenChoice === 'custom' && years}
-      <label>from <input type="number" min={years[0]} max={years[1]} value={custom[0]} onchange={(e) => setCustom(0, Number(e.currentTarget.value))} /></label>
-      <label>to <input type="number" min={years[0]} max={years[1]} value={custom[1]} onchange={(e) => setCustom(1, Number(e.currentTarget.value))} /></label>
-    {/if}
-    <label>Now
-      <select value={String(s.now)} onchange={(e) => { const v = e.currentTarget.value; s.now = v === 'latest' ? 'latest' : Number(v) }}>
-        <option value="latest">latest{years ? ` (${years[1]})` : ''}</option>
-        {#each yearList as y}<option value={String(y)} disabled={empty.has(y)}>{y}{empty.has(y) ? ' (no data)' : ''}</option>{/each}
-      </select>
-    </label>
-    <label>palette
-      <select bind:value={s.pal}><option value="spectral">Spectral</option><option value="viridis">viridis</option></select>
-    </label>
-    <label class="chk"><input type="checkbox" bind:checked={s.anom} /> anomaly (Now − Then)</label>
-  </div>
-
-  <div class="md">
-    <button onclick={() => { s.md = stepMd(s.md, -1); mdLive = s.md }} aria-label="previous day">←</button>
-    <input type="range" min="1" max="366" value={mdToBand(mdLive)}
-           oninput={(e) => { mdLive = bandToMd(Number(e.currentTarget.value)) }}
-           onchange={(e) => { s.md = bandToMd(Number(e.currentTarget.value)) }} aria-label="month and day" />
-    <button onclick={() => { s.md = stepMd(s.md, 1); mdLive = s.md }} aria-label="next day">→</button>
-    <span class="mdl">{mdLabel(mdLive)}</span>
-  </div>
-
-  <p class="status" class:err={!!error}>{error || status}{busy ? ' …' : ''}</p>
-  {#if note || catNote}<p class="meta">{[note, catNote].filter(Boolean).join(' · ')}</p>{/if}
-
-  <div class="mapwrap">
-    <SwipeMap pmtilesUrl={`${GAZETTEER_FALLBACK}places/places.pmtiles`} placeId={s.place} {bounds} left={leftImg} right={rightImg}
-              single={s.anom} swipe={s.swipe} onswipe={(f) => { s.swipe = f }} onhover={(ll) => { hover = ll }} />
-    {#if s.anom}
-      {#if nowB}<div class="lg tl"><b>Now − Then</b><br />{mdLabel(nowB.md)} {nowB.year} − {thenB?.years[0]}–{thenB?.years[thenB.years.length - 1]}</div>{/if}
-    {:else}
-      {#if thenLegend}<div class="lg tl"><b>{thenLegend.split(':')[0]}</b><br />{thenLegend.split(': ')[1]}</div>{/if}
-      {#if nowLegend}<div class="lg tr"><b>Now</b><br />{nowLegend.split(': ')[1]}</div>{/if}
-    {/if}
-    {#if s.anom ? aDomain : domain}
-      {@const dom = (s.anom ? aDomain : domain)!}
-      <div class="bar">
-        <div class="ramp" style:background={css(paletteStops(s.anom ? 'anomaly' : s.pal))}></div>
-        <div class="ticks">{#each ticks(dom) as t}<span>{t.toFixed(1)}</span>{/each}</div>
-        <div class="unit">{s.anom ? `Now − Then (${unitLbl})` : `${s.variable} (${unitLbl})`}</div>
+      <div class="pane-row">
+        <label class="pane-field">from <input type="number" min={years[0]} max={years[1]} value={custom[0]} onchange={(e) => setCustom(0, Number(e.currentTarget.value))} /></label>
+        <label class="pane-field">to <input type="number" min={years[0]} max={years[1]} value={custom[1]} onchange={(e) => setCustom(1, Number(e.currentTarget.value))} /></label>
       </div>
     {/if}
-    {#if readout}<div class="readout">{readout}</div>{/if}
+  </div>
+{/snippet}
+{#snippet nowPanel()}
+  <div class="pane-col">
+    <Select label="Now" value={String(s.now)} options={nowOptions} onchange={(v) => { s.now = v === 'latest' ? 'latest' : Number(v) }} />
+    <Toggle bind:checked={s.anom} label="Anomaly (Now − Then)" hint="one map on a diverging scale, and the share above +1" />
+  </div>
+{/snippet}
+{#snippet dayPanel()}
+  <div class="pane-col">
+    <Slider label="Day of year" value={mdToBand(mdLive)} min={1} max={366} ticks={[{ value: 1, label: 'Jan' }, { value: 183, label: 'Jul' }, { value: 366, label: 'Dec' }]}
+            format={(b) => fmtMd(bandToMd(b))} oninput={(b) => { mdLive = bandToMd(b); s.md = mdLive }} />
+    <p class="pane-note">Or click the day-of-year chart in the Time strip; ▶ plays through the year.</p>
+  </div>
+{/snippet}
+{#snippet methodPanel()}
+  <div class="pane-col">
+    <div class="lens-switch" role="group" aria-label="lens">
+      <Button variant="quiet" size="sm" pressed={false} onclick={switchLens}>Window statistics</Button>
+      <Button variant="quiet" size="sm" pressed={true}>Then vs Now</Button>
+    </div>
+    {@render thenPanel()}
+    {@render nowPanel()}
+    {@render dayPanel()}
+    <details class="pane-details">
+      <summary>More options</summary>
+      <div class="pane-col">
+        <Select label="Palette" value={s.pal} options={[{ value: 'spectral', label: 'Spectral' }, { value: 'viridis', label: 'viridis' }]}
+                onchange={(v) => { s.pal = v as typeof s.pal }} />
+        <Slider label="Smoothing (days, chart)" bind:value={smooth} min={1} max={31} step={2} />
+      </div>
+    </details>
+  </div>
+{/snippet}
+{#snippet sharePanel()}
+  <div class="pane-col">
+    <div class="pane-row">
+      <Button variant="action" size="sm" onclick={saveCsv} disabled={!series.length}>Download CSV</Button>
+      <Button variant="quiet" size="sm" onclick={savePng} disabled={!nowB}>PNG of the view</Button>
+    </div>
+    <div class="pane-row">
+      <Button variant="quiet" size="sm" onclick={() => copy(link, 'link')}>Copy link</Button>
+      <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')}>Copy citation</Button>
+      {#if copied}<span class="pane-note" role="status">{copied}</span>{/if}
+    </div>
+    <details class="pane-details"><summary>Cite this data</summary><p class="pane-note">{cite}</p></details>
+    <details class="pane-details">
+      <summary>Reproduce: requests, SQL and timing</summary>
+      <div class="pane-col">
+        <Button variant="quiet" size="sm" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</Button>
+        <p class="pane-note">{footer}{seriesNote ? ` · ${seriesNote}` : ''}{emptyNote ? ` · year validity: ${emptyNote}` : ''}</p>
+        {#if note || catNote}<p class="pane-note">{[note, catNote].filter(Boolean).join(' · ')}</p>{/if}
+        <p class="pane-mono">data: {root}</p>
+        <pre class="pane-pre">{reproduce}</pre>
+      </div>
+    </details>
+  </div>
+{/snippet}
+
+<div class="lens" data-state={error ? 'error' : busy || !nowB || !maskDone ? 'loading' : 'done'}>
+  <div class="sentence-bar">
+    <Sentence>
+      <Chip label={varLabel} facet="dataset" title="choose a variable" width="18rem">
+        {#snippet children(close)}
+          <Select label="Variable" value={s.variable} options={variables.map((v) => ({ value: v, label: v }))} onchange={(v) => { s.variable = v; close() }} />
+          <p class="pane-note">NOAA Coral Reef Watch CoralTemp, 5 km, daily{years ? `, ${years[0]}–${years[1]}` : ''}</p>
+        {/snippet}
+      </Chip>
+      in
+      <Chip label={placeLabel} facet="place" title="choose a sanctuary" width="22rem">
+        {#snippet children(close)}{@render placePicker(close)}{/snippet}
+      </Chip>
+      on
+      <span class="nw"><Chip label={fmtMd(s.md)} facet="method" title="choose the day of year" width="20rem">
+        {#snippet children()}{@render dayPanel()}{/snippet}
+      </Chip>:</span>
+      <Chip label="Then" facet="method" title="choose Then" width="18rem">
+        {#snippet children()}{@render thenPanel()}{/snippet}
+      </Chip>
+      {thenText} vs
+      <Chip label="Now" facet="method" title="choose Now" width="18rem">
+        {#snippet children()}{@render nowPanel()}{/snippet}
+      </Chip>
+      {nowText}
+      {#snippet sub()}
+        {#if s.anom ? aDomain : domain}
+          {@const dom = (s.anom ? aDomain : domain)!}
+          <Legend title={s.anom ? `Now − Then (${unitLbl})` : `${s.variable} (${unitLbl})`} colors={paletteStops(s.anom ? 'anomaly' : s.pal)} domain={dom} />
+        {/if}
+        {#if s.anom && headline}
+          <span class="headline">{headline}</span>
+          <span class="counts">{km(exceed!.km2)} of {km(exceed!.validKm2)} km² · {exceed!.n} of {exceed!.valid} pixels</span>
+        {:else if exceed && !maskDone}
+          <span class="counts">masking the sanctuary…</span>
+        {:else if exceed}
+          <span class="counts">{exceed.valid} pixels {masked ? 'in the sanctuary' : 'in the raster box'}</span>
+        {/if}
+        {#if note}<span class="counts">{note}</span>{/if}
+      {/snippet}
+    </Sentence>
   </div>
 
-  {#if exceed}
-    <p class="meta">Now − Then &gt; +1 {unitLbl}: <b>{exceed.n}</b> of {exceed.valid} pixels,
-       {exceed.km2.toFixed(0)} of {exceed.validKm2.toFixed(0)} km² ({exceed.validKm2 ? ((100 * exceed.km2) / exceed.validKm2).toFixed(0) : 0}% of the area)
-       {masked ? 'inside the sanctuary (boundary pixels by their share)' : 'in the raster box (the sanctuary mask is loading or unavailable)'}</p>
-  {/if}
+  <div class="stage" style:--map-bottom={timeFolded ? '52px' : `${stripH + 58}px`}>
+    <SwipeMap pmtilesUrl={`${GAZETTEER_FALLBACK}places/places.pmtiles`} placeId={s.place} {bounds} left={leftImg} right={rightImg}
+              single={s.anom} swipe={s.swipe} onswipe={(f) => { s.swipe = f }} onhover={(ll) => { hover = ll }}
+              dark={theme.dark} padding={fitPadding(VW, START, 170)} onmaps={(a, b) => { mapA = a; mapB = b }}
+              leftLabel={s.anom ? (nowB ? `Now − Then: ${fmtMd(nowB.md)} ${nowB.year} − ${thenText}` : '') : (thenB ? `Then ${thenText}` : '')}
+              rightLabel={nowB ? `Now ${fmtMd(nowB.md)} ${nowB.year}` : ''} />
+    {#if readout}<div class="readout">{readout}</div>{/if}
+    {#if error}
+      <div class="toast"><Notice kind="error" ondismiss={() => { error = '' }}>{error}</Notice></div>
+    {/if}
 
-  <h2>Day of year, every year</h2>
-  <label class="meta">smoothing <input type="range" min="1" max="31" step="2" bind:value={smooth} /> {smooth} day{smooth > 1 ? 's' : ''}</label>
-  <div bind:this={chartEl} class="chart"></div>
-  <div bind:this={anomEl} class="chart"></div>
+    <Controls id="tn-controls" title="controls" width={390} bind:active={tab} bind:collapsed={controlsFolded}
+      tabs={[{ id: 'place', label: 'Place' }, { id: 'data', label: 'Dataset & variable' }, { id: 'method', label: 'Method' }, { id: 'share', label: 'Share' }]}>
+      {#snippet tabLabel(t)}<span class="tab-label">{t.label}</span>{/snippet}
+      {#snippet panel(id)}
+        {#if id === 'place'}
+          <div class="pane-col">
+            {@render placePicker()}
+            <p class="pane-note">The national marine sanctuaries with Then vs Now rasters{available.size ? ` (${available.size})` : ''}.</p>
+          </div>
+        {:else if id === 'data'}
+          <div class="pane-col">
+            <Select label="Variable" value={s.variable} options={variables.map((v) => ({ value: v, label: `${variableWords(catalog?.collection?.['cube:variables']?.[v]?.description ?? (v === 'CRW_SST' ? 'sea surface temperature' : v), v)} (${v})` }))}
+                    onchange={(v) => { s.variable = v }} />
+            <p class="pane-note">NOAA Coral Reef Watch CoralTemp (dhw_5km), 5 km, daily{years ? `, ${years[0]}–${years[1]}` : ''}: one 366-band COG per year, clipped to the sanctuary's box + 20 %, read one band at a time.</p>
+          </div>
+        {:else if id === 'method'}
+          {@render methodPanel()}
+        {:else}
+          {@render sharePanel()}
+        {/if}
+      {/snippet}
+      {#snippet footer()}{exceed ? `${exceed.valid} pixels · ` : ''}CoralTemp 5 km{busy ? ' · updating…' : ''}{/snippet}
+    </Controls>
 
-  <footer class="meta">{footer}{footer && seriesNote ? ' · ' : ''}{seriesNote}{emptyNote ? ` · year validity: ${emptyNote}` : ''} · data: {root}</footer>
-</main>
+    <Pane title="exceedance" id="tn-exceedance" anchor="top-right" offset={{ x: 0, y: 130 }} width={300}
+          bind:collapsed={sideFolded} pillLabel={s.anom && pct !== null && maskDone ? `Exceedance · ${Math.round(pct)} % > +1 ${unitLbl}` : 'Exceedance'}>
+      <div class="pane-col">
+        {#if exceed && pct !== null}
+          <Stat value={`${Math.round(pct)} %`} label={`of ${masked ? 'the sanctuary' : 'the raster box'} > +1 ${unitLbl}`} note={`${fmtMd(s.md)} ${nowText} against ${thenText}`} />
+          <p class="pane-note">Now − Then &gt; +1 {unitLbl}: <b>{exceed.n}</b> of {exceed.valid} pixels,
+             {km(exceed.km2)} of {km(exceed.validKm2)} km²
+             {masked ? 'inside the sanctuary (boundary pixels by their share)' : 'in the raster box (the sanctuary mask is loading or unavailable)'}.</p>
+          {#if !s.anom}<Toggle bind:checked={s.anom} label="Show the anomaly map" />{/if}
+        {:else}
+          <p class="pane-note">{busy ? 'updating…' : 'no view yet'}</p>
+        {/if}
+      </div>
+    </Pane>
+
+    <TimeStrip title={stripMode === 'years' ? `day of year, every year · ${unitLbl}` : `${nowText} − Then mean · ${unitLbl}`}
+               bind:collapsed={timeFolded} bind:height={stripH} minHeight={90} maxHeight={380}
+               domain={[1, 367]} plotLeft={PL} plotRight={PR} bind:brush {onbrushend}>
+      {#snippet actions()}
+        {#if stripMode === 'years'}
+          <span class="chart-key" aria-label="chart key">
+            <span><svg width="16" height="8" aria-hidden="true"><line x1="0" y1="4" x2="16" y2="4" stroke={COL.now} stroke-width="2.2" /></svg> {nowText}</span>
+            <span><svg width="16" height="8" aria-hidden="true"><line x1="0" y1="4" x2="16" y2="4" stroke={COL.prev} stroke-width="1.4" /></svg> {Number(nowText) - 1 || 'previous'}</span>
+            <span><svg width="16" height="8" aria-hidden="true"><line x1="0" y1="4" x2="16" y2="4" stroke={COL.then} stroke-width="1" /></svg> Then years</span>
+            <span><svg width="16" height="8" aria-hidden="true"><line x1="0" y1="4" x2="16" y2="4" stroke={ink} stroke-width="1.2" stroke-dasharray="4,3" /></svg> Then mean</span>
+          </span>
+        {/if}
+        <Button variant="quiet" size="sm" aria-label="previous day" onclick={() => { s.md = stepMd(s.md, -1); mdLive = s.md }}>◀</Button>
+        <Button variant="quiet" size="sm" aria-label={playing ? 'pause' : 'play through the year'} pressed={playing} onclick={() => { playing = !playing }}>{playing ? '❚❚' : '▶'}</Button>
+        <Button variant="quiet" size="sm" aria-label="next day" onclick={() => { s.md = stepMd(s.md, 1); mdLive = s.md }}>▶|</Button>
+        <Button variant="quiet" size="sm" pressed={stripMode === 'anomaly'} onclick={() => { stripMode = stripMode === 'years' ? 'anomaly' : 'years' }}>{stripMode === 'years' ? 'anomaly series' : 'every year'}</Button>
+      {/snippet}
+      {#snippet children({ width, height })}
+        <PlotBox make={stripMode === 'years' ? doyChart : anomChart} {width} {height} />
+      {/snippet}
+    </TimeStrip>
+  </div>
+</div>
 
 <style>
-  main    { max-width: 900px; margin: 2rem auto; padding: 0 1rem; font: 15px/1.5 system-ui, sans-serif; color: #222; }
-  h1      { font-size: 1.4rem; margin: 0 0 .25rem; }
-  h2      { font-size: 1.05rem; margin: 1.25rem 0 .25rem; }
-  .nav    { margin: 0 0 .25rem; font-size: 13px; }
-  .sub    { color: #555; margin: 0 0 1rem; }
-  .controls { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; margin-bottom: .5rem; }
-  .controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 2px; }
-  .controls label.chk { flex-direction: row; align-items: center; gap: 4px; font-size: 13px; }
-  .controls select, .controls input[type=number] { font-size: 14px; padding: 2px 4px; max-width: 320px; }
-  .controls input[type=number] { width: 5.5em; }
-  .md     { display: flex; align-items: center; gap: .5rem; margin: .25rem 0 .5rem; }
-  .md input { flex: 1; }
-  .mdl    { font-weight: 600; min-width: 4.5em; }
-  .status { background: #eef4fb; border-left: 3px solid #1f77b4; padding: .5rem .75rem; }
-  .status.err { background: #fdeeee; border-left-color: #d62728; }
-  .meta   { color: #444; font-size: 13px; }
-  .mapwrap { position: relative; margin: .75rem 0; }
-  .lg     { position: absolute; top: 8px; background: rgba(255,255,255,.9); padding: 3px 8px; border-radius: 3px;
-            font: 12px/1.35 system-ui, sans-serif; pointer-events: none; z-index: 6; }
-  .tl     { left: 8px; } .tr { right: 48px; }
-  .bar    { position: absolute; left: 8px; bottom: 8px; width: 240px; background: rgba(255,255,255,.9); padding: 4px 8px;
-            border-radius: 3px; font: 11px system-ui, sans-serif; pointer-events: none; z-index: 6; }
-  .ramp   { height: 10px; border: 1px solid #999; }
-  .ticks  { display: flex; justify-content: space-between; }
-  .unit   { text-align: center; color: #444; }
-  .readout { position: absolute; right: 8px; bottom: 28px; background: rgba(255,255,255,.92); padding: 2px 8px; border-radius: 3px;
-             font: 12px system-ui, sans-serif; pointer-events: none; z-index: 6; }
-  .chart  { margin: .5rem 0; }
-  footer  { margin: 1rem 0 2rem; word-break: break-all; }
+  .readout { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(var(--map-bottom, 0px) + 8px); z-index: 6;
+             padding: 2px 8px; border-radius: 4px; pointer-events: none; font: 12px/1.4 var(--font-mono);
+             color: var(--text-strong); background: color-mix(in srgb, var(--bg-surface) 90%, transparent); }
 </style>

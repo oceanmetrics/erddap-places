@@ -4,11 +4,11 @@
   // places.pmtiles, and each side's raster band as a MapLibre `image` source drawn from a canvas
   // (nearest-neighbour, so the 0.05° pixels stay square). in anomaly mode the left map shows the
   // Now - Then layer over the whole box and the slider is hidden.
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import maplibregl, { type Map as MlMap, type StyleSpecification } from 'maplibre-gl'
   import 'maplibre-gl/dist/maplibre-gl.css'
   import { Protocol } from 'pmtiles'
-  import { OCEAN_ATTRIBUTION, OCEAN_TILES } from '../MapView.svelte'
+  import { basemapStyle, DARK_ATTRIBUTION, OCEAN_ATTRIBUTION, setBasemap } from '../MapView.svelte'
   import { PLACES_SOURCE_LAYER } from '../gazetteer'
   import { clipFor, syncMaps } from './swipe'
 
@@ -23,8 +23,17 @@
     swipe     : number              // 0..1
     onswipe  ?: (f: number) => void
     onhover  ?: (ll: { lng: number; lat: number } | null) => void
+    /** the dark theme's basemap */
+    dark     ?: boolean
+    /** room to leave around the fitted place (the panes float over the map) */
+    padding  ?: number | { top: number; bottom: number; left: number; right: number }
+    /** the side captions, drawn at the top beside the swipe handle (left alone in anomaly mode) */
+    leftLabel ?: string
+    rightLabel?: string
+    /** both maps once loaded (Then/anomaly on the left, Now on the right), for the PNG of the view */
+    onmaps   ?: (a: MlMap, b: MlMap) => void
   }
-  let { pmtilesUrl, placeId, bounds, left, right, single, swipe, onswipe, onhover }: Props = $props()
+  let { pmtilesUrl, placeId, bounds, left, right, single, swipe, onswipe, onhover, dark = false, onmaps, leftLabel = '', rightLabel = '', padding = 30 }: Props = $props()
 
   if (!(globalThis as any).__pmtilesProtocol) {
     const protocol = new Protocol()
@@ -43,17 +52,18 @@
   $effect(() => { pos = swipe })
 
   function style(): StyleSpecification {
+    const base = basemapStyle(untrack(() => dark))
     return {
       version: 8,
       sources: {
-        ocean : { type: 'raster', tiles: [OCEAN_TILES], tileSize: 256, maxzoom: 13, attribution: OCEAN_ATTRIBUTION },
+        ...base.sources,
         places: { type: 'vector', url: `pmtiles://${pmtilesUrl}`, minzoom: 0, maxzoom: 12 },
       },
       layers: [
-        { id: 'ocean', type: 'raster', source: 'ocean' },
+        ...base.layers,
         { id: 'outline', type: 'line', source: 'places', 'source-layer': PLACES_SOURCE_LAYER,
           filter: ['==', ['get', 'place_id'], placeId],
-          paint: { 'line-color': '#111', 'line-width': 1.6 } },
+          paint: { 'line-color': untrack(() => dark) ? '#eaf3f7' : '#111', 'line-width': 1.6 } },
       ],
     }
   }
@@ -61,11 +71,14 @@
   onMount(() => {
     const opts = { style: style(), center: [-80.5, 25] as [number, number], zoom: 6, dragRotate: false, pitchWithRotate: false }
     mapA = new maplibregl.Map({ container: elA!, ...opts, attributionControl: false })
-    mapB = new maplibregl.Map({ container: elB!, ...opts, attributionControl: { compact: true } })
+    // the basemap credit sits on the box (below), not on either map: one side is always clipped
+    mapB = new maplibregl.Map({ container: elB!, ...opts, attributionControl: false })
     mapB.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    mapB.addControl(new maplibregl.FullscreenControl({ container: box! }), 'top-right')
+    mapA.addControl(new maplibregl.ScaleControl(), 'bottom-left')
     const unsync = syncMaps(mapA, mapB)
     let n = 0
-    const loaded = () => { if (++n === 2) { ready = true; fit() } }
+    const loaded = () => { if (++n === 2) { ready = true; fit(); onmaps?.(mapA!, mapB!) } }
     mapA.on('load', loaded); mapB.on('load', loaded)
     for (const m of [mapA, mapB]) {
       m.on('mousemove', (e) => onhover?.(e.lngLat))
@@ -79,13 +92,19 @@
   function fit() {
     const b = bounds
     if (!ready || !mapA || !b || !(b[2] > b[0] && b[3] > b[1])) return
-    mapA.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: 30, maxZoom: 10, animate: false })
+    mapA.fitBounds([[b[0], b[1]], [b[2], b[3]]], { padding: untrack(() => padding), maxZoom: 10, animate: false })
   }
   // re-fit when the place (its bounds) changes; the key keeps a same-valued array from refitting
   let fitKey = ''
   $effect(() => {
     const k = JSON.stringify(bounds)
     if (ready && k !== fitKey) { fitKey = k; fit() }
+  })
+  // the theme flips the basemap layers in place and recolours the outline
+  $effect(() => {
+    const d = dark
+    if (!ready) return
+    for (const m of [mapA, mapB]) { setBasemap(m, d); m?.setPaintProperty('outline', 'line-color', d ? '#eaf3f7' : '#111') }
   })
   $effect(() => {
     const id = placeId
@@ -140,14 +159,28 @@
       <span>‹ ›</span>
     </div>
   {/if}
+  {#if leftLabel}
+    <div class="cap l" style:right={single ? null : `calc(${(1 - pos) * 100}% + 10px)`} style:left={single ? '50%' : null}
+         style:transform={single ? 'translateX(-50%)' : null}>{leftLabel}</div>
+  {/if}
+  {#if rightLabel && !single}
+    <div class="cap r" style:left="calc({pos * 100}% + 10px)">{rightLabel}</div>
+  {/if}
+  <div class="attr">{@html dark ? DARK_ATTRIBUTION : OCEAN_ATTRIBUTION}</div>
 </div>
 
 <style>
-  .box    { position: relative; height: 460px; width: 100%; border: 1px solid #ddd; border-radius: 3px; overflow: hidden; }
+  /* the map is the page: fill the lens's positioned stage */
+  .box    { position: absolute; inset: 0; overflow: hidden; }
   .m      { position: absolute; inset: 0; }
+  .cap    { position: absolute; top: 8px; z-index: 6; padding: 2px 8px; border-radius: 4px; pointer-events: none; white-space: nowrap;
+            font: 600 12px/1.4 var(--font-sans); color: var(--text-strong); background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+            box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.2)); }
+  .attr   { position: absolute; right: 4px; bottom: var(--map-bottom, 4px); z-index: 3; max-width: 60%; padding: 1px 6px;
+            border-radius: 3px; font: 10px/1.4 var(--font-sans); color: var(--text-muted); background: color-mix(in srgb, var(--bg-surface) 80%, transparent);
+            pointer-events: none; text-align: right; }
   .slider { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,.6);
             z-index: 5; cursor: ew-resize; touch-action: none; }
   .slider span { position: absolute; top: 50%; left: -17px; width: 32px; height: 32px; margin-top: -16px; border-radius: 50%;
                  background: #fff; box-shadow: 0 0 4px rgba(0,0,0,.5); font: 600 13px/32px system-ui; text-align: center; color: #333; user-select: none; }
-  @media (max-width: 640px) { .box { height: 340px; } }
 </style>

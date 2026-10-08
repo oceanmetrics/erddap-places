@@ -1,21 +1,32 @@
 <script lang="ts">
-  // place-based statistics in the browser: pick a place from the published gazetteer and a variable
-  // from a STAC-described ERDDAP dataset, mask the grid, fetch one griddap slab per lobe, aggregate
-  // with DuckDB-WASM. Nothing but ERDDAP itself is in the request path.
-  import { onMount } from 'svelte'
+  // the Statistics lens: pick a place from the published gazetteer and a variable from a
+  // STAC-described ERDDAP dataset, mask the grid, fetch one griddap slab per lobe, aggregate with
+  // DuckDB-WASM. Nothing but ERDDAP itself is in the request path. The map is the page; the title
+  // sentence, the Controls pane (① Place ② Dataset & variable ③ Method ④ Share), the Time strip and
+  // the Table pill float around it. Any change runs (no Run button); a newer pick supersedes.
+  import { untrack } from 'svelte'
   import * as Plot from '@observablehq/plot'
+  import { Button, Chip, Controls, Legend, Menu, Notice, Pane, Picker, Select, Sentence, TimeStrip, type BrushRange, type PickerItem } from '@marinebon/ui'
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
-  import { gazetteerBase, loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
+  import { loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
   import { loadDatasets, lobeLonSpan, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
-  import { clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
+  import { addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
   import MapView from './lib/MapView.svelte'
+  import PlotBox from './lib/PlotBox.svelte'
   import { cellPoints, cellSquares, placeMapBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
-  import { decodeHash, permalink, type RunState } from './lib/permalink'
+  import { decodeHash, encodeHash, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
+  import { chrome, theme } from './lib/chrome.svelte'
+  import { decodePanes, encodePanes, fitPadding, initialPanes, paneUrlState, hashParam, withExtras, type Lens, type Panes } from './lib/view'
+  import { citation, datasetBlurb, fmtDay, fmtMonths, fmtRange, isStat, plural, shortPlace, STATS, statLabel, variableWords, type StatId } from './lib/sentence'
+  import { grabMap, viewPng } from './lib/png'
+
+  interface Props { setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void }
+  let { setLens }: Props = $props()
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
@@ -34,29 +45,41 @@
   // ever replaced wholesale, so raw state loses nothing.
   let places    = $state.raw<Place[]>([])
   let datasets  = $state.raw<Dataset[]>([])
-  // a shared link reproduces the run: #place=…&dataset=…&variable=…&from=…&to=…, read once, here,
-  // before any effect can default the window from the dataset extent
+  // a shared link reproduces the run: #place=…&dataset=…&variable=…&from=…&to=… (+ stat, show, hide),
+  // read once, here, before any effect can default the window from the dataset extent
   const HASH    = typeof location === 'undefined' ? {} : decodeHash(location.hash)
+  const RAW     = typeof location === 'undefined' ? '' : location.hash
   let hashWindow = Boolean(HASH.from && HASH.to)
   let placeId   = $state(HASH.place ?? 'NMS:HIHWNMS')
   let dsId      = $state(HASH.dataset ?? 'erddap/dhw_5km')
   let varName   = $state(HASH.variable ?? 'CRW_SST')
   let endDate   = $state(HASH.to ?? iso(new Date(Date.now() - LAG_DAYS * 864e5)))
   let startDate = $state(HASH.from ?? iso(new Date(Date.now() - (LAG_DAYS + DEFAULT_DAYS - 1) * 864e5)))
+  // the statistic the Time strip draws (`stat=`; the table and the CSV always carry all of them)
+  const statQ   = hashParam(RAW, 'stat')
+  let stat      = $state<StatId>(isStat(statQ) ? statQ : 'mean_wt')
+  // which panes are open (`show=` / `hide=`); a closed pane is folded to its pill
+  const PANES0  = decodePanes(RAW, 'stats')
+  const VW      = typeof innerWidth === 'number' ? innerWidth : 1280
+  const START   = initialPanes(PANES0, VW)
+  let controlsFolded = $state(!START.controls)
+  let timeFolded     = $state(!START.time)
+  let tableFolded    = $state(!START.side)
+  const panes   = $derived<Panes>({ controls: !controlsFolded, time: !timeFolded, side: !tableFolded })
+  let tab       = $state('place')
   let status    = $state('loading the gazetteer…')
   let error     = $state('')
-  let busy      = $state(false)
+  let busy      = $state(true)
   let note      = $state('')
   let urls      = $state.raw<{ url: string; kb: number; ms: number }[]>([])
   let rows      = $state.raw<Record<string, any>[]>([])
   let sql       = $state('')
   let mapSql    = $state('')   // the last-time-step query behind the map layer
   let totalMs   = $state(0)
-  let chartEl   = $state<HTMLDivElement | null>(null)
   // the dataset's live time extent, from ERDDAP's info table (the STAC extent end is null/stale)
   let extent    = $state<TimeExtent | null>(null)
   let extentFor = $state('')   // the dataset id `extent` belongs to
-  let maskMs    = $state(0)    // time spent masking the grid, reported in the status line
+  let maskMs    = $state(0)    // time spent masking the grid, reported under Share
   // only the newest run may touch the UI: a run started while another is in flight supersedes it
   const runs    = new Runs()
   let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
@@ -66,28 +89,24 @@
   let shownProtocol = $state<'griddap' | 'tabledap'>('griddap')
   let stepDate  = $state('')
   let pmtiles   = $state(placesPmtilesUrl())
-  // what the results on screen are of: file names, the permalink and the reproduce panel use this,
-  // never the live pickers (which stay editable while a run is in flight)
+  // what the results on screen are of: file names, the permalink, the sentence counts and the
+  // reproduce panel use this, never the live pickers (which stay editable while a run is in flight)
   let shownRun  = $state.raw<RunState | null>(null)
   let maskInfo  = $state.raw<{ cells: number; weight: number; partial: number; lobes: number } | null>(null)
   let copied    = $state('')
   let exporting = $state('')
+  let map: any  = null
 
   const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
   const variable = $derived(dataset?.variables.find((v) => v.name === varName) ?? dataset?.variables[0] ?? null)
-  const groups  = $derived([...new Set(places.map((p) => p.gazetteer))].map((g) => ({ g, ps: places.filter((p) => p.gazetteer === g) })))
   // the results on screen belong to the variable that produced them, never to the current picker:
   // a superseded run used to render SST rows through a categorical template ("class NaN")
   const categorical = $derived(shownVar?.categorical === true)
   const nDays   = $derived(Math.round((Date.parse(endDate) - Date.parse(startDate)) / 864e5) + 1)
-  // the dataset in the picker, which the pre-run line describes (`pointRun` is about the results)
   const pickedTabular = $derived(dataset?.protocol === 'tabledap')
-  const nYears  = $derived((Math.max(0, nDays) / 365).toFixed(1))
   const step    = $derived(extent?.stepLabel ?? (dataset?.timeStep === 'P1D' ? 'daily' : undefined))
-  const nSteps  = $derived(Math.max(1, Math.round(nDays / (extent?.stepDays ?? 1))))
-  const through = $derived(extentFor === dsId && extent ? `data through ${extent.end.slice(0, 10)}` +
-                           (step && step !== 'daily' ? ` (${step} steps)` : '') : '')
+  const through = $derived(extentFor === dsId && extent ? extent.end.slice(0, 10) : '')
   // categorical rows, labelled and coloured (seascapeR's class table when the collection carries one)
   const classList = $derived(categorical
     ? [...new Set(rows.map((r) => Number(r.class)))].sort((a, b) => a - b)
@@ -104,10 +123,40 @@
   })))
   const fmt     = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
+  // ── pickers (the Controls tabs and the sentence chips show the same ones) ───
+  const GAZ_GROUP: Record<string, string> = { NMS: 'Sanctuaries', MRGID: 'Marine regions', PSGID: 'Protected areas' }
+  const GAZ_ORDER = ['NMS', 'MRGID', 'PSGID']
+  const gazRank = (g: string) => { const i = GAZ_ORDER.indexOf(g); return i < 0 ? GAZ_ORDER.length : i }
+  const placeItems = $derived<PickerItem[]>([...places].sort((a, b) => gazRank(a.gazetteer) - gazRank(b.gazetteer) || a.name.localeCompare(b.name)).map((p) => ({
+    id: p.place_id, label: shortPlace(p.name), group: GAZ_GROUP[p.gazetteer] ?? p.gazetteer,
+    keywords: `${p.place_id} ${p.name}`, color: 'var(--facet-place)',
+  })))
+  const cadenceGroup = (d: Dataset) => d.protocol === 'tabledap' ? 'Samples (tabledap)'
+    : d.timeStep === 'P1D' ? 'Daily grids' : d.timeStep === 'P1M' ? 'Monthly grids' : 'Other grids'
+  const datasetItems = $derived<PickerItem[]>(datasets.map((d) => ({
+    id: d.id, label: d.title, group: cadenceGroup(d), disabled: d.status === 'pending',
+    keywords: `${d.id} ${d.variables.map((v) => `${v.name} ${v.description}`).join(' ')}`,
+  })))
+  const variableOptions = $derived((dataset?.variables ?? []).map((v) => ({
+    value: v.name, label: `${variableWords(v.description, v.name)}${v.categorical ? ' (classes)' : ''}`,
+  })))
+  const statOptions = STATS.map((s) => ({ value: s.id, label: s.label }))
+
+  // ── the sentence ────────────────────────────────────────────────────────────
+  const shownDs   = $derived(shownRun ? datasets.find((d) => d.id === shownRun!.dataset) ?? null : null)
+  const varLabel  = $derived(variable ? variableWords(variable.description, variable.name) : 'Variable')
+  const blurb     = $derived(dataset ? datasetBlurb(dataset.collection, dataset.timeStep, extent?.stepLabel, dataset.protocol) : '')
+  const placeLabel = $derived(place ? shortPlace(place.name) : placeId)
+  const methodLabel = $derived(pickedTabular ? 'monthly mean' : variable?.categorical ? 'area-weighted class fractions' : statLabel(stat))
+  const windowLabel = $derived(pickedTabular ? fmtMonths(startDate, endDate) : fmtRange(startDate, endDate))
+  const countWord = $derived(shownProtocol === 'tabledap' ? 'station' : 'cell')
+  const unit      = $derived(shownVar ? valueLabel(shownVar) : '')
+  const titleText = $derived(`${varLabel}${blurb ? ` (${blurb})` : ''} in ${placeLabel}, ${methodLabel}` +
+    (maskInfo ? ` of ${plural(maskInfo.cells, countWord)}` : '') + `, ${windowLabel}`)
+
   // ── map ─────────────────────────────────────────────────────────────────────
   // the place's bounds; only an antimeridian place (PMNM) costs a geometry walk (see cells.ts)
   const mapBounds = $derived(place ? placeMapBounds(place) : null)
-  const unit      = $derived(shownVar ? valueLabel(shownVar) : '')
   // a sequential ramp for a measurement, the chart's own class colours for a categorical grid
   const layer     = $derived(squares ?? points)
   const pointRun  = $derived(shownProtocol === 'tabledap')   // the results on screen are tabledap
@@ -121,15 +170,7 @@
     return ['case', ['==', ['get', 'value'], null], 'rgba(0,0,0,0)',
             ['interpolate', ['linear'], ['get', 'value'], ...rampStops(l.range[0], l.range[1])]] as any
   })
-  const ramp7  = VIRIDIS_9.filter((_, i) => i % 2 === 0)
-  const legend = $derived.by(() => {
-    const l = layer
-    if (!l) return []
-    if (categorical) return classList.map((c) => ({ label: classLabel(c), color: colours.get(String(c))! }))
-    const [lo, hi] = l.range
-    return ramp7.map((color, i) => ({ color, label: i === 0 || i === ramp7.length - 1
-      ? (lo + ((hi - lo) * i) / (ramp7.length - 1)).toFixed(1) : '' }))
-  })
+  const legendItems = $derived(categorical ? classList.map((c) => ({ label: classLabel(c), color: colours.get(String(c))! })) : [])
   const cellText  = $derived(categorical
     ? (v: number) => `${classLabel(v)} (class ${v})`
     : (v: number) => `${v.toFixed(2)} ${unit}`.trim())
@@ -148,11 +189,22 @@
       : { date, n: num(r.n), mean: num(r.mean), mean_wt: num(r.mean_wt), sd: num(r.sd),
           min: num(r.min), max: num(r.max), p10: num(r.p10), p90: num(r.p90), weight_sum: num(r.weight_sum) }
   }))
-  const link = $derived(shownRun ? permalink(shownRun) : '')
+  // the view in the URL: the run on screen, the statistic and the panes that differ from the default
+  const viewHash = $derived.by(() => {
+    if (!shownRun) return ''
+    const { show, hide } = encodePanes(paneUrlState(panes, PANES0, VW), 'stats')
+    return withExtras(encodeHash(shownRun), { stat: stat !== 'mean_wt' ? stat : null, show, hide })
+  })
+  const link = $derived(viewHash && typeof location !== 'undefined' ? location.href.split('#')[0] + viewHash : '')
+  $effect(() => {
+    const h = viewHash
+    if (h && typeof history !== 'undefined' && h !== location.hash)
+      history.replaceState(null, '', location.pathname + location.search + h)
+  })
   /** everything needed to repeat this run outside the browser, as one copyable block. */
   const reproduce = $derived.by(() => {
     if (!shownRun) return ''
-    const ds = datasets.find((d) => d.id === shownRun!.dataset)
+    const ds = shownDs
     return [
       `# erddap-places — ${place?.name ?? shownRun.place} (${shownRun.place})`,
       `# dataset ${shownRun.dataset} (${ds?.baseUrl ?? '?'}, ERDDAP ${ds?.version ?? '?'}), ` +
@@ -176,6 +228,8 @@
       mapSql,
     ].join('\n')
   })
+  const cite = $derived(shownDs ? citation(shownDs, iso(new Date())) +
+    ' Places: Ocean Metrics gazetteer (NOAA ONMS, MarineRegions.org, ProtectedSeas), https://storage.oceanmetrics.io/gazetteer/.' : '')
 
   async function copy(text: string, what: string) {
     copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
@@ -194,16 +248,31 @@
       exporting = ''
     } catch (e) { exporting = `Parquet export failed: ${e instanceof Error ? e.message : String(e)}` }
   }
-
-  onMount(async () => {
+  async function savePng() {
+    if (!map || !shownRun) return
+    exporting = 'drawing the PNG…'
     try {
-      const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
-      places = ps; datasets = ds
-      if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
-      pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
-      status = `gazetteer: ${places.length} places, ${datasets.length} ERDDAP datasets (${gazetteerBase()})`
-      await run()
-    } catch (e) { fail(e) }
+      const canvas = await grabMap(map)
+      const blob = await viewPng({ layers: [{ canvas }], title: titleText, dark: theme.dark,
+        sub: (stepDate ? `map: ${fmtDay(stepDate)}` : '') + (layer && !categorical ? ` · colour ${layer.range[0].toFixed(2)} to ${layer.range[1].toFixed(2)} ${unit}` : ''),
+        stamp: [`${shownDs?.title ?? shownRun.dataset} · ERDDAP ${shownDs?.version ?? ''} · built by Ocean Metrics for MBON`, link] })
+      download(blob, resultFileName(shownRun, 'png'), 'image/png')
+      exporting = ''
+    } catch (e) { exporting = `PNG failed: ${e instanceof Error ? e.message : String(e)}` }
+  }
+
+  // ── loading, and running on every change ───────────────────────────────────
+  $effect(() => {
+    untrack(async () => {
+      try {
+        const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
+        places = ps; datasets = ds
+        if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
+        pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
+        status = `gazetteer: ${places.length} places, ${datasets.length} ERDDAP datasets`
+        if (!places.some((p) => p.place_id === placeId)) { busy = false; error = `no place ${placeId} in the gazetteer` }
+      } catch (e) { fail(e); busy = false }
+    })
   })
 
   function fail(e: unknown) {
@@ -219,6 +288,28 @@
     if (!d || extentFor === d.id) return
     const reset = !hashWindow; hashWindow = false
     loadExtent(d, reset)
+  })
+  // run on change: once the pickers are valid and the dataset's extent is in, any new
+  // place × dataset × variable × window runs after a short pause (typing a date does not stack runs;
+  // a run in flight is superseded and aborted, as before)
+  let lastKey = ''
+  const keyOf = (p: string, d: string, v: string, a: string, b: string) => [p, d, v, a, b].join('|')
+  $effect(() => {
+    const key = keyOf(placeId, dsId, varName, startDate, endDate)
+    const ready = !!place && !!dataset && !!variable && variable.name === varName && extentFor === dsId
+    if (!ready || key === lastKey) return
+    const t = setTimeout(() => { lastKey = key; untrack(() => run()) }, 250)
+    return () => clearTimeout(t)
+  })
+  // the footer line: "updating… <step>" while busy, the timings once done
+  $effect(() => { chrome.busy = busy; chrome.step = busy ? status : '' })
+  $effect(() => {
+    const d = shownDs
+    chrome.release = d ? `${d.title} · ERDDAP ${d.version ?? '?'}${through && extentFor === d.id ? ` · data through ${fmtDay(through)}` : ''}` : ''
+  })
+  $effect(() => {
+    const kb = urls.reduce((a, u) => a + u.kb, 0)
+    chrome.timing = shownRun ? `${plural(rows.length, 'row')} · ${kb.toLocaleString('en-US')} kB · ${(totalMs / 1000).toFixed(1)} s (mask ${(maskMs / 1000).toFixed(2)} s)` : ''
   })
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
@@ -256,11 +347,13 @@
       if (win.snapped) note = `window ${win.reason}`
       let end = win.end, start = win.start
       if (daysBetween(start, end) + 1 > cap) start = iso(new Date(Date.parse(end) - (cap - 1) * 864e5))
+      // the clamped window is what ran: the run-on-change effect must not see it as a new pick
+      lastKey = keyOf(p.place_id, ds.id, v.name, start, end)
       startDate = start; endDate = end
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
 
-      // the mask works on a plain copy: nothing reactive, and no work at all happens until Run
+      // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))
       maskMs = 0
       const cells: MaskCell[] = []
@@ -376,7 +469,6 @@
       maskInfo = { cells: cells.length, lobes: lobes.length,
                    weight: cells.reduce((a, c) => a + c.weight, 0),
                    partial: cells.filter((c) => c.weight < 0.999).length }
-      if (typeof history !== 'undefined') history.replaceState(null, '', permalink(shownRun))
       // tabledap counts stations and rolls up by month; a grid counts cells and time steps
       note = (win.snapped ? `window ${win.reason}. ` : '') +
              `${lobes.length} lobe${lobes.length > 1 ? 's' : ''}, ` +
@@ -397,231 +489,308 @@
     }
   }
 
-  // ── charts ──────────────────────────────────────────────────────────────────
-  // continuous: mean / area-weighted mean with a p10-p90 band.
-  // categorical: stacked area of the area-weighted class proportions (seascapeR's plot_ss_ts()).
-  $effect(() => {
-    if (!chartEl || !rows.length || !shownVar) return
-    const chart = pointRun ? monthlyChart() : categorical ? categoricalChart() : continuousChart()
-    chartEl.replaceChildren(chart)
-    return () => chart.remove()
+  // ── the Time strip ──────────────────────────────────────────────────────────
+  // the window sits inside a context span (the window again on each side, within the dataset's
+  // extent) and is drawn as the brush; dragging a new brush sets the window and runs it. no extra
+  // data is fetched for the context: only the window is ever requested.
+  const ms = (d: string) => Date.parse(`${d.slice(0, 10)}T00:00:00Z`)
+  const ctx = $derived.by((): [number, number] => {
+    const len = Math.max(1, nDays)
+    let a = ms(addDays(startDate, -len)), b = ms(addDays(endDate, len))
+    if (extent?.start) a = Math.max(a, Math.min(ms(startDate), ms(extent.start.slice(0, 10))))
+    if (extent?.end)   b = Math.min(b, Math.max(ms(endDate), ms(extent.end.slice(0, 10))))
+    if (!(b > a)) b = a + 864e5
+    return [a, b + 864e5]
   })
+  const winBrush = $derived<[number, number] | null>(Number.isFinite(ctx[0]) && nDays > 0
+    ? [(ms(startDate) - ctx[0]) / (ctx[1] - ctx[0]), (ms(endDate) + 864e5 - ctx[0]) / (ctx[1] - ctx[0])] : null)
+  let brush = $state<[number, number] | null>(null)
+  $effect(() => { brush = winBrush })
+  let stripH = $state(150)
+  const PL = 52, PR = 14
+  function onbrushend(r: BrushRange) {
+    if (r.v0 === undefined || r.v1 === undefined) return
+    let a = iso(new Date(Math.round(r.v0 / 864e5) * 864e5)), b = iso(new Date(Math.round(r.v1 / 864e5) * 864e5 - 864e5))
+    if (b < a) b = a
+    const cap = winOpts(dataset).maxDays
+    if (daysBetween(a, b) + 1 > cap) a = addDays(b, -(cap - 1))
+    startDate = a; endDate = b
+    brush = winBrush
+  }
+  const ink  = $derived(theme.dark ? '#c4d7e0' : '#44606e')
+  const main = $derived(theme.dark ? '#6fc3d3' : '#2456b8')
+  const alt  = $derived(theme.dark ? '#f5b53f' : '#b5651d')
+  // the comparison line: the unweighted mean beside the area-weighted one (and vice versa)
+  const altStat = $derived<StatId>(stat === 'mean_wt' ? 'mean' : 'mean_wt')
+  const stripTitle = $derived(pointRun ? 'monthly mean · min–max' : categorical ? 'class fractions of the place area'
+    : `${statLabel(stat)} · ${step ?? 'daily'}${unit ? ` · ${unit}` : ''}`)
 
-  function continuousChart() {
-    const long = rows.flatMap((r) => [
-      { date: new Date(r.date), stat: 'mean',          value: r.mean    },
-      { date: new Date(r.date), stat: 'area-wtd mean', value: r.mean_wt },
-    ])
-    return Plot.plot({
-      width: 820, height: 320, marginLeft: 55,
-      y: { label: valueLabel(shownVar!), grid: true },
-      x: { label: step && step !== 'daily' ? `date (${step} steps)` : null },
-      color: { legend: true, domain: ['mean', 'area-wtd mean'], range: ['#1f77b4', '#d62728'] },
+  function chart(width: number, height: number): Element | null {
+    if (!rows.length || !shownVar) return null
+    const x = { domain: [new Date(ctx[0]), new Date(ctx[1])], type: 'utc' as const, label: null,
+                ticks: Math.max(2, Math.floor(width / 90)), tickFormat: pointRun ? '%b %Y' : '%-d %b' }
+    const base = { width, height, marginLeft: PL, marginRight: PR, marginTop: 8, marginBottom: 22,
+                   style: { background: 'transparent', color: ink, fontSize: '10px' } }
+    if (pointRun)
+      return Plot.plot({ ...base, x, y: { label: null, grid: true },
+        marks: [
+          Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'min', y2: 'max', fill: main, fillOpacity: 0.15, curve: 'step' }),
+          Plot.line(rows, { x: (r: any) => new Date(r.date), y: 'mean', stroke: main, strokeWidth: 1.8 }),
+          Plot.dot(rows,  { x: (r: any) => new Date(r.date), y: 'mean', fill: main, r: 2.5,
+            title: (r: any) => `${new Date(r.date).toISOString().slice(0, 7)}\n${Number(r.mean).toFixed(2)}\n${r.n} measurements, ${r.n_casts} casts` }),
+        ] })
+    if (categorical) {
+      const domain = classList.map(classLabel)
+      return Plot.plot({ ...base, x, y: { label: null, grid: true, percent: true },
+        color: { domain, range: classList.map((c) => colours.get(String(c))!) },
+        marks: [
+          Plot.areaY(catRows, { x: 'date', y: 'fraction', fill: 'label', offset: 'normalize', order: domain, curve: 'step',
+            title: (d: any) => `${d.date.toISOString().slice(0, 10)}\n${d.label}\n${(d.fraction * 100).toFixed(1)}% of area, ${d.n} cells` }),
+          Plot.ruleY([0]),
+        ] })
+    }
+    const pts = (k: string) => rows.map((r) => ({ date: new Date(r.date), value: r[k] }))
+    return Plot.plot({ ...base, x, y: { label: null, grid: true },
       marks: [
-        Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: '#1f77b4', fillOpacity: 0.12 }),
-        Plot.line(long, { x: 'date', y: 'value', stroke: 'stat', strokeWidth: 1.8 }),
-        Plot.dot(long,  { x: 'date', y: 'value', stroke: 'stat', r: 2 }),
-      ],
-    })
+        Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: main, fillOpacity: 0.13 }),
+        // the comparison: thin and dashed, so two lines 0.04 °C apart stay two lines
+        ...(stat === 'mean_wt' || stat === 'mean'
+          ? [Plot.line(pts(altStat), { x: 'date', y: 'value', stroke: alt, strokeWidth: 1.2, strokeDasharray: '4,3' })] : []),
+        Plot.line(pts(stat), { x: 'date', y: 'value', stroke: main, strokeWidth: 2 }),
+        Plot.dot(pts(stat), { x: 'date', y: 'value', fill: main, r: 2,
+          title: (d: any) => `${d.date.toISOString().slice(0, 10)}\n${statLabel(stat)} ${fmt(d.value)} ${unit}` }),
+      ] })
   }
 
-  // tabledap: monthly mean with the month's min-max band, over an x axis of months
-  function monthlyChart() {
-    return Plot.plot({
-      width: 820, height: 320, marginLeft: 55,
-      y: { label: valueLabel(shownVar!), grid: true },
-      x: { label: 'month' },
-      color: { legend: true, domain: ['monthly mean', 'min–max'], range: ['#1f77b4', '#9ecae1'] },
-      marks: [
-        Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'min', y2: 'max', fill: '#1f77b4', fillOpacity: 0.15, curve: 'step' }),
-        Plot.line(rows, { x: (r: any) => new Date(r.date), y: 'mean', stroke: '#1f77b4', strokeWidth: 1.8 }),
-        Plot.dot(rows,  { x: (r: any) => new Date(r.date), y: 'mean', fill: '#1f77b4', r: 2.5,
-          title: (r: any) => `${new Date(r.date).toISOString().slice(0, 7)}\n${Number(r.mean).toFixed(2)}\n${r.n} measurements, ${r.n_casts} casts` }),
-      ],
-    })
-  }
-
-  function categoricalChart() {
-    const domain = classList.map(classLabel)
-    return Plot.plot({
-      width: 820, height: 360, marginLeft: 55, marginRight: 10,
-      y: { label: 'fraction of place area', grid: true, percent: true },
-      x: { label: step && step !== 'daily' ? `date (${step} steps)` : null },
-      color: { legend: true, domain, range: classList.map((c) => colours.get(String(c))!) },
-      marks: [
-        Plot.areaY(catRows, {
-          x: 'date', y: 'fraction', fill: 'label', offset: 'normalize',
-          order: domain, curve: 'step',
-          title: (d: any) => `${d.date.toISOString().slice(0, 10)}\n${d.label}\n${(d.fraction * 100).toFixed(1)}% of area, ${d.n} cells`,
-        }),
-        Plot.ruleY([0]),
-      ],
-    })
-  }
+  const tableLabel = $derived(pointRun ? `Table · ${plural(rows.length, 'month')}`
+    : categorical ? `Table · ${plural(new Set(rows.map((r) => r.date)).size, 'day')}` : `Table · ${plural(rows.length, 'day')}`)
+  const switchLens = () => setLens?.('then-now', { place: placeId, panes })
 </script>
 
-<main>
-  <h1>erddap-places <a class="mode" href="#mode=then-now">Then vs Now →</a></h1>
-  <p class="sub">Key statistics for a gazetteer place from an ERDDAP™ griddap dataset — masked, fetched
-     and aggregated entirely in this browser with DuckDB-WASM.</p>
-
-  <div class="controls">
-    <label>place
-      <select bind:value={placeId} disabled={!places.length}>
-        {#each groups as { g, ps }}
-          <optgroup label={g}>
-            {#each ps as p}<option value={p.place_id}>{p.name} ({p.place_id})</option>{/each}
-          </optgroup>
-        {/each}
-      </select>
-    </label>
-    <label>dataset
-      <select bind:value={dsId} disabled={!datasets.length}>
-        {#each datasets as d}<option value={d.id} disabled={d.status === 'pending'}>{d.title}{d.status === 'pending' ? ' (pending: not served yet)' : ''}</option>{/each}
-      </select>
-    </label>
-    {#if through}<span class="through">{through}</span>{/if}
-    <label>variable
-      <select bind:value={varName} disabled={!dataset}>
-        {#each dataset?.variables ?? [] as v}<option value={v.name}>{v.name}{v.categorical ? ' (categorical)' : ''} — {v.description}</option>{/each}
-      </select>
-    </label>
-    <label>from <input type="date" bind:value={startDate} /></label>
-    <label>to <input type="date" bind:value={endDate} /></label>
-    <button onclick={run} disabled={!place || !variable}>{busy ? 'Run (supersedes)' : 'Run'}</button>
-  </div>
-  <p class="meta">
-    {#if pickedTabular}
-      {nYears} year{nYears === '1.0' ? '' : 's'} requested (tabledap: monthly roll-up, no {MAX_DAYS}-day cap)
-    {:else}
-      {nDays > 0 ? nDays : 0} days requested (capped at {MAX_DAYS}){#if step && step !== 'daily'} ≈ {nSteps} {step} steps{/if}
+{#snippet placePicker(close?: () => void)}
+  <Picker items={placeItems} value={placeId} label="places" placeholder="Search places…" maxHeight={close ? '16rem' : '11rem'}
+          onselect={(it) => { placeId = it.id; close?.() }} />
+{/snippet}
+{#snippet datasetPicker(close?: () => void)}
+  <div class="pane-col">
+    <Picker items={datasetItems} value={dsId} label="datasets" placeholder="Search datasets…" maxHeight={close ? '13rem' : '11rem'}
+            onselect={(it) => { dsId = it.id }} />
+    {#if dataset}
+      <Select label="Variable" value={varName} options={variableOptions} onchange={(v) => { varName = v; close?.() }} />
+      <p class="pane-note">{blurb}{through ? ` · ${fmtDay(extent?.start ?? '')} – ${fmtDay(through)}` : ''}</p>
     {/if}
-  </p>
-
-  <p class="status" class:err={!!error}>{error || status}</p>
-  {#if note}<p class="meta">{note}</p>{/if}
-
-  {#if rows.length && shownRun}
-    <div class="export">
-      <button onclick={saveCsv}>Download CSV</button>
-      <button onclick={saveParquet}>Download Parquet</button>
-      <button onclick={() => copy(link, 'permalink')}>Copy permalink</button>
-      {#if copied}<span class="ok">{copied}</span>{/if}
-      {#if exporting}<span class="ok">{exporting}</span>{/if}
+  </div>
+{/snippet}
+{#snippet lensSwitch()}
+  <div class="lens-switch" role="group" aria-label="lens">
+    <Button variant="quiet" size="sm" pressed={true}>Window statistics</Button>
+    <Button variant="quiet" size="sm" pressed={false} onclick={switchLens}>Then vs Now</Button>
+  </div>
+{/snippet}
+{#snippet methodPanel()}
+  <div class="pane-col">
+    {@render lensSwitch()}
+    {#if pickedTabular}
+      <p class="pane-note">Sample data: every measurement at a station inside the place, rolled up by month (mean, sd, min, max, p10, p90).</p>
+    {:else if variable?.categorical}
+      <p class="pane-note">Classes: the share of the place's area in each class per time step, each cell weighted by the share of its area inside the place.</p>
+    {:else}
+      <Select label="Statistic (the Time strip)" value={stat} options={statOptions} onchange={(v) => { stat = v as StatId }} />
+      <p class="pane-note">Mask: each grid cell weighted by the share of its area inside the place{maskInfo && !pointRun ? ` (${plural(maskInfo.cells, 'cell')}, ${maskInfo.partial} on the boundary)` : ''}. The table and the CSV carry every statistic.</p>
+    {/if}
+    {@render windowPanel()}
+  </div>
+{/snippet}
+{#snippet windowPanel()}
+  <div class="pane-row">
+    <label class="pane-field">from <input type="date" bind:value={startDate} min={extent?.start?.slice(0, 10)} max={through || undefined} /></label>
+    <label class="pane-field">to <input type="date" bind:value={endDate} min={extent?.start?.slice(0, 10)} max={through || undefined} /></label>
+  </div>
+  <p class="pane-note">{pickedTabular ? 'Up to five years, monthly roll-up.' : `Up to ${MAX_DAYS} days`}{through ? `; data through ${fmtDay(through)}` : ''}{step && step !== 'daily' ? ` (${step} steps)` : ''}. Or drag on the Time strip.</p>
+{/snippet}
+{#snippet sharePanel()}
+  <div class="pane-col">
+    <div class="pane-row">
+      <Button variant="action" size="sm" onclick={saveCsv} disabled={!rows.length}>Download CSV</Button>
+      <Button variant="quiet" size="sm" onclick={saveParquet} disabled={!rows.length}>Parquet</Button>
+      <Button variant="quiet" size="sm" onclick={savePng} disabled={!shownRun}>PNG of the view</Button>
     </div>
-  {/if}
+    <div class="pane-row">
+      <Button variant="quiet" size="sm" onclick={() => copy(link, 'link')} disabled={!link}>Copy link</Button>
+      <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')} disabled={!cite}>Copy citation</Button>
+      {#if copied || exporting}<span class="pane-note" role="status">{copied || exporting}</span>{/if}
+    </div>
+    {#if cite}<details class="pane-details"><summary>Cite this data</summary><p class="pane-note">{cite}</p></details>{/if}
+    {#if shownRun}
+      <details class="pane-details">
+        <summary>Reproduce: requests, mask, SQL and timing</summary>
+        <div class="pane-col">
+          <Button variant="quiet" size="sm" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</Button>
+          {#each urls as u}
+            <p class="pane-mono"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
+          {/each}
+          {#if maskInfo && pointRun}
+            <p class="pane-note">{plural(maskInfo.cells, 'sample position')} inside the place, in {plural(maskInfo.lobes, 'lobe')}</p>
+          {:else if maskInfo}
+            <p class="pane-note">{plural(maskInfo.cells, 'cell')} in {plural(maskInfo.lobes, 'lobe')}, total area weight {maskInfo.weight.toFixed(3)}, {plural(maskInfo.partial, 'partial (boundary) cell')}</p>
+          {/if}
+          {#if note}<p class="pane-note">{note}</p>{/if}
+          <span class="mbon-label">sql/{statsTemplate(shownVar, shownProtocol)}.sql</span>
+          <pre class="pane-pre">{sql}</pre>
+          <span class="mbon-label">sql/{pointRun ? 'points_tabledap' : 'last_step'}.sql (the map layer)</span>
+          <pre class="pane-pre">{mapSql}</pre>
+        </div>
+      </details>
+    {/if}
+  </div>
+{/snippet}
 
-  <MapView
-    pmtilesUrl={pmtiles}
-    {placeId}
-    onselect={(id) => { placeId = id }}
-    bounds={mapBounds}
-    squares={squares?.geojson ?? null}
-    points={points?.geojson ?? null}
-    {fillColor}
-    valueLabel={shownVar ? (categorical ? shownVar.name : `${shownVar.name}${unit && unit !== shownVar.name ? ` (${unit})` : ''}`) : 'place'}
-    valueText={cellText}
-    weightLabel={pointRun ? 'measurements' : 'area weight'}
-    weightText={pointRun ? (v) => String(Math.round(v)) : undefined}
-    {stepDate}
-    {legend} />
+<div class="lens" data-state={error ? 'error' : busy ? 'loading' : shownRun ? 'done' : 'idle'}>
+  <div class="sentence-bar">
+    <Sentence>
+      <Chip label={varLabel} facet="dataset" title="choose a dataset and variable" width="24rem">
+        {#snippet children(close)}{@render datasetPicker(close)}{/snippet}
+      </Chip>
+      {#if blurb}<span class="paren">({blurb})</span>{/if}
+      in
+      <span class="nw"><Chip label={placeLabel} facet="place" title="choose a place" width="22rem">
+        {#snippet children(close)}{@render placePicker(close)}{/snippet}
+      </Chip>,</span>
+      <span class="nw"><Chip label={methodLabel} facet="method" title="choose the method" width="22rem">
+        {#snippet children()}{@render methodPanel()}{/snippet}
+      </Chip>{#if maskInfo}&nbsp;of <span class="num">{plural(maskInfo.cells, countWord)}</span>,{:else},{/if}</span>
+      <Chip label={windowLabel} facet="method" title="choose the window" width="20rem">
+        {#snippet children()}<div class="pane-col">{@render windowPanel()}</div>{/snippet}
+      </Chip>
+      {#snippet sub()}
+        {#if layer && categorical}
+          <Legend type="categorical" items={legendItems} />
+        {:else if layer}
+          <Legend title={`${shownVar?.name ?? ''} ${unit ? `(${unit})` : ''}`} colors={VIRIDIS_9} domain={layer.range} />
+        {/if}
+        <span class="counts">
+          {#if stepDate}map: {fmtDay(stepDate)}{/if}
+          {#if maskInfo && !pointRun} · {plural(maskInfo.cells, 'cell')} · {maskInfo.partial} on the boundary{/if}
+          {#if maskInfo && pointRun} · {plural(maskInfo.cells, 'station')}{/if}
+          {#if note && /snapped|capped|clamp/i.test(note)} · {note.split('. ')[0]}{/if}
+        </span>
+      {/snippet}
+    </Sentence>
+  </div>
 
-  <div bind:this={chartEl} class="chart"></div>
+  <div class="stage" style:--map-bottom={timeFolded ? '52px' : `${stripH + 58}px`}>
+    <MapView
+      pmtilesUrl={pmtiles}
+      {placeId}
+      onselect={(id) => { placeId = id }}
+      bounds={mapBounds}
+      squares={squares?.geojson ?? null}
+      points={points?.geojson ?? null}
+      {fillColor}
+      dark={theme.dark}
+      padding={fitPadding(VW, START, 150)}
+      onmap={(m) => { map = m }}
+      valueLabel={shownVar ? (categorical ? shownVar.name : `${shownVar.name}${unit && unit !== shownVar.name ? ` (${unit})` : ''}`) : 'place'}
+      valueText={cellText}
+      weightLabel={pointRun ? 'measurements' : 'area weight'}
+      weightText={pointRun ? (v) => String(Math.round(v)) : undefined} />
 
-  {#if rows.length && pointRun}
-    <table>
-      <thead><tr><th>month</th><th>n</th><th>casts</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
-      <tbody>
-        {#each rows as r}
-          <tr>
-            <td>{new Date(r.date).toISOString().slice(0, 7)}</td><td>{r.n}</td><td>{r.n_casts}</td>
-            <td>{fmt(r.mean)}</td><td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td>
-            <td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {:else if rows.length && categorical}
-    <table>
-      <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
-      <tbody>
-        {#each catRows as r}
-          <tr>
-            <td>{r.date.toISOString().slice(0, 10)}</td>
-            <td><span class="swatch" style="background:{colours.get(String(r.class))}"></span>{r.class}</td>
-            <td>{r.label}</td><td>{r.n}</td><td>{fmt(rows.find((x) => x.date === +r.date && Number(x.class) === r.class)?.weight)}</td>
-            <td>{(r.fraction * 100).toFixed(1)}%</td><td>{r.percent.toFixed(1)}%</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {:else if rows.length}
-    <table>
-      <thead><tr><th>date</th><th>n</th><th>mean</th><th>area-wtd mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
-      <tbody>
-        {#each rows as r}
-          <tr>
-            <td>{new Date(r.date).toISOString().slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean)}</td><td>{fmt(r.mean_wt)}</td>
-            <td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td><td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  {/if}
+    {#if error}
+      <div class="toast"><Notice kind="error" ondismiss={() => { error = '' }}>{error}</Notice></div>
+    {/if}
 
-  {#if shownRun}
-    <details class="repro" open>
-      <summary>reproduce this run</summary>
-      <button class="copy" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</button>
+    <Controls id="ep-controls" title="controls" width={390} bind:active={tab} bind:collapsed={controlsFolded}
+      tabs={[{ id: 'place', label: 'Place' }, { id: 'data', label: 'Dataset & variable' }, { id: 'method', label: 'Method' }, { id: 'share', label: 'Share' }]}>
+      {#snippet tabLabel(t)}<span class="tab-label">{t.label}</span>{/snippet}
+      {#snippet panel(id)}
+        {#if id === 'place'}
+          <div class="pane-col">
+            {@render placePicker()}
+            {#if place}<p class="pane-note">{place.name} · {place.place_id}{place.area_km2 ? ` · ${Math.round(place.area_km2).toLocaleString('en-US')} km²` : ''}. Or click a place on the map.</p>{/if}
+          </div>
+        {:else if id === 'data'}
+          {@render datasetPicker()}
+        {:else if id === 'method'}
+          {@render methodPanel()}
+        {:else}
+          {@render sharePanel()}
+        {/if}
+      {/snippet}
+      {#snippet footer()}{maskInfo ? `${plural(maskInfo.cells, countWord)} · ` : ''}{dataset?.title ?? ''}{busy ? ' · updating…' : ''}{/snippet}
+    </Controls>
 
-      <h3>{shownProtocol} request{urls.length > 1 ? 's' : ''}</h3>
-      {#each urls as u}
-        <p class="url"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
-      {/each}
+    <Pane title="table" id="ep-table" anchor="top-right" offset={{ x: 0, y: 130 }} width={380} height={300}
+          bind:collapsed={tableFolded} pillLabel={rows.length ? tableLabel : 'Table'}>
+      {#snippet actions()}
+        <Menu label="⬇" ariaLabel="Export the table" align="end">
+          {#snippet children(close)}
+            <button type="button" onclick={() => { saveCsv(); close() }}>CSV</button>
+            <button type="button" onclick={() => { saveParquet(); close() }}>Parquet</button>
+          {/snippet}
+        </Menu>
+      {/snippet}
+      <div class="table-wrap">
+        {#if rows.length && pointRun}
+          <table class="data-table">
+            <thead><tr><th>month</th><th>n</th><th>casts</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+            <tbody>
+              {#each rows as r}
+                <tr>
+                  <td>{new Date(r.date).toISOString().slice(0, 7)}</td><td>{r.n}</td><td>{r.n_casts}</td>
+                  <td>{fmt(r.mean)}</td><td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td>
+                  <td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {:else if rows.length && categorical}
+          <table class="data-table">
+            <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
+            <tbody>
+              {#each catRows as r}
+                <tr>
+                  <td>{r.date.toISOString().slice(0, 10)}</td>
+                  <td><span class="swatch" style:background={colours.get(String(r.class))}></span>{r.class}</td>
+                  <td>{r.label}</td><td>{r.n}</td><td>{fmt(rows.find((x) => x.date === +r.date && Number(x.class) === r.class)?.weight)}</td>
+                  <td>{(r.fraction * 100).toFixed(1)}%</td><td>{r.percent.toFixed(1)}%</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {:else if rows.length}
+          <table class="data-table">
+            <thead><tr><th>date</th><th>n</th><th>area-wtd mean</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+            <tbody>
+              {#each rows as r}
+                <tr>
+                  <td>{new Date(r.date).toISOString().slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean_wt)}</td><td>{fmt(r.mean)}</td>
+                  <td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td><td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        {:else}
+          <p class="pane-note">{busy ? 'updating…' : 'no rows yet'}</p>
+        {/if}
+      </div>
+    </Pane>
 
-      <h3>mask</h3>
-      {#if maskInfo && pointRun}
-        <p class="meta">{maskInfo.cells} sample position{maskInfo.cells === 1 ? '' : 's'} inside the place,
-           in {maskInfo.lobes} lobe{maskInfo.lobes > 1 ? 's' : ''}</p>
-      {:else if maskInfo}
-        <p class="meta">{maskInfo.cells} cells in {maskInfo.lobes} lobe{maskInfo.lobes > 1 ? 's' : ''},
-           total area weight {maskInfo.weight.toFixed(3)},
-           {maskInfo.partial} partial (boundary) cell{maskInfo.partial === 1 ? '' : 's'}</p>
-      {/if}
-
-      <h3>permalink</h3>
-      <p class="url"><a href={link}>{link}</a></p>
-
-      <h3>SQL — sql/{statsTemplate(shownVar, shownProtocol)}.sql</h3>
-      <pre>{sql}</pre>
-      <h3>SQL — sql/{pointRun ? 'points_tabledap' : 'last_step'}.sql (the map layer)</h3>
-      <pre>{mapSql}</pre>
-    </details>
-  {/if}
-</main>
-
-<style>
-  main    { max-width: 900px; margin: 2rem auto; padding: 0 1rem; font: 15px/1.5 system-ui, sans-serif; color: #222; }
-  h1      { font-size: 1.4rem; margin: 0 0 .25rem; }
-  h1 .mode { font-size: 13px; font-weight: 400; margin-left: .75rem; }
-  .sub    { color: #555; margin: 0 0 1rem; }
-  .controls { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; margin-bottom: .25rem; }
-  .controls label { display: flex; flex-direction: column; font-size: 12px; color: #444; gap: 2px; }
-  .controls select, .controls input { font-size: 14px; padding: 2px 4px; max-width: 420px; }
-  .status { background: #eef4fb; border-left: 3px solid #1f77b4; padding: .5rem .75rem; }
-  .status.err { background: #fdeeee; border-left-color: #d62728; }
-  .meta   { color: #444; font-size: 13px; }
-  .through { font-size: 12px; color: #555; padding-bottom: 4px; }
-  .url    { font-size: 12px; word-break: break-all; color: #666; }
-  .export { display: flex; gap: .5rem; align-items: center; margin: .75rem 0; flex-wrap: wrap; }
-  .ok     { font-size: 12px; color: #2a7; }
-  .repro  { margin: 1rem 0; border: 1px solid #e3e3e3; border-radius: 3px; padding: .5rem .75rem; }
-  .repro h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #555; margin: .75rem 0 .25rem; }
-  .repro .copy { float: right; }
-  .chart  { margin: 1rem 0; }
-  table   { border-collapse: collapse; font-size: 13px; width: 100%; }
-  th, td  { border-bottom: 1px solid #e3e3e3; padding: 3px 8px; text-align: right; }
-  th:first-child, td:first-child { text-align: left; }
-  .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border: 1px solid #999; }
-  pre     { background: #f7f7f7; padding: .5rem; overflow-x: auto; font-size: 12px; }
-</style>
+    <TimeStrip title={stripTitle} bind:collapsed={timeFolded} bind:height={stripH} minHeight={90} maxHeight={360}
+               domain={ctx} plotLeft={PL} plotRight={PR} bind:brush {onbrushend} onclear={() => { brush = winBrush }}>
+      {#snippet actions()}
+        {#if rows.length && !categorical && !pointRun}
+          <span class="chart-key" aria-label="chart key">
+            <span><svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4" stroke={main} stroke-width="2" /></svg> {statLabel(stat)}</span>
+            {#if stat === 'mean_wt' || stat === 'mean'}
+              <span><svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4" stroke={alt} stroke-width="1.4" stroke-dasharray="4,3" /></svg> {statLabel(altStat)}</span>
+            {/if}
+            <span><svg width="14" height="8" aria-hidden="true"><rect width="14" height="8" fill={main} fill-opacity="0.18" /></svg> p10–p90</span>
+          </span>
+        {/if}
+      {/snippet}
+      {#snippet children({ width, height })}
+        <PlotBox make={chart} {width} {height} />
+      {/snippet}
+    </TimeStrip>
+  </div>
+</div>
