@@ -2,11 +2,11 @@
   // the Statistics lens: pick a place from the published gazetteer and a variable from a
   // STAC-described ERDDAP dataset, mask the grid, fetch one griddap slab per lobe, aggregate with
   // DuckDB-WASM. Nothing but ERDDAP itself is in the request path. The map is the page; the title
-  // sentence, the Controls pane (① Place ② Dataset & variable ③ Method ④ Share), the Time strip and
-  // the Table pill float around it. Any change runs (no Run button); a newer pick supersedes.
+  // sentence, the Controls pane (① Place ② Dataset & variable ③ Method ④ Share) and the Time strip
+  // (Plot | Table tabs, a ⬇ download menu, Expand) float around it. Any change runs (no Run button); a newer pick supersedes.
   import { untrack } from 'svelte'
   import * as Plot from '@observablehq/plot'
-  import { Button, Chip, Controls, Legend, Menu, Notice, Pane, Picker, Select, Sentence, TimeStrip, type BrushRange, type PickerItem } from '@marinebon/ui'
+  import { Button, Chip, Controls, Legend, Menu, Notice, Picker, Select, Sentence, TimeStrip, type BrushRange, type PickerItem } from '@marinebon/ui'
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
@@ -24,7 +24,7 @@
   import { chrome, theme } from './lib/chrome.svelte'
   import { decodePanes, encodePanes, fitPadding, initialPanes, paneUrlState, hashParam, withExtras, type Lens, type Panes } from './lib/view'
   import { datasetBlurb, fmtDay, fmtMonths, fmtRange, isStat, plural, shortPlace, STATS, statLabel, variableWords, type StatId } from './lib/sentence'
-  import { grabMap, viewPng } from './lib/png'
+  import { grabMap, svgCanvas, viewPng } from './lib/png'
   import { citeText } from './lib/help/cite'
   import { pageBase } from './lib/help/start'
   import type { LensApi } from './lib/help/lensApi'
@@ -75,8 +75,9 @@
   const START   = initialPanes(PANES0, VW)
   let controlsFolded = $state(!START.controls)
   let timeFolded     = $state(!START.time)
-  let tableFolded    = $state(!START.side)
-  const panes   = $derived<Panes>({ controls: !controlsFolded, time: !timeFolded, side: !tableFolded })
+  // the table is the Time strip's second tab; `show=table` opens the strip on it (no key of its own)
+  let timeTab        = $state<'plot' | 'table'>(START.side ? 'table' : 'plot')
+  const panes   = $derived<Panes>({ controls: !controlsFolded, time: !timeFolded, side: timeTab === 'table' })
   let tab       = $state('place')
   let status    = $state('loading the gazetteer…')
   let error     = $state('')
@@ -272,6 +273,23 @@
       download(blob, resultFileName(shownRun, 'png'), 'image/png')
       exporting = ''
     } catch (e) { exporting = `PNG failed: ${e instanceof Error ? e.message : String(e)}` }
+  }
+
+  // PNG of the Time strip's plot: the chart rebuilt at a fixed size (so it does not depend on the tab or
+  // the strip height), drawn through an <img> of its SVG, under the title sentence, over the data stamp
+  async function savePlotPng() {
+    if (!rows.length || !shownRun || shownSource) return
+    exporting = 'drawing the plot…'
+    try {
+      const svg = chart(PLOT_W, PLOT_H)
+      if (!svg) throw new Error('nothing to draw')
+      const canvas = await svgCanvas(svg, PLOT_W, PLOT_H, 2, { color: ink, fontFamily: '"IBM Plex Mono", ui-monospace, monospace' })
+      const key = categorical || pointRun ? '' : stat === 'mean_wt' || stat === 'mean' ? ` · solid ${statLabel(stat)}, dashed ${statLabel(altStat)}, band p10–p90` : ` · band p10–p90`
+      const blob = await viewPng({ layers: [{ canvas }], title: titleText, dark: theme.dark, sub: `${stripTitle}${key}`,
+        stamp: [`${shownDs?.title ?? shownRun.dataset} · ERDDAP ${shownDs?.version ?? ''} · built by Ocean Metrics for MBON`, link] })
+      download(blob, resultFileName(shownRun, 'png', 'plot'), 'image/png')
+      exporting = ''
+    } catch (e) { exporting = `PNG of the plot failed: ${e instanceof Error ? e.message : String(e)}` }
   }
 
   // ── loading, and running on every change ───────────────────────────────────
@@ -549,6 +567,7 @@
   $effect(() => { brush = winBrush })
   let stripH = $state(150)
   const PL = 52, PR = 14
+  const PLOT_W = 900, PLOT_H = 340   // the size of the plot in the PNG
   function onbrushend(r: BrushRange) {
     if (r.v0 === undefined || r.v1 === undefined) return
     let a = iso(new Date(Math.round(r.v0 / 864e5) * 864e5)), b = iso(new Date(Math.round(r.v1 / 864e5) * 864e5 - 864e5))
@@ -603,19 +622,21 @@
       ] })
   }
 
-  const tableLabel = $derived(pointRun ? `Table · ${plural(rows.length, 'month')}`
-    : categorical ? `Table · ${plural(new Set(rows.map((r) => r.date)).size, 'day')}` : `Table · ${plural(rows.length, 'day')}`)
+  // the strip's title on the Table tab: what the rows are ("table · 30 days"; the kit builds its button labels from it)
+  const tableTitle = $derived(!rows.length ? 'table' : `table · ${pointRun ? plural(rows.length, 'month')
+    : categorical ? plural(new Set(rows.map((r) => r.date)).size, 'day') : plural(rows.length, 'day')}`)
   const switchLens = () => setLens?.('then-now', { place: placeId, panes })
 
   // what Help, the tour and the shortcuts may ask of this lens (once: the Shell re-mounts a lens to change it)
   // svelte-ignore state_referenced_locally
   register?.({
-    ui   : () => ({ tab, controls: !controlsFolded, time: !timeFolded, side: !tableFolded }),
+    ui   : () => ({ tab, controls: !controlsFolded, time: !timeFolded, side: timeTab === 'table', timeTab }),
     setUi: (u) => {
       if (u.tab) tab = u.tab
       if (u.controls !== undefined) controlsFolded = !u.controls
       if (u.time !== undefined) timeFolded = !u.time
-      if (u.side !== undefined) tableFolded = !u.side
+      if (u.side !== undefined) timeTab = u.side ? 'table' : 'plot'
+      if (u.timeTab === 'plot' || u.timeTab === 'table') timeTab = u.timeTab
     },
     switchLens,
     sentence: () => titleText,
@@ -784,69 +805,14 @@
       {#snippet footer()}{maskInfo ? `${plural(maskInfo.cells, countWord)} · ` : ''}{dataset?.title ?? ''}{busy ? ' · updating…' : ''}{/snippet}
     </Controls>
 
-    <Pane title="table" id="ep-table" class="edge-pane" anchor="top-right" offset={{ x: 0, y: 130 }} width={380} height={300}
-          bind:collapsed={tableFolded} pillLabel={rows.length ? tableLabel : 'Table'}>
-      {#snippet actions()}
-        <Menu label="⬇" ariaLabel="Export the table" align="end">
-          {#snippet children(close)}
-            <button type="button" onclick={() => { saveCsv(); close() }}>CSV</button>
-            <button type="button" onclick={() => { saveParquet(); close() }}>Parquet</button>
-          {/snippet}
-        </Menu>
-      {/snippet}
-      <div class="table-wrap">
-        {#if rows.length && pointRun}
-          <table class="data-table">
-            <thead><tr><th>month</th><th>n</th><th>casts</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
-            <tbody>
-              {#each rows as r}
-                <tr>
-                  <td>{new Date(r.date).toISOString().slice(0, 7)}</td><td>{r.n}</td><td>{r.n_casts}</td>
-                  <td>{fmt(r.mean)}</td><td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td>
-                  <td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {:else if rows.length && categorical}
-          <table class="data-table">
-            <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
-            <tbody>
-              {#each catRows as r}
-                <tr>
-                  <td>{r.date.toISOString().slice(0, 10)}</td>
-                  <td><span class="swatch" style:background={colours.get(String(r.class))}></span>{r.class}</td>
-                  <td>{r.label}</td><td>{r.n}</td><td>{fmt(rows.find((x) => x.date === +r.date && Number(x.class) === r.class)?.weight)}</td>
-                  <td>{(r.fraction * 100).toFixed(1)}%</td><td>{r.percent.toFixed(1)}%</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {:else if rows.length}
-          <table class="data-table">
-            <thead><tr><th>date</th><th>n</th><th>area-wtd mean</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
-            <tbody>
-              {#each rows as r}
-                <tr>
-                  <td>{new Date(r.date).toISOString().slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean_wt)}</td><td>{fmt(r.mean)}</td>
-                  <td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td><td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-        {:else}
-          <p class="pane-note">{busy ? 'updating…' : 'no rows yet'}</p>
-        {/if}
-      </div>
-    </Pane>
-
-    <TimeStrip title={stripTitle} bind:collapsed={timeFolded} bind:height={stripH} minHeight={90} maxHeight={360}
+    <TimeStrip title={timeTab === 'table' ? tableTitle : stripTitle} bind:collapsed={timeFolded} bind:height={stripH} minHeight={90} maxHeight={360}
+               tabs={[{ id: 'plot', label: 'Plot' }, { id: 'table', label: 'Table' }]} bind:active={timeTab}
                domain={ctx} plotLeft={PL} plotRight={PR} bind:brush {onbrushend} onclear={() => { brush = winBrush }}>
       {#snippet actions()}
         {#if shownSource}
-          <span class="source-note" style="font: var(--text-xs)/1 var(--font-mono); color: var(--text-muted)" role="status" title={shownSource.asOf ? `weekly precompute of ${fmtDay(shownSource.asOf)}` : 'weekly precompute'}>{sourceLabel(shownSource, fmtDay)}</span>
+          <span class="source-note" role="status" title={shownSource.asOf ? `weekly precompute of ${fmtDay(shownSource.asOf)}` : 'weekly precompute'}>{sourceLabel(shownSource, fmtDay)}</span>
         {/if}
-        {#if rows.length && !categorical && !pointRun}
+        {#if timeTab === 'plot' && rows.length && !categorical && !pointRun}
           <span class="chart-key" aria-label="chart key">
             <span><svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4" stroke={main} stroke-width="2" /></svg> {statLabel(stat)}</span>
             {#if stat === 'mean_wt' || stat === 'mean'}
@@ -855,9 +821,65 @@
             <span><svg width="14" height="8" aria-hidden="true"><rect width="14" height="8" fill={main} fill-opacity="0.18" /></svg> p10–p90</span>
           </span>
         {/if}
+        <span class="dl-menu">
+          <Menu label="⬇" ariaLabel="Download the table or the plot" align="end">
+            {#snippet children(close)}
+              <button type="button" disabled={!rows.length || !!shownSource} onclick={() => { saveCsv(); close() }}>CSV</button>
+              <button type="button" disabled={!rows.length || !!shownSource} onclick={() => { saveParquet(); close() }}>Parquet</button>
+              <button type="button" disabled={!rows.length || !!shownSource || !shownRun} onclick={() => { savePlotPng(); close() }}>PNG of plot</button>
+            {/snippet}
+          </Menu>
+        </span>
       {/snippet}
       {#snippet children({ width, height })}
-        <PlotBox make={chart} {width} {height} />
+        {#if timeTab === 'table'}
+        <div class="table-wrap">
+          {#if rows.length && pointRun}
+            <table class="data-table">
+              <thead><tr><th>month</th><th>n</th><th>casts</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+              <tbody>
+                {#each rows as r}
+                  <tr>
+                    <td>{new Date(r.date).toISOString().slice(0, 7)}</td><td>{r.n}</td><td>{r.n_casts}</td>
+                    <td>{fmt(r.mean)}</td><td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td>
+                    <td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else if rows.length && categorical}
+            <table class="data-table">
+              <thead><tr><th>date</th><th>class</th><th>label</th><th>cells</th><th>area weight</th><th>fraction of area</th><th>% of cells</th></tr></thead>
+              <tbody>
+                {#each catRows as r}
+                  <tr>
+                    <td>{r.date.toISOString().slice(0, 10)}</td>
+                    <td><span class="swatch" style:background={colours.get(String(r.class))}></span>{r.class}</td>
+                    <td>{r.label}</td><td>{r.n}</td><td>{fmt(rows.find((x) => x.date === +r.date && Number(x.class) === r.class)?.weight)}</td>
+                    <td>{(r.fraction * 100).toFixed(1)}%</td><td>{r.percent.toFixed(1)}%</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else if rows.length}
+            <table class="data-table">
+              <thead><tr><th>date</th><th>n</th><th>area-wtd mean</th><th>mean</th><th>sd</th><th>min</th><th>max</th><th>p10</th><th>p90</th></tr></thead>
+              <tbody>
+                {#each rows as r}
+                  <tr>
+                    <td>{new Date(r.date).toISOString().slice(0, 10)}</td><td>{r.n}</td><td>{fmt(r.mean_wt)}</td><td>{fmt(r.mean)}</td>
+                    <td>{fmt(r.sd)}</td><td>{fmt(r.min)}</td><td>{fmt(r.max)}</td><td>{fmt(r.p10)}</td><td>{fmt(r.p90)}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          {:else}
+            <p class="pane-note">{busy ? 'updating…' : 'no rows yet'}</p>
+          {/if}
+        </div>
+        {:else}
+          <PlotBox make={chart} {width} {height} />
+        {/if}
       {/snippet}
     </TimeStrip>
   </div>

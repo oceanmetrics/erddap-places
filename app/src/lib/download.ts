@@ -19,9 +19,12 @@ export function toCsv(rows: Record<string, unknown>[], columns?: string[]): stri
 
 const safe = (s: string) => String(s ?? '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
 
-/** `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv` */
-export function resultFileName(s: Partial<RunState>, ext: string): string {
-  const parts = ['erddap-places', s.place, s.dataset, s.variable, s.from, s.to].filter(Boolean).map((x) => safe(String(x)))
+/**
+ * `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv`; a `suffix` goes before
+ * the extension (`…_2026-06-26_plot.png`, the Time strip's plot, so it never collides with the map PNG).
+ */
+export function resultFileName(s: Partial<RunState>, ext: string, suffix = ''): string {
+  const parts = ['erddap-places', s.place, s.dataset, s.variable, s.from, s.to, suffix].filter(Boolean).map((x) => safe(String(x)))
   return `${parts.join('_')}.${ext.replace(/^\./, '')}`
 }
 

@@ -13,7 +13,7 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
 
 ## One page, two lenses (MBON UI kit)
 
-- The UI is `@marinebon/ui` (pinned `github:marinebon/ui#v0.1.0`); follow its AGENTS.md
+- The UI is `@marinebon/ui` (pinned `github:marinebon/ui#v0.3.0`); follow its AGENTS.md
   (`node_modules/@marinebon/ui/AGENTS.md`): semantic tokens only, one coral button (Download CSV in
   Share), pipeline order dataset → place → method → delivery, check both themes and 390 px.
 - `src/Shell.svelte`: header, footer, Help, and the lens, swapped in place (no reload).
@@ -23,7 +23,8 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   (+ `pal=viridis`, `data=<root>`). The old `mode=then-now` still opens it and is rewritten on load
   (`migrateHash()` in `src/lib/view.ts`, tested in `view.test.ts`): never drop that shim.
 - Both: `show=` / `hide=` for panes that differ from the default (`controls`, `time`, `table` /
-  `exceedance`). Every view stays a link.
+  `exceedance`). Every view stays a link. In Statistics `table` means the Time strip's Table tab (the
+  table is a tab of the strip, not a pane); the active tab has no hash key of its own.
 - Each lens marks its root `.lens[data-state=loading|done|error]`; screenshot scripts wait on it.
 - The words of the title sentence live in `src/lib/sentence.ts` (tested); the shared footer line in
   `src/lib/chrome.svelte.ts`.

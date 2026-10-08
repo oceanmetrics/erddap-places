@@ -107,7 +107,7 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
 - ERDDAP constraints: percent-encode each `[`/`]` and nothing else. A descending latitude axis
   (`erddap:lat_descending`) must be requested hi → lo. Clamp longitude to `erddap:lon_range`.
 - DuckDB-WASM has no ICU, so `TIMESTAMPTZ::DATE` fails. Use `make_timestamp(epoch_ms(time) * 1000)::DATE`.
-- UI is `@marinebon/ui` v0.1.0 (follow `node_modules/@marinebon/ui/AGENTS.md`): semantic tokens
+- UI is `@marinebon/ui` v0.3.0 (follow `node_modules/@marinebon/ui/AGENTS.md`): semantic tokens
   only, check both themes and a 390 px width.
 - When a control moves or is renamed, update its tour stop (`TOUR_STOPS`) and the keyboard list
   (`SHORTCUTS`). After a layout change, re-shoot screenshots with `docs/ui-assessment/shoot.mjs`;

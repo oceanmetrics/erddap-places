@@ -18,7 +18,7 @@ export const SHORTCUTS: { keys: string[]; what: string }[] = [
   { keys: ['1', '2', '3', '4'], what: 'Controls tabs: ① Place, ② Dataset & variable, ③ Method, ④ Share' },
   { keys: ['l'], what: 'switch lens: Window statistics or Then vs Now' },
   { keys: ['←', '→'], what: 'Then vs Now: the day before, the day after' },
-  { keys: ['Esc'], what: 'close the open menu, dialog, card or tour' },
+  { keys: ['Esc'], what: 'close the open menu, dialog, card or tour; restore an expanded Time strip' },
 ]
 
 export interface KeyLike {

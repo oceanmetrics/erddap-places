@@ -3,7 +3,7 @@
 //   `npm run preview` works too: EP_URL=http://localhost:4179/ node shoot.mjs ep-after)
 //   Since Help, the tour and feedback (U4) every ep-after state opens with `?tour=off`, so no welcome
 //   card or tour lands in it; `welcome_*` is a first visit and `tour-stop-1_*` is `?tour=on`, each in
-//   both themes (`?theme=`) at the three widths. `node shoot.mjs ep-after welcome` shoots only those.
+//   both themes (`?theme=`) at the three widths. `ONLY=<regex>` re-shoots only the files whose path matches. `node shoot.mjs ep-after welcome` shoots only those.
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 const which = process.argv[2];
@@ -14,6 +14,7 @@ const HOME = process.env.HOME;
 const b = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 
 async function shot({ url, file, vp, ready, full = false, after, theme }) {
+  if (process.env.ONLY && !new RegExp(process.env.ONLY).test(file)) return;   // ONLY='stats_table|welcome' re-shoots just those
   const ctx = await b.newContext({ viewport: VP[vp], deviceScaleFactor: 1, isMobile: vp === "phone", hasTouch: vp === "phone", colorScheme: theme ?? "light" });
   const p = await ctx.newPage();
   const t0 = Date.now();
@@ -105,7 +106,17 @@ if (which === "ep-after") {
     after: async (p) => { await p.locator(".sentence-bar button.chip").nth(1).click(); await p.waitForTimeout(400); } });
   await shot({ url: fk, vp: "laptop", ready: epAfter, file: `${out}/stats_share_laptop.png`,
     after: async (p) => { await p.getByRole("tab", { name: /Share/ }).click(); await p.locator("details.pane-details summary").last().click(); await p.waitForTimeout(400); } });
+  // the Time strip's Table tab (`show=table` opens it), light, dark and a phone; its ⬇ menu; Expand
   await shot({ url: `${fk}&show=table`, vp: "laptop", ready: epAfter, file: `${out}/stats_table_laptop.png` });
+  await shot({ url: `${fk}&show=table`, vp: "laptop", theme: "dark", ready: epAfter, file: `${out}/stats_table_laptop_dark.png` });
+  await shot({ url: fk, vp: "phone", ready: epAfter, file: `${out}/stats_table_phone.png`,
+    after: async (p) => { await p.locator('.mbon-timestrip button[aria-label^="Show"]').click(); await p.locator('.mbon-timestrip [role="tab"][id$="-tab-table"]').click(); await p.waitForTimeout(500); } });
+  await shot({ url: fk, vp: "laptop", ready: epAfter, file: `${out}/stats_download-menu_laptop.png`,
+    after: async (p) => { await p.getByRole("button", { name: /Download the table or the plot/ }).click(); await p.waitForTimeout(400); } });
+  await shot({ url: fk, vp: "laptop", ready: epAfter, file: `${out}/stats_expanded_laptop.png`,
+    after: async (p) => { await p.locator('.mbon-timestrip button[aria-label^="Expand"]').click(); await p.waitForTimeout(500); } });
+  await shot({ url: fk, vp: "phone", ready: epAfter, file: `${out}/stats_strip_phone.png`,
+    after: async (p) => { await p.locator('.mbon-timestrip button[aria-label^="Show"]').click(); await p.waitForTimeout(500); } });
   await shot({ url: `${EPA}#lens=then-now&anom=1&show=exceedance`, vp: "laptop", ready: epAfter, file: `${out}/thennow_method-exceedance_laptop.png`,
     after: async (p) => { await p.getByRole("tab", { name: /Method/ }).click(); await p.waitForTimeout(400); } });
   await shot({ url: fk, vp: "phone", ready: epAfter, file: `${out}/stats_help_phone.png`,

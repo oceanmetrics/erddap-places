@@ -15,6 +15,28 @@ export function grabMap(map: { getCanvas(): HTMLCanvasElement; once(t: string, f
   })
 }
 
+/**
+ * An SVG element (an Observable Plot figure) drawn onto a transparent canvas of `width × height` CSS px
+ * at `scale`. The SVG is serialised and loaded through an <img>, which cannot see the page's CSS: the
+ * text colour and font are set on the clone, and the page's fonts are not available (a system font is
+ * used). No dependency; the same canvas then goes under `viewPng()`'s title and stamp.
+ */
+export async function svgCanvas(svg: Element, width: number, height: number, scale = 2, o: { color?: string; fontFamily?: string } = {}): Promise<HTMLCanvasElement> {
+  const clone = svg.cloneNode(true) as SVGElement
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+  clone.setAttribute('width', String(width)); clone.setAttribute('height', String(height))
+  if (o.color) clone.style.color = o.color
+  if (o.fontFamily) clone.style.fontFamily = o.fontFamily
+  const xml = new XMLSerializer().serializeToString(clone)
+  const img = new Image()
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`
+  await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('the plot could not be drawn')) })
+  const c = document.createElement('canvas')
+  c.width = Math.round(width * scale); c.height = Math.round(height * scale)
+  c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height)
+  return c
+}
+
 /** wrap `text` to lines no wider than `max` px in the context's current font. */
 export function wrapLines(ctx: { measureText(s: string): { width: number } }, text: string, max: number): string[] {
   const out: string[] = []

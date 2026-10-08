@@ -1,7 +1,8 @@
 // the in-app tour: a focus ring on one part of the page and a small card (Back / Next / Done), after
 // calcofi.io/explore's "Help, the tour and feedback" and obis-hex's tour. The stops follow the page in
 // pipeline order: the sentence, ① Place, ② Dataset & variable, ③ Method (with the lens switch), the
-// legend line, the Time strip, the right-edge pill, ④ Share, then Help. No library: Tour.svelte draws
+// legend line, the Time strip (its Plot tab, then its Table tab and download menu; in Then vs Now the
+// right-edge exceedance pill), ④ Share, then Help. No library: Tour.svelte draws
 // the ring and the card; this file holds the stops and the keyboard rules, so both are tested.
 
 /** the Controls tabs, in order (the same ids in both lenses) */
@@ -18,6 +19,8 @@ export interface TourStop {
   tab?: TabId
   /** unfold the Time strip first */
   time?: boolean
+  /** show this tab of the Time strip (Statistics; Then vs Now has no tabs and ignores it) */
+  timeTab?: 'plot' | 'table'
 }
 
 const tabSel = (t: TabId) => [`.mbon-controls [role="tab"][id$="-tab-${t}"]`, `[role="tab"][id$="-tab-${t}"]`]
@@ -60,14 +63,18 @@ export const TOUR_STOPS: TourStop[] = [
     id: 'time',
     target: ['.mbon-timestrip'],
     time: true,
+    timeTab: 'plot',
     title: 'The Time strip',
-    text: 'The series behind the map. Drag across it to choose a new window (or, in Then vs Now, a day); it runs on its own.',
+    text: 'The series behind the map. Drag across it to choose a new window (or, in Then vs Now, a day); it runs on its own. The corner button expands the strip over the map (Esc restores it).',
   },
   {
-    id: 'pill',
-    target: ['.mbon-pane-pill[aria-label="Show table pane"]', '.mbon-pane-pill[aria-label="Show exceedance pane"]', '.mbon-pane.edge-pane .bar'],
-    title: 'The pill on the right edge',
-    text: 'The table of every day (or, in Then vs Now, the exceedance: how much of the place is more than 1 °C warmer). Click it to open.',
+    id: 'table',
+    // Statistics: the strip's Table tab; Then vs Now has no tabs, so its exceedance pill is rung instead
+    target: ['.mbon-timestrip [role="tab"][id$="-tab-table"]', '.mbon-pane-pill[aria-label="Show exceedance pane"]', '.mbon-pane.edge-pane .bar'],
+    time: true,
+    timeTab: 'table',
+    title: 'The table and the download',
+    text: 'Statistics: the Table tab of the Time strip lists every day (or class, or month), and the ⬇ menu beside it downloads the table as CSV or Parquet, or the plot as a PNG. Then vs Now: the pill on the right edge opens the exceedance, how much of the place is more than 1 °C warmer.',
   },
   {
     id: 'share',

@@ -17,7 +17,7 @@ the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_
 
 ## The page (MBON re-layout, 2026-10-08)
 
-One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.1.0,
+One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.3.0,
 installed from the git tag), laid out like calcofi.io/explore: the map is the page and everything
 else floats over it. `src/Shell.svelte` holds the frame and swaps the **lens** in place;
 `src/App.svelte` is the Statistics lens, `src/lib/thenNow/ThenNow.svelte` the Then vs Now lens (a lazy
@@ -43,15 +43,24 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
   link, Copy citation, *Cite this data*, and *Reproduce: requests, mask, SQL and timing*, closed).
 - **No Run button**: a change runs after 250 ms; the run tokens still abort and supersede, so a
   chip change never stacks requests. A dataset change waits for its time extent before running.
-- **Time strip** (kit `TimeStrip`), bottom: Statistics draws the daily series (the chosen statistic
+- **Time strip** (kit `TimeStrip`), bottom, with two tabs in its header (app 0.2.0, kit 0.3.0):
+  **Plot** and **Table**. Plot: Statistics draws the daily series (the chosen statistic
   solid, the other mean dashed, the p10–p90 band; key in the strip bar) over a context of the window
   again on each side, with the **window as the brush**: drag a new one and it runs (capped at 90
   days). Only the window is fetched. Then vs Now draws the day-of-year chart (Then years blue, Now
   red, the previous year orange, the Then mean dashed), ◀ ▶ ▶| step and play the day, a brush picks a
   day, and *anomaly series* switches to the Now year's anomaly.
-- **Right-edge pill**: *Table · 30 days* (the per-day, per-class or monthly table, with its own CSV
-  / Parquet menu) for Statistics; *Exceedance · 76 % > +1 °C* (the pixel and km² breakdown) for
-  Then vs Now. Folded by default.
+  **Table** (Statistics only): the per-day, per-class or monthly table, scrolling inside the strip
+  (the date column stays put on a phone). The brush belongs to the Plot tab. The header's **⬇ menu**
+  downloads *CSV*, *Parquet* (both off while the rows are still the precomputed ones) or *PNG of
+  plot* (the chart rebuilt at 900 × 340 px, serialised as SVG, drawn through an `<img>` onto a canvas
+  at 2×, and composed by `viewPng()` under the title sentence and over the data stamp, no new
+  dependency; `…_plot.png` so it never collides with the map's *PNG of the view*). The **Expand**
+  button fills the stage (Esc restores; `height` is unchanged, so the map padding and `--map-bottom`
+  do not move). The table used to be a right-edge pane (`ep-table`); `show=table` still works and
+  opens the strip on its Table tab.
+- **Right-edge pill** (Then vs Now only): *Exceedance · 76 % > +1 °C* (the pixel and km² breakdown).
+  Folded by default.
 - **Panes** remember their position per viewport class (the kit, `localStorage`); which are open is
   in the URL (below). On a phone (< 640 px) they are bottom sheets and start as bars, so the map
   shows; that folding is never written to the URL.
@@ -62,6 +71,11 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 - **Errors** are a dismissable `Notice` over the map; the old status box, "N days requested" line
   and meta line are gone (their content is in the footer and under Share → Reproduce).
 
+**app 0.2.0** (2026-10-08): the table is the Time strip's second tab (was a right-edge pane), the strip
+gets a ⬇ download menu (CSV, Parquet, PNG of plot) and Expand, and the kit moves to 0.3.0 (smaller
+Sentence and Chip, the selected tab in accent, `TimeStrip` tabs / `expandable`); the app's own
+sentence font-size overrides are gone, the kit default is the size.
+
 ### URL grammar
 
 | key | lens | what |
@@ -70,7 +84,7 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 | `stat` | Statistics | the charted statistic (`mean_wt` default, omitted; `mean`, `min`, `max`, `p10`, `p90`, `sd`) |
 | `lens` | both | `then-now`; absent = Statistics |
 | `place`, `variable`, `md`, `then`, `now`, `swipe`, `anom`, `pal`, `data`, `dataset` | Then vs Now | as before |
-| `show`, `hide` | both | comma lists of panes that differ from the default: `controls`, `time`, and `table` (Statistics) / `exceedance` (Then vs Now) |
+| `show`, `hide` | both | comma lists of panes that differ from the default: `controls`, `time`, and `table` (Statistics: the Time strip's Table tab is active) / `exceedance` (Then vs Now). The active tab has no key of its own |
 
 Two **query** switches sit before the hash and are never part of a view (a copied link drops them):
 `?tour=off` suppresses the welcome card and the tour (screenshots use it), `?tour=on` replays the tour,
@@ -102,8 +116,8 @@ behave alike. The logic is plain TypeScript under `src/lib/help/` and `src/lib/f
   the card's button): a ring and a card, no library; Back / Next / Done, ← → PageUp PageDown Home End
   Esc, focus returns where it was, the ring only animates without `prefers-reduced-motion`, and the
   tabs and panes go back as they were when it ends. Stops: the sentence → ① Place → ② Dataset &
-  variable → ③ Method (and the lens switch) → the legend line → the Time strip (brush) → the edge pill
-  → ④ Share → Help.
+  variable → ③ Method (and the lens switch) → the legend line → the Time strip (brush, Expand) → the
+  Table tab and ⬇ menu (Then vs Now: the exceedance pill) → ④ Share → Help.
 - **Help ▾**: *Take the tour*, *Guide* (marinebon.org/tools/erddap-places/), *Start here*, *About*
   (what the app is, how it computes, the gazetteer and the ERDDAP servers it reads, who built it, the
   licence and version, and the view's citation), *Data sources and attribution* (one row per ERDDAP
@@ -112,7 +126,7 @@ behave alike. The logic is plain TypeScript under `src/lib/help/` and `src/lib/f
   rasters, the Esri basemaps and the software), *Keyboard*, *Register a product*, *Source code*.
   The modals are native `<dialog>`s (`Modal.svelte`).
 - **Keys** (`keys.ts`): `?` tour, `t` theme, `1`–`4` the Controls tabs, `l` the other lens, `←` `→`
-  the day in Then vs Now, `Esc` closes. Never while typing, with a modifier, or on something that
+  the day in Then vs Now, `Esc` closes (the open menu first, then an expanded Time strip). Never while typing, with a modifier, or on something that
   owns its arrows (tabs, sliders, pane titles, the map, the Time strip).
 - **Feedback** (the header button; `src/lib/feedback/`, a lazy chunk): a note, an optional email
   ("optional, so we can reply; not published"), a picture of the view (html-to-image 1.11.13, pinned
@@ -152,7 +166,8 @@ the entry CSS and the lazy Then vs Now chunk, and sums the self-hosted fonts:
 
 Help, the tour and feedback (U4) added 8.2 KB to the entry JS (570.7 → 578.9 KB: the welcome card,
 the tour, the modals, the sources and the citations), 1.0 KB to the entry CSS (17.5 KB) and 0.2 KB to
-the Then vs Now chunk (35.0 KB); no budget was raised. The feedback dialog and html-to-image are their
+the Then vs Now chunk (35.0 KB); no budget was raised. App 0.2.0 (the Time strip's tabs, ⬇ menu and PNG of plot, kit 0.3.0): entry JS 581.5 KB, entry CSS 17.8 KB, the
+Then vs Now chunk 35.0 KB; no budget raised. The feedback dialog and html-to-image are their
 own lazy chunks (`FeedbackDialog-*`, `capture-*`: 9.3 KB gzip), fetched on the first Feedback click,
 with a line of their own (budget 15 KB); the script fails if html-to-image (its `fontEmbedCSS` option
 name) shows up in the entry.
@@ -175,11 +190,12 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
   path — bbox + window constraints instead of axis vectors, `pointMask()` instead of `gridMask()`,
   and a **monthly** roll-up with `n_casts`; the chart becomes a monthly mean with a min–max band and
   the map draws the sample stations as circles.
-- **Export**: the result table as **CSV** or **Parquet** (DuckDB's own `COPY … TO` writer, read back
+- **Export** (④ Share, and the Time strip's ⬇ menu): the result table as **CSV** or **Parquet** (DuckDB's own `COPY … TO` writer, read back
   with `copyFileToBuffer`), named after the place, dataset, variable and window, e.g.
   `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.parquet`; a **PNG of the
   view** (`src/lib/png.ts`: the map canvas read in its `render` event, the sentence above, the dataset
-  and the link stamped below).
+  and the link stamped below); and a **PNG of the plot** (the Time strip's ⬇ menu, `svgCanvas()` in the
+  same file).
 - **Reproduce** (Share tab, closed): the exact griddap URL(s) used, the mask summary (cells, lobes,
   total area weight, partial boundary cells) and the rendered SQL of both queries, with *Copy all*.
 - **Precomputed stats first** (`src/lib/precomputed.ts`): the weekly precompute publishes
@@ -188,7 +204,7 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
   target that `stats/collection.json` lists (its `rel: "item"` links, fetched once from the bucket URL
   like then-now, because the storage host's 302 has no CORS header, and cached; no HEAD per run, so an unpublished combination costs no request), `run()` reads the file
   with hyparquet (no DuckDB-WASM needed), keeps the rows inside the window and puts them in the Time
-  strip and the table at once, shaped exactly like a live run (`frac_area` / `pct_cells` become
+  strip (plot and table) at once, shaped exactly like a live run (`frac_area` / `pct_cells` become
   `fraction` / `percent_cells`, `date` is epoch ms). The strip header says "precomputed to 6 Oct 2026;
   refreshing…" (`shownSource`), the CSV / Parquet buttons stay off, and `shownRun`, the permalink, the
   map layer and the sentence's cell count stay empty until the live run completes and replaces the

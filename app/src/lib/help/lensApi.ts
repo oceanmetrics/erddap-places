@@ -2,7 +2,11 @@
 // registers one of these when it mounts. The page chrome never reaches into a lens's state otherwise.
 import type { TabId } from './tour'
 
-export interface LensUi { tab: string; controls: boolean; time: boolean; side: boolean }
+/**
+ * `side` is the right-edge pane (Then vs Now: the exceedance) or, in Statistics, the Table tab of the
+ * Time strip; `timeTab` is the strip's active tab where it has tabs (Statistics: plot | table).
+ */
+export interface LensUi { tab: string; controls: boolean; time: boolean; side: boolean; timeTab?: string }
 
 export interface LensApi {
   /** the Controls tab and which panes are open */

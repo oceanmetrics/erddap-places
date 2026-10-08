@@ -102,6 +102,7 @@
   function tourStepped(s: TourStop) {
     if (s.tab) api?.setUi({ tab: s.tab, controls: true })
     if (s.time) api?.setUi({ time: true })
+    if (s.timeTab) api?.setUi({ timeTab: s.timeTab })
   }
   function tourClosed() {
     if (tourWas) api?.setUi(tourWas)
@@ -273,7 +274,7 @@
           <li><Kbd>Tab</Kbd> moves through the sentence chips, the tabs and the panes; <Kbd>Enter</Kbd> opens a chip.</li>
           <li>On the Controls tabs, <Kbd>←</Kbd> <Kbd>→</Kbd> move between tabs.</li>
           <li>On a pane title, arrows move it, <Kbd>Home</Kbd> sends it home.</li>
-          <li>On the Time strip, drag or arrows move the window, <Kbd>Shift</Kbd>+arrows resize it.</li>
+          <li>On the Time strip, drag or arrows move the window, <Kbd>Shift</Kbd>+arrows resize it; on its Plot and Table tabs, <Kbd>←</Kbd> <Kbd>→</Kbd> switch.</li>
           <li>In a picker, type to search, <Kbd>↑</Kbd> <Kbd>↓</Kbd> then <Kbd>Enter</Kbd>.</li>
           <li>In the tour, <Kbd>←</Kbd> <Kbd>→</Kbd> move, <Kbd>Esc</Kbd> ends it.</li>
         </ul>

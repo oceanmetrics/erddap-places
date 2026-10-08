@@ -19,9 +19,13 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 describe('the tour', () => {
   it('visits the page in pipeline order', () => {
-    expect(TOUR_STOPS.map((s) => s.id)).toEqual(['sentence', 'place', 'data', 'method', 'legend', 'time', 'pill', 'share', 'help'])
+    expect(TOUR_STOPS.map((s) => s.id)).toEqual(['sentence', 'place', 'data', 'method', 'legend', 'time', 'table', 'share', 'help'])
     expect(TOUR_STOPS.filter((s) => s.tab).map((s) => s.tab)).toEqual(['place', 'data', 'method', 'share'])
     expect(TOUR_STOPS.find((s) => s.id === 'time')?.time).toBe(true)
+    // the Time strip stop shows the plot, the next one the Table tab (and unfolds the strip, where the tab is)
+    expect(TOUR_STOPS.find((s) => s.id === 'time')?.timeTab).toBe('plot')
+    expect(TOUR_STOPS.find((s) => s.id === 'table')).toMatchObject({ time: true, timeTab: 'table' })
+    expect(TOUR_STOPS.find((s) => s.id === 'table')?.target[0]).toContain('tab-table')
     expect(TOUR_STOPS.find((s) => s.id === 'method')?.text).toMatch(/Then vs Now/)
   })
   it('keeps every stop to one or two plain sentences', () => {

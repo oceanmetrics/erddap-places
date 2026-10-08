@@ -12,7 +12,6 @@ body { overflow: hidden; }
 /* the title sentence: dataset -> place -> method -> time, its chips open the same pickers as Controls */
 .sentence-bar { position: relative; z-index: 30; padding: var(--space-2) var(--space-4) var(--space-2);
                 background: var(--bg-surface); border-bottom: 1px solid var(--border); }
-.sentence-bar .mbon-sentence .line { font-size: var(--text-lg); }
 .sentence-bar .nw { white-space: nowrap; }
 .sentence-bar .nw .pop { white-space: normal; }
 .sentence-bar .paren { font: var(--fw-regular) var(--text-sm)/1.3 var(--font-sans); color: var(--text-muted); letter-spacing: 0; }
@@ -42,13 +41,18 @@ body { overflow: hidden; }
 .tab-label { white-space: normal; text-align: center; line-height: 1.15; }
 .lens-switch { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
-/* tables in the right-edge pane */
+/* the result table, in the Time strip's Table tab (the kit scrolls a non-plot tab) */
 .data-table { border-collapse: collapse; font: var(--text-xs)/1.4 var(--font-mono); width: 100%; color: var(--text-body); }
 .data-table th, .data-table td { padding: 3px 8px; text-align: right; white-space: nowrap; }
-.data-table th { position: sticky; top: 0; background: var(--pane-bg); color: var(--text-muted); font-weight: 500; }
+.data-table th { position: sticky; top: 0; z-index: 1; background: var(--pane-bg); color: var(--text-muted); font-weight: 500; }
 .data-table tbody tr:nth-child(odd) { background: var(--bg-tint); }
 .data-table th:first-child, .data-table td:first-child { text-align: left; }
-.table-wrap { max-height: 100%; overflow: auto; }
+.table-wrap { height: 100%; overflow: auto; }
+/* on a phone the date stays in view while the other columns scroll */
+@media (max-width: 640px) {
+  .data-table th:first-child, .data-table td:first-child { position: sticky; left: 0; background: var(--pane-bg); }
+  .data-table th:first-child { z-index: 2; }
+}
 .swatch { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; }
 
 /* the line legend of the Time charts */
@@ -61,7 +65,6 @@ body { overflow: hidden; }
 @media (max-width: 640px) {
   body { overflow: auto; }
   .sentence-bar { padding: var(--space-2) var(--space-3); }
-  .sentence-bar .mbon-sentence .line { font-size: var(--text-base); }
   .sentence-bar .mbon-legend { min-width: 160px; }
   .stage { min-height: 70vh; }
 }
@@ -71,3 +74,25 @@ body { overflow: hidden; }
 
 /* Cite this data (④ Share): wrap, never scroll sideways */
 .pane-pre.cite { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* the Time strip: the precomputed-source note, the Download menu (it opens upward, the strip being at the
+   bottom; expanded it sits at the top, so it opens downward), Expand over the panes */
+.source-note { font: var(--text-xs)/1 var(--font-mono); color: var(--text-muted); white-space: nowrap; }
+.mbon-timestrip .dl-menu .mbon-menu .panel { top: auto; bottom: calc(100% + 4px); min-width: 9rem; }
+.mbon-timestrip.expanded .dl-menu .mbon-menu .panel { top: calc(100% + 4px); bottom: auto; }
+.mbon-timestrip .dl-menu button:disabled { opacity: 0.45; cursor: default; }
+.stage .mbon-timestrip.overlay.expanded { z-index: 20; }
+@media (max-width: 640px) { .source-note { display: none; } }
+
+/* a floating pane stops above the Time strip: the strip's header now holds the Plot / Table tabs and the
+   ⬇ and Expand buttons, which a tall Controls pane used to cover (--map-bottom is the strip's height) */
+@media (min-width: 641px) {
+  .stage > .mbon-pane:not(.edge-pane) { max-height: calc(100% - var(--map-bottom, 0px) - 20px) !important; }
+}
+
+/* the strip's header must keep its tabs legible on a phone: the title gives way (ellipsis), the tabs never
+   shrink, and "clear selection" (a tap on the plot does the same) goes */
+.mbon-timestrip .bar .t { flex: 0 1 auto; min-width: 2.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+section.mbon-timestrip .bar .tabs { flex: none; }
+.mbon-timestrip .bar .clear { white-space: nowrap; }
+@media (max-width: 640px) { .mbon-timestrip .bar .clear { display: none; } }

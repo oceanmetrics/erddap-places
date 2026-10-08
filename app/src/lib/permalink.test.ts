@@ -48,6 +48,11 @@ describe('export files', () => {
       .toBe('erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv')
     expect(resultFileName(RUN, '.parquet')).toMatch(/\.parquet$/)
   })
+  it('puts a suffix before the extension, so the Time strip plot PNG never collides with the map PNG', () => {
+    expect(resultFileName(RUN, 'png', 'plot'))
+      .toBe('erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26_plot.png')
+    expect(resultFileName(RUN, 'png')).not.toBe(resultFileName(RUN, 'png', 'plot'))
+  })
   it('quotes CSV fields that need it and renders dates as ISO days', () => {
     expect(csvField('Papahānaumokuākea, NWHI')).toBe('"Papahānaumokuākea, NWHI"')
     expect(csvField('say "hi"')).toBe('"say ""hi"""')
