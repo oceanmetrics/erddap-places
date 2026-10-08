@@ -15,31 +15,110 @@ ERDDAP axes  ──┘
 WKB decoded by `src/lib/wkb.ts`), splits it into lobes (one griddap request each, grouped by side of
 the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_5km`.
 
-## Features
+## The page (MBON re-layout, 2026-10-08)
+
+One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.1.0,
+installed from the git tag), laid out like calcofi.io/explore: the map is the page and everything
+else floats over it. `src/Shell.svelte` holds the frame and swaps the **lens** in place;
+`src/App.svelte` is the Statistics lens, `src/lib/thenNow/ThenNow.svelte` the Then vs Now lens (a lazy
+chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-assessment/after/`.
+
+- **Header** (kit `Header`): MBON wordmark, *erddap-places*, "place statistics from ERDDAP, in your
+  browser", the lens word (*Statistics* · *Then vs Now*), Help ▾ (About, Data sources & attribution,
+  Keyboard; the guided tour and user guide are placeholders), Feedback, the theme toggle. The dark
+  theme switches the basemap to Esri World Dark Gray in place (`setBasemap()` flips two raster layers;
+  no `setStyle`, so the place and cell layers stay).
+- **Title sentence** (kit `Sentence` + `Chip`), dataset → place → method → time. Statistics:
+  "**Sea surface temperature** (NOAA Coral Reef Watch, 5 km, daily) in **Florida Keys NMS**,
+  **area-weighted mean** of 462 cells, **7 Sep – 6 Oct 2026**"; Then vs Now: "**Sea surface
+  temperature** in **Florida Keys NMS** on **5 Aug**: **Then** 1985–2005 climatology vs **Now**
+  2026". Each bold part is a chip whose popover holds the same picker as the Controls tab. The second
+  line is the colour scale of the map layer and the counts ("map: 6 Oct 2026 · 462 cells · 278 on the
+  boundary"); with the anomaly on it carries the headline ("76 % of the sanctuary more than +1 °C
+  warmer", shown once the sanctuary mask is in). The words come from `src/lib/sentence.ts`.
+- **Controls** pane (kit `Controls`), top left: ① **Place** (gazetteer picker, sanctuaries first; or
+  click the map) ② **Dataset & variable** (datasets grouped by cadence, then the variable in words)
+  ③ **Method** (the lens: *Window statistics* | *Then vs Now*; for statistics the charted statistic,
+  the area-weight note and the window; for Then vs Now, Then, Now, the anomaly, the day, and under
+  *More options* the palette and smoothing) ④ **Share** (Download CSV, Parquet, PNG of the view, Copy
+  link, Copy citation, *Cite this data*, and *Reproduce: requests, mask, SQL and timing*, closed).
+- **No Run button**: a change runs after 250 ms; the run tokens still abort and supersede, so a
+  chip change never stacks requests. A dataset change waits for its time extent before running.
+- **Time strip** (kit `TimeStrip`), bottom: Statistics draws the daily series (the chosen statistic
+  solid, the other mean dashed, the p10–p90 band; key in the strip bar) over a context of the window
+  again on each side, with the **window as the brush**: drag a new one and it runs (capped at 90
+  days). Only the window is fetched. Then vs Now draws the day-of-year chart (Then years blue, Now
+  red, the previous year orange, the Then mean dashed), ◀ ▶ ▶| step and play the day, a brush picks a
+  day, and *anomaly series* switches to the Now year's anomaly.
+- **Right-edge pill**: *Table · 30 days* (the per-day, per-class or monthly table, with its own CSV
+  / Parquet menu) for Statistics; *Exceedance · 76 % > +1 °C* (the pixel and km² breakdown) for
+  Then vs Now. Folded by default.
+- **Panes** remember their position per viewport class (the kit, `localStorage`); which are open is
+  in the URL (below). On a phone (< 640 px) they are bottom sheets and start as bars, so the map
+  shows; that folding is never written to the URL.
+- **Footer** (kit `Footer`), one line: built by Ocean Metrics · the data release ("NOAA Coral Reef
+  Watch — Daily Global 5km SST + DHW · ERDDAP 2.29 · data through 6 Oct 2026") · "updating… <step>"
+  or the timings ("30 rows · 159 kB · 2.3 s (mask 0.19 s)") · source.
+- **Errors** are a dismissable `Notice` over the map; the old status box, "N days requested" line
+  and meta line are gone (their content is in the footer and under Share → Reproduce).
+
+### URL grammar
+
+| key | lens | what |
+|---|---|---|
+| `place`, `dataset`, `variable`, `from`, `to` | Statistics | the run, as before |
+| `stat` | Statistics | the charted statistic (`mean_wt` default, omitted; `mean`, `min`, `max`, `p10`, `p90`, `sd`) |
+| `lens` | both | `then-now`; absent = Statistics |
+| `place`, `variable`, `md`, `then`, `now`, `swipe`, `anom`, `pal`, `data`, `dataset` | Then vs Now | as before |
+| `show`, `hide` | both | comma lists of panes that differ from the default: `controls`, `time`, and `table` (Statistics) / `exceedance` (Then vs Now) |
+
+**Compatibility**: `mode=then-now` (every Then vs Now link before 2026-10-08) still opens Then vs
+Now; `src/Shell.svelte` rewrites it to `lens=then-now` in place with `history.replaceState`
+(`migrateHash()` in `src/lib/view.ts`), and `mode=stats` / `lens=stats` are dropped. Every other key
+is kept, so an old link opens the same view. Switching lens carries the place over (a sanctuary into
+Then vs Now; CRW SST for that place back into Statistics) and pushes a history entry, so Back returns.
+
+### Size budget
+
+`npm run size-budget` (after `npm run build`; also run by the Pages workflow) gzips the entry JS,
+the entry CSS and the lazy Then vs Now chunk, and sums the self-hosted fonts:
+
+| part | before (2026-10-08, `26e61cd`) | after (kit 0.1.0) | budget |
+|---|---|---|---|
+| entry JS, gzip | 548.9 KB | 570.7 KB | 620 KB |
+| entry CSS, gzip | 10.6 KB | 16.5 KB | 20 KB |
+| Then vs Now chunk JS + CSS, gzip | 28.9 KB | 34.8 KB | 40 KB |
+| fonts (woff2, raw; a page fetches only the faces it uses) | 0 | 514 KB | 560 KB |
+
+There was no budget before the re-layout; these are the first, set with ~8 % headroom over the
+measured sizes. The DuckDB engine (wasm + worker, ~15 MB gzip, fetched on first query) is listed by
+the script, not budgeted. The data bytes per view are unchanged (FKNMS 30 days: one 159 kB griddap
+Parquet; Then vs Now first view: 6 range requests, 56 kB).
+
+## The pipeline
 
 - **Pickers**: place (gazetteer, grouped by NMS/MRGID/PSGID), ERDDAP dataset, variable, date window
   (clamped to the dataset's live time extent).
-- **Map** (`src/lib/MapView.svelte`, between the pickers and the chart, 420 px tall): the gazetteer
+- **Map** (`src/lib/MapView.svelte`, the whole stage): the gazetteer
   places as vector tiles from `places.pmtiles`, outlined, with the selected one filled and a click
   anywhere in a place selecting it; after a run, the **last time step** of the slab as one square per
-  masked grid cell, hover showing the value and the area weight. Fits the place bbox on selection.
-- **Chart**: daily mean / area-weighted mean with a p10–p90 band, or a stacked area of class
-  proportions for a categorical grid.
-- **Table** of the daily or per-class result.
+  masked grid cell, hover showing the value and the area weight. Fits the place bbox on selection,
+  padded so the Controls pane and the Time strip do not cover it (`fitPadding()`).
 - **Tabledap**: a dataset whose collection says `erddap:protocol: "tabledap"` takes a different
   path — bbox + window constraints instead of axis vectors, `pointMask()` instead of `gridMask()`,
   and a **monthly** roll-up with `n_casts`; the chart becomes a monthly mean with a min–max band and
   the map draws the sample stations as circles.
 - **Export**: the result table as **CSV** or **Parquet** (DuckDB's own `COPY … TO` writer, read back
   with `copyFileToBuffer`), named after the place, dataset, variable and window, e.g.
-  `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.parquet`.
-- **Reproduce panel**: the exact griddap URL(s) used, the mask summary (cells, lobes, total area
-  weight, partial boundary cells), the permalink and the rendered SQL of both queries, with a
-  *Copy all* button.
-- **Permalink**: `#place=…&dataset=…&variable=…&from=…&to=…`, written on every successful run and
-  read on load, so a shared link reproduces the run.
+  `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.parquet`; a **PNG of the
+  view** (`src/lib/png.ts`: the map canvas read in its `render` event, the sentence above, the dataset
+  and the link stamped below).
+- **Reproduce** (Share tab, closed): the exact griddap URL(s) used, the mask summary (cells, lobes,
+  total area weight, partial boundary cells) and the rendered SQL of both queries, with *Copy all*.
+- **Permalink**: written on every successful run (the run on screen, plus `stat`, `show`, `hide`)
+  and read on load, so a shared link reproduces the view.
 
-## Then vs Now (`#mode=then-now`)
+## Then vs Now (`#lens=then-now`)
 
 A second view: the *Sanctuaries Climate Change* Shiny app (shiny.marinebon.app/nms-cc) without a
 server. Pick a sanctuary, a day of the year, **Then** (the `1985–2005` or `2003–2012` climatology, or
@@ -65,11 +144,12 @@ npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP 
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
 npm run check    # svelte-check + tsc
+npm run size-budget   # after build: entry JS / CSS / Then vs Now chunk / fonts against the budget
 ```
 
 `ERDDAP_OFFLINE=1 npm run test` forces the live-network tests to skip.
 
-Offline then-now: `npm run dev`, then `http://localhost:5179/#mode=then-now&place=NMS:TEST&data=/__then-now-fixture/`
+Offline then-now: `npm run dev`, then `http://localhost:5179/#lens=then-now&place=NMS:TEST&data=/__then-now-fixture/`
 (the committed fixture, served by a dev-only middleware in `vite.config.ts`).
 
 ## Notes
@@ -93,7 +173,8 @@ Offline then-now: `npm run dev`, then `http://localhost:5179/#mode=then-now&plac
   DuckDB) returns early when `stale()`, and the signal goes into every `fetch`. The results also
   carry the variable they came from (`shownVar`), so a superseded SST run can no longer render
   through the newly-picked categorical template as "class NaN" rows. The pickers stay live while a
-  run is in flight and the button reads "Run (supersedes)".
+  run is in flight; since the re-layout there is no Run button: a change runs after 250 ms
+  (`App.svelte`, the run-on-change effect keyed on place × dataset × variable × window).
 - **Never put place geometry in deep `$state`** (verified 2026-09-15): Svelte 5's reactive proxy
   wraps every nested coordinate array, and `gridMask` reads each vertex many times — masking FKNMS
   (13 parts, 39,645 vertices) takes **0.24 s on plain arrays and 67 s through the proxy** (TBNMS:

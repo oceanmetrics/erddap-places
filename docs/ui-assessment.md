@@ -261,3 +261,36 @@ guide, About, data sources), feedback, theme. Footer: "built by Ocean Metrics" �
    COG reads / series SQL, and the App/MapView mount tests that guard against effect loops); the
    `maskPerf.test.ts` budget (FKNMS mask < 1 s, geometry never in deep `$state`) and the map camera
    only through `bind:bounds`.
+
+## 7. After the re-layout (U2, 2026-10-08)
+
+Taken with `shoot.mjs ep-after` (`EP_URL=http://localhost:4179/`, the built app under
+`npm run preview`, same Playwright set-up as above; each shot waits for `.lens[data-state=done]`,
+network idle and 2 s). The app is described in `app/README.md` ("The page"); the URL grammar and the
+compatibility shim are in the same file.
+
+| | phone 390×844 | laptop 1280×800 | laptop, dark | projector 1920×1080 |
+|---|---|---|---|---|
+| initial (HIHWNMS × CRW SST) | ![](ui-assessment/after/stats_initial_phone.png) | ![](ui-assessment/after/stats_initial_laptop.png) | ![](ui-assessment/after/stats_initial_laptop_dark.png) | ![](ui-assessment/after/stats_initial_projector.png) |
+| FKNMS × CRW SST, last 30 days | ![](ui-assessment/after/stats_fknms-sst_phone.png) | ![](ui-assessment/after/stats_fknms-sst_laptop.png) | ![](ui-assessment/after/stats_fknms-sst_laptop_dark.png) | ![](ui-assessment/after/stats_fknms-sst_projector.png) |
+| Then vs Now (old `#mode=then-now` link) | ![](ui-assessment/after/thennow_fknms_phone.png) | ![](ui-assessment/after/thennow_fknms_laptop.png) | ![](ui-assessment/after/thennow_fknms_laptop_dark.png) | ![](ui-assessment/after/thennow_fknms_projector.png) |
+| Then vs Now, anomaly | ![](ui-assessment/after/thennow_fknms-anomaly_phone.png) | ![](ui-assessment/after/thennow_fknms-anomaly_laptop.png) | ![](ui-assessment/after/thennow_fknms-anomaly_laptop_dark.png) | ![](ui-assessment/after/thennow_fknms-anomaly_projector.png) |
+
+Controls: the place chip open (`stats_chip-place_laptop.png`), Share with Reproduce open
+(`stats_share_laptop.png`), the Table pane (`stats_table_laptop.png`, `#…&show=table`), Method and
+the Exceedance pane (`thennow_method-exceedance_laptop.png`), Help ▾ at phone width
+(`stats_help_phone.png`).
+
+What changed against §4–§6:
+
+- one page of 800 px at laptop width instead of 3542 px; the map is the page at every width;
+- the sentences read "Sea surface temperature (NOAA Coral Reef Watch, 5 km, daily) in Florida Keys
+  NMS, area-weighted mean of 462 cells, 7 Sep – 6 Oct 2026" and "Sea surface temperature in Florida
+  Keys NMS on 5 Aug: Then 1985–2005 climatology vs Now 2026" (+ "76 % of the sanctuary more than
+  +1 °C warmer" on the second line with the anomaly on);
+- cut or folded as in §4, except: *Send feedback* is a header link to the issues, not a Share item;
+  the zip download, *Copy code* (R / Python) and the Time strip's SVG export are not built; the
+  dataset list is grouped by cadence (daily / monthly / samples), not by theme, and not filtered by
+  the place; the then-now rasters are still the box + 20 %, not masked on the map;
+- kept: every old link opens the same view (`mode=` is rewritten to `lens=`), one griddap Parquet
+  per lobe (FKNMS 159 kB) and 6 range requests / 56 kB for a Then vs Now first view, all tests.

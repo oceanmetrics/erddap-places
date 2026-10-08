@@ -107,6 +107,7 @@
   // is on screen, and only the count waits for it
   let geoms: Promise<Place[]> | null = null
   let maskFor = $state('')
+  let maskFailed = $state('')            // the place whose polygon could not be read (count over the box)
   let weights = $state.raw<Float32Array | null>(null)
   async function loadMask(id: string, b: Band) {
     const key = `${id}|${b.width}x${b.height}|${b.bbox.join(',')}`
@@ -114,11 +115,12 @@
     try {
       geoms ??= loadPlaces()
       const p = (await geoms).find((q) => q.place_id === id)
-      if (!p || s.place !== id) return
+      if (!p) { maskFailed = id; return }    // a place outside the gazetteer (the dev fixture): count over the box
+      if (s.place !== id) return
       const ax = latticeAxes(b), cells = []
       for (const lobe of placeLobes(plainPlace(p))) cells.push(...gridMask(lobe.geojson, ax.lon, ax.lat).cells)
       weights = latticeWeights(b, cells); maskFor = key
-    } catch (e) { console.warn('then-now: no sanctuary mask', e) }
+    } catch (e) { console.warn('then-now: no sanctuary mask', e); maskFailed = id }
   }
   $effect(() => { const b = nowB?.lattice, id = s.place; if (b) untrack(() => loadMask(id, b)) })
   const masked  = $derived(!!weights && !!nowB && maskFor === `${s.place}|${nowB.lattice.width}x${nowB.lattice.height}|${nowB.lattice.bbox.join(',')}`)
@@ -426,7 +428,9 @@
   const nowText    = $derived(String(nowB?.year ?? nowYear ?? (s.now === 'latest' ? 'latest' : s.now)))
   const km         = (v: number) => Math.round(v).toLocaleString('en-US')
   const pct        = $derived(exceed && exceed.validKm2 ? (100 * exceed.km2) / exceed.validKm2 : null)
-  const headline   = $derived(pct !== null ? exceedanceLine(pct, 1, unitLbl, masked ? 'the sanctuary' : 'the raster box') : '')
+  // the headline waits for the sanctuary mask: a count over the raster box would read as the answer
+  const maskDone   = $derived(masked || maskFailed === s.place)
+  const headline   = $derived(pct !== null && maskDone ? exceedanceLine(pct, 1, unitLbl, masked ? 'the sanctuary' : 'the raster box') : '')
   const titleText  = $derived(`${varLabel} in ${placeLabel} on ${fmtMd(s.md)}: Then ${thenText} vs Now ${nowText}`)
   const placeItems = $derived<PickerItem[]>(places.map((p) => ({
     id: p.place_id, label: shortPlace(p.name), keywords: `${p.place_id} ${p.name}`, color: 'var(--facet-place)',
@@ -551,7 +555,7 @@
   </div>
 {/snippet}
 
-<div class="lens" data-state={error ? 'error' : busy || !nowB ? 'loading' : 'done'}>
+<div class="lens" data-state={error ? 'error' : busy || !nowB || !maskDone ? 'loading' : 'done'}>
   <div class="sentence-bar">
     <Sentence>
       <Chip label={varLabel} facet="dataset" title="choose a variable" width="18rem">
@@ -584,6 +588,8 @@
         {#if s.anom && headline}
           <span class="headline">{headline}</span>
           <span class="counts">{km(exceed!.km2)} of {km(exceed!.validKm2)} km² · {exceed!.n} of {exceed!.valid} pixels</span>
+        {:else if exceed && !maskDone}
+          <span class="counts">masking the sanctuary…</span>
         {:else if exceed}
           <span class="counts">{exceed.valid} pixels {masked ? 'in the sanctuary' : 'in the raster box'}</span>
         {/if}
@@ -628,7 +634,7 @@
     </Controls>
 
     <Pane title="exceedance" id="tn-exceedance" anchor="top-right" offset={{ x: 0, y: 130 }} width={300}
-          bind:collapsed={sideFolded} pillLabel={s.anom && pct !== null ? `Exceedance · ${Math.round(pct)} % > +1 ${unitLbl}` : 'Exceedance'}>
+          bind:collapsed={sideFolded} pillLabel={s.anom && pct !== null && maskDone ? `Exceedance · ${Math.round(pct)} % > +1 ${unitLbl}` : 'Exceedance'}>
       <div class="pane-col">
         {#if exceed && pct !== null}
           <Stat value={`${Math.round(pct)} %`} label={`of ${masked ? 'the sanctuary' : 'the raster box'} > +1 ${unitLbl}`} note={`${fmtMd(s.md)} ${nowText} against ${thenText}`} />
