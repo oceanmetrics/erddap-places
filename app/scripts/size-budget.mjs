@@ -15,6 +15,7 @@ export const BUDGET = {
   entryJs : 620 * KB,   // index-*.js: Svelte, MapLibre, Plot, DuckDB glue, hyparquet, the kit, the app
   css     :  20 * KB,   // index-*.css: MapLibre + the kit's tokens/base + app
   thenNow :  40 * KB,   // the lazy Then vs Now chunk (geotiff readers load on their own)
+  feedback:  15 * KB,   // the lazy feedback dialog + capture (html-to-image), fetched on the first Feedback click
   fonts   : 560 * KB,   // every self-hosted woff2 (a page fetches only the faces it uses)
 }
 
@@ -29,6 +30,7 @@ const parts = [
   { name: 'entry JS (gzip)', files: pick(/^index-.*\.js$/), size: gz, budget: BUDGET.entryJs },
   { name: 'entry CSS (gzip)', files: pick(/^index-.*\.css$/), size: gz, budget: BUDGET.css },
   { name: 'Then vs Now chunk JS+CSS (gzip)', files: pick(/^ThenNow-.*\.(js|css)$/), size: gz, budget: BUDGET.thenNow },
+  { name: 'feedback chunks JS+CSS (gzip)', files: pick(/^(FeedbackDialog|capture)-.*\.(js|css)$/), size: gz, budget: BUDGET.feedback },
   { name: 'fonts (woff2, raw)', files: pick(/\.woff2$/), size: raw, budget: BUDGET.fonts },
 ]
 let ok = true
@@ -37,6 +39,11 @@ for (const p of parts) {
   const pass = n <= p.budget
   ok &&= pass
   console.log(`${pass ? 'ok  ' : 'OVER'} ${p.name}: ${(n / KB).toFixed(1)} KB (budget ${(p.budget / KB).toFixed(0)} KB) ${p.files.join(', ')}`)
+}
+// html-to-image must stay out of the entry: "fontEmbedCSS" is one of its option names, which survives
+// minification and appears in no other dependency
+for (const f of pick(/^index-.*\.js$/)) {
+  if (readFileSync(join(dist, 'assets', f), 'utf8').includes('fontEmbedCSS')) { ok = false; console.log(`OVER html-to-image is in the entry ${f}: it must be reached only through import()`) }
 }
 const engine = pick(/^duckdb-/)
 console.log(`info DuckDB engine (fetched on first query, not budgeted): ${(sum(engine, gz) / KB).toFixed(0)} KB gzip`)

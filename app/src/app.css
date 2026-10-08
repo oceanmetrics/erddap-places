@@ -66,3 +66,6 @@ body { overflow: hidden; }
 @media (max-width: 640px) { .chart-key { display: none; } }
 /* the Time strip sits above the map's own overlays (the swipe handle, captions), below the panes */
 .stage .mbon-timestrip.overlay { z-index: 8; }
+
+/* Cite this data (④ Share): wrap, never scroll sideways */
+.pane-pre.cite { white-space: pre-wrap; overflow-wrap: anywhere; }

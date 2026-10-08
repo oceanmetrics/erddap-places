@@ -22,11 +22,17 @@
   import { copyText, download, resultFileName, toCsv } from './lib/download'
   import { chrome, theme } from './lib/chrome.svelte'
   import { decodePanes, encodePanes, fitPadding, initialPanes, paneUrlState, hashParam, withExtras, type Lens, type Panes } from './lib/view'
-  import { citation, datasetBlurb, fmtDay, fmtMonths, fmtRange, isStat, plural, shortPlace, STATS, statLabel, variableWords, type StatId } from './lib/sentence'
+  import { datasetBlurb, fmtDay, fmtMonths, fmtRange, isStat, plural, shortPlace, STATS, statLabel, variableWords, type StatId } from './lib/sentence'
   import { grabMap, viewPng } from './lib/png'
+  import { citeText } from './lib/help/cite'
+  import type { LensApi } from './lib/help/lensApi'
 
-  interface Props { setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void }
-  let { setLens }: Props = $props()
+  interface Props {
+    setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void
+    /** hands the Shell what Help, the tour and the shortcuts may ask of this lens */
+    register?: (api: LensApi) => void
+  }
+  let { setLens, register }: Props = $props()
 
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
@@ -36,7 +42,10 @@
   // point data is sparse: a CalCOFI cruise is quarterly, so a tabledap run defaults to five years
   const TABLE_DAYS   = 5 * 365
   const TABLE_WIN    = { days: TABLE_DAYS, minSteps: 1, maxDays: TABLE_DAYS + 2 }
-  const winOpts      = (ds: Dataset | null) => (ds?.protocol === 'tabledap' ? TABLE_WIN : WIN)
+  // a monthly grid is small per step: its window may run the whole record (a CMEMS product is a few
+  // hundred steps), where a daily 5 km grid stays capped at 90 days
+  const MONTHLY_WIN  = { days: DEFAULT_DAYS, minSteps: MIN_STEPS, maxDays: 40 * 366 }
+  const winOpts      = (ds: Dataset | null) => (ds?.protocol === 'tabledap' ? TABLE_WIN : ds?.timeStep === 'P1M' ? MONTHLY_WIN : WIN)
   const iso          = (d: Date) => d.toISOString().slice(0, 10)
 
   // ── state ───────────────────────────────────────────────────────────────────
@@ -228,8 +237,8 @@
       mapSql,
     ].join('\n')
   })
-  const cite = $derived(shownDs ? citation(shownDs, iso(new Date())) +
-    ' Places: Ocean Metrics gazetteer (NOAA ONMS, MarineRegions.org, ProtectedSeas), https://storage.oceanmetrics.io/gazetteer/.' : '')
+  // Cite this data: the dataset on screen, the gazetteer, this app with the view's link
+  const cite = $derived(shownDs ? citeText({ datasets: [shownDs], accessed: iso(new Date()), url: link, appVersion: __APP_VERSION__ }) : '')
 
   async function copy(text: string, what: string) {
     copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
@@ -565,6 +574,22 @@
   const tableLabel = $derived(pointRun ? `Table · ${plural(rows.length, 'month')}`
     : categorical ? `Table · ${plural(new Set(rows.map((r) => r.date)).size, 'day')}` : `Table · ${plural(rows.length, 'day')}`)
   const switchLens = () => setLens?.('then-now', { place: placeId, panes })
+
+  // what Help, the tour and the shortcuts may ask of this lens (once: the Shell re-mounts a lens to change it)
+  // svelte-ignore state_referenced_locally
+  register?.({
+    ui   : () => ({ tab, controls: !controlsFolded, time: !timeFolded, side: !tableFolded }),
+    setUi: (u) => {
+      if (u.tab) tab = u.tab
+      if (u.controls !== undefined) controlsFolded = !u.controls
+      if (u.time !== undefined) timeFolded = !u.time
+      if (u.side !== undefined) tableFolded = !u.side
+    },
+    switchLens,
+    sentence: () => titleText,
+    maps    : () => (map ? [map] : []),
+    cite    : () => cite,
+  })
 </script>
 
 {#snippet placePicker(close?: () => void)}
@@ -606,7 +631,7 @@
     <label class="pane-field">from <input type="date" bind:value={startDate} min={extent?.start?.slice(0, 10)} max={through || undefined} /></label>
     <label class="pane-field">to <input type="date" bind:value={endDate} min={extent?.start?.slice(0, 10)} max={through || undefined} /></label>
   </div>
-  <p class="pane-note">{pickedTabular ? 'Up to five years, monthly roll-up.' : `Up to ${MAX_DAYS} days`}{through ? `; data through ${fmtDay(through)}` : ''}{step && step !== 'daily' ? ` (${step} steps)` : ''}. Or drag on the Time strip.</p>
+  <p class="pane-note">{pickedTabular ? 'Up to five years, monthly roll-up.' : dataset?.timeStep === 'P1M' ? 'Monthly steps, the whole record if you like' : `Up to ${MAX_DAYS} days`}{through ? `; data through ${fmtDay(through)}` : ''}{step && step !== 'daily' ? ` (${step} steps)` : ''}. Or drag on the Time strip.</p>
 {/snippet}
 {#snippet sharePanel()}
   <div class="pane-col">
@@ -620,7 +645,15 @@
       <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')} disabled={!cite}>Copy citation</Button>
       {#if copied || exporting}<span class="pane-note" role="status">{copied || exporting}</span>{/if}
     </div>
-    {#if cite}<details class="pane-details"><summary>Cite this data</summary><p class="pane-note">{cite}</p></details>{/if}
+    {#if cite}
+      <details class="pane-details cite-this">
+        <summary>Cite this data</summary>
+        <div class="pane-col">
+          <pre class="pane-pre cite">{cite}</pre>
+          <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')}>Copy citation</Button>
+        </div>
+      </details>
+    {/if}
     {#if shownRun}
       <details class="pane-details">
         <summary>Reproduce: requests, mask, SQL and timing</summary>
@@ -719,7 +752,7 @@
       {#snippet footer()}{maskInfo ? `${plural(maskInfo.cells, countWord)} · ` : ''}{dataset?.title ?? ''}{busy ? ' · updating…' : ''}{/snippet}
     </Controls>
 
-    <Pane title="table" id="ep-table" anchor="top-right" offset={{ x: 0, y: 130 }} width={380} height={300}
+    <Pane title="table" id="ep-table" class="edge-pane" anchor="top-right" offset={{ x: 0, y: 130 }} width={380} height={300}
           bind:collapsed={tableFolded} pillLabel={rows.length ? tableLabel : 'Table'}>
       {#snippet actions()}
         <Menu label="⬇" ariaLabel="Export the table" align="end">

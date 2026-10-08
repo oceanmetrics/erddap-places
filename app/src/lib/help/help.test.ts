@@ -247,3 +247,15 @@ describe('Data sources and attribution', () => {
     for (const w of ['DuckDB-WASM', 'MapLibre', 'geotiff']) expect(sw).toContain(w)
   })
 })
+describe('html-to-image stays lazy', () => {
+  it('is imported only by capture.ts, and that only through import()', () => {
+    const shell = readFileSync(path.join(SRC, 'Shell.svelte'), 'utf8')
+    const statics = [shell, readFileSync(path.join(SRC, 'App.svelte'), 'utf8'), readFileSync(path.join(SRC, 'main.ts'), 'utf8')]
+    for (const s of statics) {
+      expect(s).not.toMatch(/from ['"]html-to-image['"]/)
+      expect(s).not.toMatch(/^\s*import [^(]*['"][^'"]*feedback\/(capture|FeedbackDialog)/m)
+    }
+    expect(shell).toMatch(/import\(['"]\.\/lib\/feedback\/capture['"]\)/)
+    expect(shell).toMatch(/import\(['"]\.\/lib\/feedback\/FeedbackDialog\.svelte['"]\)/)
+  })
+})
