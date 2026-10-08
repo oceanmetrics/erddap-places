@@ -125,6 +125,8 @@
     url       : pageBase() + location.hash,
     lens      : LENS_LABEL[current],
     appVersion: `${__APP_VERSION__}${__APP_COMMIT__ ? ` (${__APP_COMMIT__})` : ''}`,
+    version   : __APP_VERSION__,
+    sha       : __APP_COMMIT__ || '',
     release   : chrome.release || null,
     viewport  : `${innerWidth}×${innerHeight}`,
     theme     : theme.dark ? 'dark' : 'light',

@@ -5,6 +5,9 @@ on:
   push:
     branches: [main]
     paths: ['app/**', 'sql/**', '.github/workflows/pages.yml']
+    # feedback/<id>.png screenshots (committed by the feedback endpoint) are outside these paths, so they
+    # do not redeploy; GitHub rejects `paths` and `paths-ignore` on the same event, so there is no
+    # paths-ignore line
   workflow_dispatch:
 
 permissions:
@@ -39,6 +42,7 @@ jobs:
       - run: npm run build
         env:
           VITE_BASE: /erddap-places/   # project site sub-path
+          VITE_FEEDBACK_URL: ${{ vars.VITE_FEEDBACK_URL }}   # Apps Script /exec; empty = no Send button (docs/feedback.md)
       - run: npm run size-budget       # app/README.md "Size budget"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

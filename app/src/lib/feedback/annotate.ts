@@ -1,6 +1,8 @@
 // the feedback dialog's mark-up: rectangle, arrow and text over the captured view (obis-hex's, after
 // MarineSensitivity/atlas src/lib/feedback/annotate.ts, itself from CalCOFI explore). Pure canvas
 // drawing; FeedbackDialog.svelte owns the pointer events.
+import { DEFAULT_MARK_COLOR } from './colors'
+
 export type MarkTool = 'rect' | 'arrow' | 'text'
 
 export interface Mark {
@@ -10,6 +12,8 @@ export interface Mark {
   x1: number
   y1: number
   text?: string
+  /** the mark's own colour, chosen when it was drawn (see colors.ts); the default when absent */
+  color?: string
 }
 
 export const MARK_TOOLS: { id: MarkTool; label: string }[] = [
@@ -17,9 +21,6 @@ export const MARK_TOOLS: { id: MarkTool; label: string }[] = [
   { id: 'arrow', label: 'Arrow' },
   { id: 'text', label: 'Text' },
 ]
-
-/** the mark-up colour: coral (the kit's --action), which reads on the dark and light basemaps */
-export const MARK_COLOR = '#f2683f'
 
 /** the arrow head's two corner points for a shaft from (x0,y0) to (x1,y1) */
 export function arrowHead(m: Pick<Mark, 'x0' | 'y0' | 'x1' | 'y1'>, len: number): [[number, number], [number, number]] {
@@ -40,9 +41,10 @@ export function strokeScale(w: number): number {
   return Math.max(1, w / 1400)
 }
 
-export function drawMark(ctx: CanvasRenderingContext2D, m: Mark, k = 1): void {
-  ctx.strokeStyle = MARK_COLOR
-  ctx.fillStyle = MARK_COLOR
+/** draws one mark in its colour (`color` overrides the mark's own, which falls back to the default) */
+export function drawMark(ctx: CanvasRenderingContext2D, m: Mark, k = 1, color: string = m.color ?? DEFAULT_MARK_COLOR): void {
+  ctx.strokeStyle = color
+  ctx.fillStyle = color
   ctx.lineWidth = 3 * k
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
@@ -67,7 +69,7 @@ export function drawMark(ctx: CanvasRenderingContext2D, m: Mark, k = 1): void {
     const w = ctx.measureText(m.text).width + 10 * k
     ctx.fillStyle = 'rgba(0,0,0,0.6)'
     ctx.fillRect(m.x0 - 5 * k, m.y0 - 3 * k, w, 22 * k)
-    ctx.fillStyle = MARK_COLOR
+    ctx.fillStyle = color
     ctx.fillText(m.text, m.x0, m.y0)
   }
 }

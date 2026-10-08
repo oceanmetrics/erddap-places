@@ -1,7 +1,8 @@
-// feedback without a server: the prefilled GitHub "new issue" URL and the same report as plain text
-// for the clipboard (obis-hex's, after MarineSensitivity/atlas src/lib/feedback/issueUrl.ts). No
-// email address is collected; the image never goes into the URL (GitHub cannot take one there): the
-// dialog copies it to the clipboard and asks the visitor to paste it into the issue.
+// the fallback when no endpoint is configured or the POST fails: the prefilled GitHub "new issue" URL
+// and the same report as plain text for the clipboard (obis-hex's, after MarineSensitivity/atlas
+// src/lib/feedback/issueUrl.ts). The optional email never enters it (payload.ts sends it to the Sheet
+// and the mail only); the image never goes into the URL (GitHub cannot take one there): the dialog
+// copies it to the clipboard and asks the visitor to paste it into the issue.
 export const ISSUE_BASE = 'https://github.com/oceanmetrics/erddap-places/issues/new'
 /** GitHub truncates a new-issue URL around 8 KB; stay well under it */
 export const MAX_ISSUE_URL_LENGTH = 7500
@@ -16,6 +17,9 @@ export interface FeedbackReport {
   /** "Statistics" or "Then vs Now" */
   lens      : string
   appVersion: string
+  /** the bare version and short commit, for the endpoint payload (appVersion is their display form) */
+  version  ?: string
+  sha      ?: string
   /** the data release line of the footer, e.g. "NOAA Coral Reef Watch — … · ERDDAP 2.29 · data through 6 Oct 2026" */
   release   : string | null
   /** "1280×800" CSS pixels */
@@ -37,7 +41,7 @@ export function issueTitle(r: FeedbackReport): string {
 
 function details(r: FeedbackReport): string {
   return [
-    `- View: ${r.url}`,
+    ...(r.url ? [`- View: ${r.url}`] : []),
     ...(r.sentence ? [`- Showing: ${r.sentence}`] : []),
     `- Lens: ${r.lens}`,
     `- Data: ${r.release || 'not loaded yet'}`,

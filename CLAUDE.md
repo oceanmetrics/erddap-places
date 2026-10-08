@@ -112,8 +112,12 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
 - When a control moves or is renamed, update its tour stop (`TOUR_STOPS`) and the keyboard list
   (`SHORTCUTS`). After a layout change, re-shoot screenshots with `docs/ui-assessment/shoot.mjs`;
   it opens pages with `?tour=off` and waits on `.lens[data-state]`.
-- Feedback has no server: it builds a GitHub issue URL (under 7,500 characters), copies to the
-  clipboard, or downloads a PNG. Never collect an email address.
+- Feedback goes to the shared Ocean Metrics Apps Script when `VITE_FEEDBACK_URL` is set (a Google
+  Sheet row, mail to the recipients, a GitHub issue; `scripts/feedback/Code.gs`, runbook
+  `docs/feedback.md`). Without it, or when the POST fails, it builds a GitHub issue URL (under 7,500
+  characters), copies to the clipboard, or downloads a PNG. The email field is optional: it goes to the
+  Sheet and the mail only, never into the issue, the issue URL or the clipboard report. The view link
+  is an opt-out checkbox; an unticked one is absent from the payload.
 - Raise a size budget only with the reason recorded in `app/README.md`.
 
 ## CI and publishing
