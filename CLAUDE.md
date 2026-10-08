@@ -52,7 +52,9 @@ Three consumers share one pipeline: the browser app, the Node precompute, and ag
 published STAC catalog.
 
 ```
-places.parquet (WKB) ─► gazetteer.ts placeLobes()  ─┐   one lobe per side of ±180
+index/places_index.parquet + layers.json ─► gazetteer.ts loadIndex()/loadLayers() (the picker: 14,734 places, 22 collections)
+<collection>/places.parquet (WKB) ─► placeGeometry() on demand (places.parquet whole for the 20 precomputed ids)
+                      ─► placeLobes()                 ─┐   one lobe per side of ±180
 ERDDAP collection.json ─► catalog.ts                 ├─► gridMask() cells + partial-area weights
 /info/<id>/index.json ─► extent.ts (live time range) ┘   (pointMask() for tabledap)
                           erddap.ts griddapUrl()/tabledapUrl() ─► .parquet slab per lobe
