@@ -1,0 +1,27 @@
+# the Erin's-layers gazetteer builder (catalog/build_erin_layers.py + catalog/erin_layers/).
+# self-contained so it can move to a standalone repo: `cd catalog && uv run pytest`
+[project]
+name = "gazetteer-layers"
+version = "0.1.0"
+description = "fetch, normalise and publish BOEM / NOAA boundary layers as GeoParquet + PMTiles + STAC"
+requires-python = ">=3.11"
+dependencies = [
+  "pyarrow>=17",
+  "shapely>=2.1",
+  "pyproj>=3.6",
+  "pyyaml>=6",
+  "requests>=2.31",
+  "pyogrio>=0.9",
+  "numpy>=1.26",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "pmtiles>=3.4"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = ["network: hits a live service (deselect with -m 'not network')", "tippecanoe: needs the tippecanoe binary"]
+
+[tool.uv]
+package = false

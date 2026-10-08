@@ -1,0 +1,195 @@
+# weekly refresh of the "Erin's layers" gazetteer collections (BOEM wind leases / planning areas / oil and gas,
+# NOAA SoCal AOAs): re-fetch only what changed upstream, rebuild those collections, commit and publish them to
+# s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
+#
+# change detection (catalog/erin_layers/pipeline.py `detect`): per source, the ArcGIS layer's
+# `editingInfo.dataLastEditDate` and record count (two tiny requests) are compared with the provenance.json
+# published next to the collection; a layer that serves no edit date (BOEM Pacific map service) is compared on its
+# payload checksum, the NOAA zip on its HTTP validators. nothing changed = nothing rebuilt = nothing published.
+#
+# runs on the self-hosted runner `msens` like stats.yml (see catalog/README.md "Where it runs"): the S3 sync uses the
+# host's AWS profile (~ubuntu/.aws); the repository holds no AWS secrets, and if AWS_ACCESS_KEY_ID /
+# AWS_SECRET_ACCESS_KEY are ever added they take precedence (same fallback as stats.yml).
+#
+# the host needs, beyond stats.yml's tools: uv (installed below with pip), tippecanoe (built below when missing; needs
+# gcc, make, libsqlite3-dev and zlib1g-dev, none of which this workflow can install without sudo: install them once
+# on msens) and portolan (uv tool). collections must already be integrated in catalog/gazetteer/<slug>/ (see
+# catalog/staging/RUNBOOK.md); a collection that is not is reported and skipped.
+name: gazetteer-sync
+
+on:
+  schedule:
+    - cron: '43 7 * * 1'          # Mondays 07:43 UTC, before the stats run (09:17) that syncs the whole gazetteer
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'only this collection (blank = every collection)'
+        required: false
+        default: ''
+      force:
+        description: 'rebuild even if the source did not change'
+        type: boolean
+        required: false
+        default: false
+      publish:
+        description: 'commit and sync to S3 when done'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: write                  # commits the rebuilt collections back to main (git stays the source of truth)
+
+# one gazetteer writer at a time: stats.yml syncs the whole catalog/gazetteer/ checkout to S3 with --delete, so a
+# publish that overlaps it (or a checkout that predates our commit) would remove or revert collections
+concurrency:
+  group: stats
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: [self-hosted, msens]
+    timeout-minutes: 90
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      BASE: https://storage.oceanmetrics.io/gazetteer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: host tools
+        run: |
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          python3 --version
+          aws --version
+          gcc --version | head -1
+          make --version | head -1
+
+      # uv fetches Python >= 3.11 itself (the host python3 is 3.10); portolan and rashid are python tools
+      - name: install uv, portolan and rashid
+        run: |
+          python3 -m pip install --user --upgrade --quiet uv rashid
+          export PATH="$HOME/.local/bin:$PATH"
+          uv tool install --upgrade portolan-cli
+          uv --version; portolan --version; rashid --version
+
+      - name: install tippecanoe (once; kept in ~/.local)
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          if ! command -v tippecanoe >/dev/null; then
+            git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git "$RUNNER_TEMP/tippecanoe"
+            make -C "$RUNNER_TEMP/tippecanoe" -j"$(nproc)"
+            make -C "$RUNNER_TEMP/tippecanoe" install PREFIX="$HOME/.local"
+          fi
+          tippecanoe --version
+
+      - name: unit tests (rules, status overlay, antimeridian, licence and attribution, PMTiles metadata)
+        working-directory: catalog
+        run: uv run --group dev pytest -q
+
+      - name: which collections changed upstream
+        id: detect
+        run: |
+          slugs=""
+          if [ -n "${{ inputs.slug }}" ]; then slugs="--slug ${{ inputs.slug }}"; fi
+          uv run catalog/build_erin_layers.py detect $slugs --published-base "$BASE" --json-out changed.json
+          if [ "${{ inputs.force }}" = "true" ]; then
+            python3 - <<'PY'
+          import json
+          rows = json.load(open("changed.json"))
+          for r in rows:
+              r["changed"] = True
+          json.dump(rows, open("changed.json", "w"))
+          PY
+          fi
+          list=$(python3 -c "import json; print(' '.join(r['slug'] for r in json.load(open('changed.json')) if r['changed']))")
+          echo "changed=$list" >> "$GITHUB_OUTPUT"
+          echo "changed collections: ${list:-none}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # a failed fetch of one collection must not throw away the others: keep going, publish what was built, fail at the end
+      - name: rebuild the changed collections
+        id: build
+        if: ${{ steps.detect.outputs.changed != '' }}
+        continue-on-error: true
+        run: |
+          failed=""
+          built=""
+          for slug in ${{ steps.detect.outputs.changed }}; do
+            if [ ! -d "catalog/gazetteer/$slug" ]; then
+              echo "::warning::$slug is not integrated in catalog/gazetteer/ yet (catalog/staging/RUNBOOK.md); skipped"
+              continue
+            fi
+            version=$(uv run catalog/build_erin_layers.py next-version --slug "$slug" --published-base "$BASE")
+            if uv run catalog/build_erin_layers.py build --slug "$slug" --version "$version"; then
+              built="$built $slug:$version"
+            else
+              failed="$failed $slug"
+            fi
+          done
+          echo "built=${built# }" >> "$GITHUB_OUTPUT"
+          echo "failed=${failed# }" >> "$GITHUB_OUTPUT"
+          echo "built:${built:- none}  failed:${failed:- none}" | tee -a "$GITHUB_STEP_SUMMARY"
+          [ -z "$failed" ]
+
+      - name: check the built collections (parquet, PMTiles attribution, licence, ids, geometry)
+        if: ${{ steps.build.outputs.built != '' }}
+        run: |
+          uv run catalog/build_erin_layers.py check $(for b in ${{ steps.build.outputs.built }}; do echo "--slug ${b%%:*}"; done)
+          cd catalog && uv run --group dev pytest -q tests/test_staged.py
+
+      # copy staging over the integrated collection and register it with portolan (thumbnail, checksums, versions.json).
+      # copy INTO the directory, never replace it: <slug>/versions.json (the version history) lives there.
+      # `portolan add` records the new version itself (patch bump of the changed files), so there is no separate
+      # `version bump`; the check below flags a checkout that was behind the published versions.json
+      - name: integrate the rebuilt collections
+        if: ${{ steps.build.outputs.built != '' }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cd catalog/gazetteer
+          for b in ${{ steps.build.outputs.built }}; do
+            slug=${b%%:*}; want=${b##*:}
+            cp -R "../staging/$slug/." "$slug/"
+            portolan add "$slug/" --force --force-thumbnails
+            got=$(portolan --format json version current "$slug" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['version'])")
+            if [ "$got" != "$want" ]; then
+              echo "::warning::$slug: portolan recorded $got but the rows say version $want (checkout behind the published versions.json?)"
+            fi
+          done
+          cd ../..
+          rashid check catalog/gazetteer --data-scope local
+
+      # git stays the source of truth: stats.yml's --delete sync publishes whatever is in main
+      - name: commit the rebuilt collections
+        if: ${{ steps.build.outputs.built != '' && (github.event_name == 'schedule' || inputs.publish) }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          paths="catalog/gazetteer/versions.json catalog/gazetteer/catalog.json"
+          for b in ${{ steps.build.outputs.built }}; do paths="$paths catalog/gazetteer/${b%%:*}"; done
+          git add $paths
+          git diff --cached --quiet || git commit -m "gazetteer-sync: rebuild ${{ steps.build.outputs.built }}"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: publish to S3
+        if: ${{ steps.build.outputs.built != '' && (github.event_name == 'schedule' || inputs.publish) }}
+        env:
+          AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          # no secrets: fall back to the host's AWS profile (IAM user on msens)
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+          fi
+          aws sts get-caller-identity
+          # only the rebuilt collections plus the two catalog-level files; never --delete the rest of the gazetteer
+          for b in ${{ steps.build.outputs.built }}; do
+            slug=${b%%:*}
+            aws s3 sync "catalog/gazetteer/$slug/" "s3://oceanmetrics.io-public/gazetteer/$slug/" --delete --exclude '.portolan/*'
+          done
+          aws s3 cp catalog/gazetteer/versions.json s3://oceanmetrics.io-public/gazetteer/versions.json
+          aws s3 cp catalog/gazetteer/catalog.json  s3://oceanmetrics.io-public/gazetteer/catalog.json
+
+      - name: fail the job if a collection failed to build
+        if: ${{ steps.build.outcome == 'failure' }}
+        run: |
+          echo "::error::failed to build: ${{ steps.build.outputs.failed }} (the other changed collections were published)"
+          exit 1
