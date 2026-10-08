@@ -286,8 +286,7 @@
   <Tour bind:index={tourIndex} onstep={tourStepped} onclose={tourClosed} />
 
   {#if FeedbackDialog}
-    <FeedbackDialog bind:open={fbOpen} kind={fbKind} image={fbImage} report={feedbackReport}
-      filename={`erddap-places_${fbKind}.png`} />
+    <FeedbackDialog bind:open={fbOpen} kind={fbKind} image={fbImage} report={feedbackReport} />
   {/if}
 
   {#snippet timingLine()}<span class="status" aria-live="polite">{chrome.busy ? `updating… ${chrome.step}` : chrome.timing}</span>{/snippet}

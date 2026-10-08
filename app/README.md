@@ -135,19 +135,24 @@ behave alike. The logic is plain TypeScript under `src/lib/help/` and `src/lib/f
   default, yellow, blue: `colors.ts`, the one place a canvas colour is written), and a checkbox
   "include a link to this view" (on by default, since every view is a permalink; unticked, the `url`
   key is absent from the payload).
-  - **Send** (shown when an endpoint is configured: `VITE_FEEDBACK_URL`, or the localStorage key
-    `erddap-places.feedback_url`, `endpoint.ts`): `postFeedback.ts` POSTs `payload.ts`'s body as
+  - **Send** is the one button, always shown. It is enabled once there is a note (and the email, if
+    given, looks like one) and an endpoint is configured (`VITE_FEEDBACK_URL`, or the localStorage key
+    `erddap-places.feedback_url`, `endpoint.ts`). `postFeedback.ts` POSTs `payload.ts`'s body as
     `text/plain` to the shared Ocean Metrics Apps Script (`scripts/feedback/Code.gs`, runbook
     `docs/feedback.md`), which writes a Google Sheet row, mails the recipients (the screenshot inline,
     a copy to the submitter) and opens a GitHub issue labelled with the kind, the screenshot committed
     as `feedback/<id>.png`. The email goes to the Sheet and the mail only, never into the issue. States:
-    Sending, Sent, or failed (the message says so and *Open a GitHub issue* appears).
-  - **Fallbacks**, always available: *Open a GitHub issue* (shown when there is no endpoint, or after
-    a failed send; title and body prefilled with the note, the view URL if ticked, the sentence, the
-    lens, the data line, the app version, the viewport and the theme; the picture goes to the
+    Sending, Sent, or failed.
+  - **Fallback**, the inline link *open a GitHub issue* in the one-line notice under Send. The notice
+    reads "Sending is not set up yet; open a GitHub issue instead" when there is no endpoint (Send is
+    then disabled), and "<reason>; open a GitHub issue instead" after a failed send. The link opens a
+    prefilled issue in a new tab (title and body carry the note, the view URL if ticked, the sentence,
+    the lens, the data line, the app version, the viewport and the theme; the picture goes to the
     clipboard with a "paste it" hint; the URL stays under 7,500 characters by cutting the note, never
-    the details), *Copy report*, *Download PNG*. The email is never in these.
-  *Register a product* is the same dialog with "what did you build?". Tests: `feedback/feedback.test.ts`.
+    the details), for people with a GitHub login. There is no Copy report or Download PNG. The email
+    is never in the issue.
+  *Register a product* is the same dialog with "what did you build?". Tests: `feedback/feedback.test.ts`, `feedback/feedbackDialog.svelte.test.ts` (Send disabled
+  without an endpoint, the link, no copy or download button).
 - **Cite this data** (④ Share, and About): the dataset's citation (producer, title, ERDDAP page,
   access date, licence, DOI), the gazetteer's, and the app's with the view's link, with a copy
   button (`cite.ts`). Then vs Now cites the CoralTemp rasters instead of an ERDDAP dataset.

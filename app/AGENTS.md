@@ -35,11 +35,13 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   `src/lib/help/tour.ts`: order, selectors, words) and the Keyboard list (`SHORTCUTS` in `keys.ts`).
   A lens reaches the Shell only through the `LensApi` it registers (`src/lib/help/lensApi.ts`).
   `?tour=` / `?modal=` are query switches, never hash keys. Screenshots open with `?tour=off`
-  (`docs/ui-assessment/shoot.mjs`). Feedback posts to the shared Apps Script endpoint when
-  `VITE_FEEDBACK_URL` (or the `erddap-places.feedback_url` localStorage override) is set, and
-  otherwise falls back to the GitHub issue URL (`issueUrl()`, under 7,500 characters), the clipboard
-  and a PNG. The email is optional and goes to the Sheet and the mail only: never into the issue, the
-  issue URL or the clipboard report (`payload.ts` leaves the key out when empty). Mark colours live
+  (`docs/ui-assessment/shoot.mjs`). Feedback has one primary button, Send, always shown. It posts to
+  the shared Apps Script endpoint when `VITE_FEEDBACK_URL` (or the `erddap-places.feedback_url`
+  localStorage override) is set; otherwise it is disabled, and so after a failed POST a one-line notice
+  under it carries the inline link "open a GitHub issue" (`issueUrl()`, under 7,500 characters; the
+  screenshot goes to the clipboard). No Copy report or Download PNG button. The email is optional and
+  goes to the Sheet and the mail only: never into the issue or the issue URL (`payload.ts` leaves the
+  key out when empty). Mark colours live
   only in `feedback/colors.ts`. Runbook: `docs/feedback.md`.
 - **html-to-image stays lazy** (pinned 1.11.13 exactly). Only `src/lib/feedback/capture.ts` imports
   it, and it and `FeedbackDialog.svelte` are reached only via `import()` in `Shell.svelte`

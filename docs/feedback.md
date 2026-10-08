@@ -2,8 +2,8 @@
 
 **Status: not yet deployed.** The code is in place (`scripts/feedback/Code.gs`, `app/src/lib/feedback/`),
 but Ben must create the Sheet and deploy the Apps Script (steps below) and set the repo variable. Until
-`VITE_FEEDBACK_URL` is set, the dialog has no Send button and falls back to the prefilled GitHub issue,
-Copy report and Download PNG.
+`VITE_FEEDBACK_URL` is set, the Send button is disabled and a line under it reads "Sending is not set up
+yet; open a GitHub issue instead", where the link opens the prefilled GitHub issue.
 
 One Apps Script serves all the Ocean Metrics apps. Each app's payload carries `app`, and the script's
 `APPS` map turns that into a repository and branch:

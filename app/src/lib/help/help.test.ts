@@ -153,7 +153,6 @@ describe('the feedback issue', () => {
       `- View: ${REPORT.url}`, `- Showing: ${REPORT.sentence}`, '- Lens: Statistics',
       `- Data: ${REPORT.release}`, '- App: erddap-places v0.1.0', '- Viewport: 1280×800', '- Theme: dark',
     ].join('\n'))
-    expect(reportBody(REPORT, { paste: false })).not.toContain('paste it here')
     expect(reportBody({ ...REPORT, note: ' ', release: null })).toContain('_(no note)_')
     expect(reportBody({ ...REPORT, release: '' })).toContain('- Data: not loaded yet')
   })

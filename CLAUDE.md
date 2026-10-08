@@ -114,9 +114,11 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   it opens pages with `?tour=off` and waits on `.lens[data-state]`.
 - Feedback goes to the shared Ocean Metrics Apps Script when `VITE_FEEDBACK_URL` is set (a Google
   Sheet row, mail to the recipients, a GitHub issue; `scripts/feedback/Code.gs`, runbook
-  `docs/feedback.md`). Without it, or when the POST fails, it builds a GitHub issue URL (under 7,500
-  characters), copies to the clipboard, or downloads a PNG. The email field is optional: it goes to the
-  Sheet and the mail only, never into the issue, the issue URL or the clipboard report. The view link
+  `docs/feedback.md`). Send is the one primary button, always shown. Without the variable it is
+  disabled, and when the POST fails, a one-line notice under it carries the inline link "open a GitHub
+  issue" (a prefilled issue URL under 7,500 characters; the screenshot goes to the clipboard). There is no
+  Copy report or Download PNG. The email field is optional: it goes to the Sheet and the mail only,
+  never into the issue or the issue URL. The view link
   is an opt-out checkbox; an unticked one is absent from the payload.
 - Raise a size budget only with the reason recorded in `app/README.md`.
 
