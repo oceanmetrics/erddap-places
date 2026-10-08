@@ -82,7 +82,11 @@ body { overflow: hidden; }
 .mbon-timestrip.expanded .dl-menu .mbon-menu .panel { top: calc(100% + 4px); bottom: auto; }
 .mbon-timestrip .dl-menu button:disabled { opacity: 0.45; cursor: default; }
 .stage .mbon-timestrip.overlay.expanded { z-index: 20; }
-@media (max-width: 640px) { .source-note { display: none; } }
+/* the compact form ("precomputed 6 Oct · map 8 Oct") is the default; the long form ("precomputed to 6 Oct 2026 ·
+   map: live 8 Oct 2026") only where the strip's header has room beside the chart key */
+.source-note .src-long { display: none; }
+@media (min-width: 1500px) { .source-note .src-long { display: inline; } .source-note .src-short { display: none; } }
+.chart-key span { white-space: nowrap; }
 
 /* a floating pane stops above the Time strip: the strip's header now holds the Plot / Table tabs and the
    ⬇ and Expand buttons, which a tall Controls pane used to cover (--map-bottom is the strip's height) */

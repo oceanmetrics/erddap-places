@@ -53,15 +53,30 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
 
 ## Precomputed stats first
 
-- `src/lib/precomputed.ts` shows the weekly `stats/<dataset_id>/<variable>/<place_id>.parquet`
-  rows in the Time strip before the live run finishes (README "Precomputed stats first"). Existence
-  comes only from the cached `stats/collection.json` item links (`hasPrecomputed()`): never HEAD or
-  GET a stats file for a combination that is not listed.
+- `src/lib/precomputed.ts` reads the weekly `stats/<dataset_id>/<variable>/<place_id>.parquet` and
+  `planRun()` decides what a run loads (README "Precomputed stats first"). Existence comes only from
+  the cached `stats/collection.json` item links (`hasPrecomputed()`): never HEAD or GET a stats file
+  for a combination that is not listed.
+- **Strip vs window** (the data contract of the Time strip): when `planRun()` says `precomputed`,
+  `series` is the WHOLE file and is what the plot draws (`plotRows`, x-domain `seriesSpan`), while
+  `rows` is only the window's share of it (`inWindow()`) and feeds the Table tab, `exportRows` (CSV /
+  Parquet), the tab title and the counts. Never put the whole file into `rows`, and never restrict
+  `series` to the window: that was the 0.2.0 bug (the strip looked like the live run). The brush is the
+  window inside the series span.
+- **Map slice**: on that path the only live request is one time step, `[(t):1:(t)]` with `t` the
+  window's last day clamped to the dataset's last step (`griddapSliceUrl()`), through the same lobe
+  loop (axis vectors, `erddap:lat_descending`, longitude clamp, `ds.format` rung) and `last_step.sql`
+  only; the window statistics SQL is not run. Any other case (window starts before the file, no file,
+  empty file, tabledap) is the full live path and must clear `series` / `shownSource`.
 - The shaped rows must keep the live run's columns (`stats_daily.sql` / `stats_categorical.sql`
   output: `fraction`, `percent_cells`, `date` as epoch ms). Change the template and the shaping
   together; `precomputed.test.ts` fails if they drift.
-- Every await in `run()` still checks `stale()`; precomputed rows never set `shownRun` (file names and
-  the permalink come from the live result only), and the live result clears `shownSource`.
+- Every await in `run()` still checks `stale()`. The precomputed load DOES set `shownRun` (as soon as
+  the file is read: permalink, file names, Reproduce, downloads), and `shownSource` (through date, as-of
+  date, `mapDate`, `failed`) marks that the statistics are not recomputed; `urls` then lists the
+  Parquet, its provenance JSON and the slice. The footer's rows / kB are the file's plus the slice
+  (`fileRows`). The same target again (a brushed window) keeps `series` on screen and reuses the
+  in-memory file (`preMem`).
 
 ## Then-now data contract
 

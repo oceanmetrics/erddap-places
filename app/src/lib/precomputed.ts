@@ -1,6 +1,8 @@
 // the weekly precompute (precompute/src/stats.ts) publishes one small Parquet per (dataset, variable,
 // place) under <gazetteer>/stats/: the same statistics the browser computes live, for the last 365
-// days. when a place is picked the app shows those rows at once, then the live run replaces them.
+// days (the full record for a monthly series). when a place is picked the app shows that WHOLE series in
+// the Time strip at once; the window (default: the last 30 days) is only the sub-range the table, the
+// exports and the sentence describe, and the map fetches just the latest time slice live (planRun()).
 //
 // everything here is plain and tested: the URL, the "is there a file" question (answered from the
 // published stats/collection.json, never a HEAD per run), the window rule, and the shaping of file
@@ -70,18 +72,40 @@ export interface Coverage { start: string; end: string }   // YYYY-MM-DD, first 
 export interface Window   { start: string; end: string }
 
 /**
- * Show precomputed rows before the live run? Only for a grid (a tabledap roll-up is not published)
- * that the collection lists.
+ * Show precomputed rows? Only for a grid (a tabledap roll-up is not published) that the collection lists.
  */
 export const usePrecomputed = (t: { protocol: string; has: boolean }) => t.protocol === 'griddap' && t.has
 
 /**
  * Do the file's dates cover the start of the window? The file ends at the last weekly refresh, so a
- * window that runs a few days past it still shows what there is ("precomputed to <date>"); a window
- * that starts before the file or after its end would show a misleading fragment, so it waits for the live run.
+ * window that runs a few days past it still uses what there is ("precomputed to <date>"); a window
+ * that starts before the file or after its end would describe a fragment, so it takes the live path.
  */
 export const windowCovered = (cov: Coverage | null, win: Window) =>
   !!cov && win.start >= cov.start && win.start <= cov.end
+
+export interface RunPlan {
+  /** where the Time strip's series (and the table's window rows) come from */
+  strip: 'precomputed' | 'live'
+  /** `slice`: fetch only the latest time step for the map; `window`: fetch the whole window slab and compute everything live */
+  map  : 'slice' | 'window'
+  /** the day of that one step (the window's end, never past the dataset's last step); null for `window` */
+  slice: string | null
+}
+
+/**
+ * The decision of a run, from what is known once the (cached) file has been read: is there a file for the
+ * target, what dates does it cover, which window is asked for, and where does the dataset end?
+ *   - a listed grid whose file covers the window's start: the whole series is the strip, the window rows
+ *     come from it, and the map needs one live slice;
+ *   - a window that starts before the file, a missing / empty file, a tabledap target: the live path as
+ *     before (the whole window slab, statistics and map from DuckDB).
+ */
+export function planRun(t: { protocol: string; has: boolean; coverage: Coverage | null }, win: Window, extentEnd?: string | null): RunPlan {
+  if (!usePrecomputed(t) || !windowCovered(t.coverage, win)) return { strip: 'live', map: 'window', slice: null }
+  const end = extentEnd && extentEnd.slice(0, 10) < win.end ? extentEnd.slice(0, 10) : win.end
+  return { strip: 'precomputed', map: 'slice', slice: end }
+}
 
 // ── rows ──────────────────────────────────────────────────────────────────────
 const num = (v: unknown) => (v === null || v === undefined ? null : Number(v))   // bigint -> number, as the engine does
@@ -105,10 +129,18 @@ export function shapeRows(raw: Row[], kind: StatsKind, win?: Window): Row[] {
 }
 
 export interface Precomputed {
-  /** rows inside the window, shaped like a live run's */
+  /** the file's rows shaped like a live run's: the whole series, or only the window when one was given */
   rows: Row[]
   /** first and last date in the whole file (not the window) */
   coverage: Coverage | null
+  /** the file's size in bytes */
+  bytes: number
+}
+
+/** the rows of a shaped series inside [start, end] (inclusive UTC days): the window's share of the whole file. */
+export function inWindow(rows: Row[], win: Window): Row[] {
+  const lo = ms(win.start), hi = ms(win.end)
+  return rows.filter((r) => r.date >= lo && r.date <= hi)
 }
 
 /** read stats Parquet bytes (testable without a network). */
@@ -116,7 +148,8 @@ export async function readPrecomputed(buf: ArrayBuffer, kind: StatsKind, win?: W
   const raw = await parquetReadObjects({ file: buf, compressors })
   const all = shapeRows(raw as Row[], kind)
   return { rows: win ? shapeRows(raw as Row[], kind, win) : all,
-           coverage: all.length ? { start: ymd(all[0].date), end: ymd(all[all.length - 1].date) } : null }
+           coverage: all.length ? { start: ymd(all[0].date), end: ymd(all[all.length - 1].date) } : null,
+           bytes: buf.byteLength }
 }
 
 /** fetch `url`; if it is under the bucket and fails, retry the same path on the storage host. */
@@ -131,7 +164,7 @@ async function fetchStats(url: string, init?: RequestInit): Promise<Response> {
 }
 
 /**
- * Fetch and read one precomputed file, restricted to the window. Throws on any failure (the caller
+ * Fetch and read one precomputed file (the whole series, or restricted to `win`). Throws on any failure (the caller
  * ignores it); `signal` aborts it, and a slow host gives up after `timeoutMs` so it never holds up the live run.
  */
 export async function loadPrecomputed(url: string, kind: StatsKind, win?: Window,
@@ -155,7 +188,18 @@ export async function precomputedAsOf(url: string, opts: { signal?: AbortSignal;
   } catch { return null }
 }
 
-/** the strip header's words for rows that came from a published file. `failed`: the live run did not complete. */
-export function sourceLabel(s: { through: string; asOf?: string | null; failed?: boolean }, fmtDay: (d: string) => string): string {
-  return `precomputed to ${fmtDay(s.through)}; ${s.failed ? 'live refresh failed' : 'refreshing…'}`
+/**
+ * the strip header's words for a series that came from a published file, while the map is the live
+ * latest slice: "precomputed to 6 Oct 2026 · map: live 8 Oct 2026". `compact` (a phone) drops the
+ * words and the shared year: "precomputed 6 Oct · map 8 Oct". `mapDate` null = the slice is still loading;
+ * `failed` = it did not load (the series stays).
+ */
+export function sourceLabel(s: { through: string; mapDate?: string | null; failed?: boolean }, fmtDay: (d: string) => string, compact = false): string {
+  const a = fmtDay(s.through), b = s.mapDate ? fmtDay(s.mapDate) : ''
+  const year = (x: string) => x.slice(-4)
+  if (compact) {
+    const short = (x: string, other: string) => (other && year(x) === year(other) ? x.slice(0, -5) : x)
+    return `precomputed ${short(a, b)}` + (b ? ` · map ${short(b, a)}` : s.failed ? ' · map failed' : '')
+  }
+  return `precomputed to ${a} · map: ` + (s.failed ? 'unavailable' : b ? `live ${b}` : 'loading…')
 }

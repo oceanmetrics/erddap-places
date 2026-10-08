@@ -4,7 +4,7 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { constraint, fetchAxis, fetchSlab, griddapUrl, griddapUrls, noonZ, parseCsvp, pickFormat } from './erddap'
+import { constraint, fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, griddapUrls, noonZ, parseCsvp, pickFormat } from './erddap'
 import { gridMask, polygonParts } from './gridMask'
 import type { FeatureCollection } from 'geojson'
 
@@ -47,6 +47,17 @@ describe('griddapUrl', () => {
     expect(u).toHaveLength(2)
     expect(u[0]).toContain('(-180):1:(-175)')
     expect(u[1]).toContain('(175):1:(180)')
+  })
+  it('griddapSliceUrl asks for ONE time step and keeps the rest of the request', () => {
+    const at = '2026-10-06T12:00:00Z'
+    const url = griddapSliceUrl({ base: BASE + '/', datasetId: 'dhw_5km', variable: 'CRW_SST', at,
+      lat: [18.8, 22.4], lon: [-160.3, -154.5], latDescending: true, format: 'parquetWMeta' })
+    expect(url).toBe(BASE + '/griddap/dhw_5km.parquetWMeta?CRW_SST' +
+      '%5B(2026-10-06T12:00:00Z):1:(2026-10-06T12:00:00Z)%5D%5B(22.4):1:(18.8)%5D%5B(-160.3):1:(-154.5)%5D')
+    // a depth level still sits between time and latitude, and a jsonp rung still gets its callback
+    expect(griddapSliceUrl({ base: BASE, datasetId: 'd', variable: 'chl', at: 'T', lat: [1, 2], lon: [3, 4], latDescending: false, depth: 0.49 }))
+      .toBe(BASE + '/griddap/d.parquet?chl%5B(T):1:(T)%5D%5B(0.49):1:(0.49)%5D%5B(1):1:(2)%5D%5B(3):1:(4)%5D')
+    expect(griddapSliceUrl({ base: BASE, datasetId: 'd', variable: 'v', at: 'T', lat: [1, 2], lon: [3, 4], format: 'jsonp', callback: 'cb0' }).endsWith('&.jsonp=cb0')).toBe(true)
   })
   it('constraint() and noonZ()', () => {
     expect(constraint(1, 2)).toBe('%5B(1):1:(2)%5D')

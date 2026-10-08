@@ -8,7 +8,7 @@
   import * as Plot from '@observablehq/plot'
   import { Button, Chip, Controls, Legend, Menu, Notice, Picker, Select, Sentence, TimeStrip, type BrushRange, type PickerItem } from '@marinebon/ui'
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
-  import { fetchAxis, fetchSlab, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
+  import { fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
   import { loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
   import { loadDatasets, lobeLonSpan, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
@@ -18,7 +18,7 @@
   import PlotBox from './lib/PlotBox.svelte'
   import { cellPoints, cellSquares, placeMapBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
-  import { hasPrecomputed, loadPrecomputed, precomputedAsOf, precomputedIndex, precomputedUrl, sourceLabel, usePrecomputed, windowCovered } from './lib/precomputed'
+  import { hasPrecomputed, inWindow, loadPrecomputed, planRun, precomputedAsOf, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type RunPlan } from './lib/precomputed'
   import { decodeHash, encodeHash, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
   import { chrome, theme } from './lib/chrome.svelte'
@@ -83,8 +83,14 @@
   let error     = $state('')
   let busy      = $state(true)
   let note      = $state('')
-  let urls      = $state.raw<{ url: string; kb: number; ms: number }[]>([])
+  let urls      = $state.raw<{ url: string; kb: number; ms: number; label?: string }[]>([])
+  // `rows` are the rows of the WINDOW (the table, the exports and the sentence describe these); on a
+  // precomputed target `series` is the whole file, which is what the Time strip draws (`plotRows`)
   let rows      = $state.raw<Record<string, any>[]>([])
+  let series    = $state.raw<Record<string, any>[] | null>(null)
+  let seriesSpan = $state.raw<Coverage | null>(null)   // first and last date of `series`: the strip's x-domain
+  let seriesKey = ''                                   // the (place, dataset, variable) `series` belongs to
+  let fileRows  = $state(0)                            // rows in the precomputed file, for the footer
   let sql       = $state('')
   let mapSql    = $state('')   // the last-time-step query behind the map layer
   let totalMs   = $state(0)
@@ -95,8 +101,11 @@
   // only the newest run may touch the UI: a run started while another is in flight supersedes it
   const runs    = new Runs()
   let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
-  // where `rows` came from while the live run is still going: the weekly precomputed file (null = live)
-  let shownSource = $state.raw<{ kind: 'precomputed'; through: string; asOf: string | null; failed: boolean } | null>(null)
+  // set when the statistics came from the weekly precomputed file and only the map is a live request
+  // (null = everything live); `mapDate` is the live slice's day (null while it loads), `failed` = it did not load
+  let shownSource = $state.raw<{ kind: 'precomputed'; through: string; asOf: string | null; mapDate: string | null; failed: boolean } | null>(null)
+  // the last precomputed file read (the brush re-runs without a second download)
+  let preMem: { url: string; pre: Precomputed; asOf: string | null; ms: number } | null = null
   // the map layer: the last time step of the slab, one square per masked cell (raw, never deep state)
   let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
   let points    = $state.raw<ReturnType<typeof cellPoints> | null>(null)
@@ -122,19 +131,22 @@
   const step    = $derived(extent?.stepLabel ?? (dataset?.timeStep === 'P1D' ? 'daily' : undefined))
   const through = $derived(extentFor === dsId && extent ? extent.end.slice(0, 10) : '')
   // categorical rows, labelled and coloured (seascapeR's class table when the collection carries one)
+  const plotRows = $derived(series ?? rows)           // the strip's rows: the whole series when there is one
   const classList = $derived(categorical
-    ? [...new Set(rows.map((r) => Number(r.class)))].sort((a, b) => a - b)
+    ? [...new Set(plotRows.map((r) => Number(r.class)))].sort((a, b) => a - b)
     : [])
   const classLabel = (c: number) => shownVar?.classes?.[String(c)] ?? `class ${c}`
   const colours = $derived(classColors(classList))
-  const catRows = $derived(rows.map((r) => ({
+  const catOf = (rs: Record<string, any>[]) => rs.map((r) => ({
     date    : new Date(r.date),
     class   : Number(r.class),
     label   : classLabel(Number(r.class)),
     fraction: Number(r.fraction),
     n       : Number(r.n),
     percent : Number(r.percent_cells),
-  })))
+  }))
+  const catRows = $derived(catOf(rows))                // the Table tab: the window
+  const catPlot = $derived(catOf(plotRows))            // the plot: the whole series
   const fmt     = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
   // ── pickers (the Controls tabs and the sentence chips show the same ones) ───
@@ -225,8 +237,8 @@
         `variable ${shownRun.variable}, ${shownRun.from} to ${shownRun.to}`,
       `# permalink: ${link}`,
       '',
-      `# ${shownProtocol} request(s):`,
-      ...urls.map((u) => u.url),
+      shownSource ? '# precomputed statistics (read in the browser) and the one live request for the map:' : `# ${shownProtocol} request(s):`,
+      ...urls.flatMap((u) => (u.label ? [`# ${u.label}`, u.url] : [u.url])),
       '',
       maskInfo
         ? (pointRun
@@ -235,7 +247,7 @@
               `${maskInfo.weight.toFixed(3)}, ${maskInfo.partial} partial (boundary) cells`)
         : '# mask: —',
       '',
-      '-- statistics (sql/' + statsTemplate(shownVar, shownProtocol) + '.sql, run in DuckDB):',
+      shownSource ? '-- statistics:' : '-- statistics (sql/' + statsTemplate(shownVar, shownProtocol) + '.sql, run in DuckDB):',
       sql,
       '',
       '-- the map layer (sql/last_step.sql):',
@@ -278,7 +290,7 @@
   // PNG of the Time strip's plot: the chart rebuilt at a fixed size (so it does not depend on the tab or
   // the strip height), drawn through an <img> of its SVG, under the title sentence, over the data stamp
   async function savePlotPng() {
-    if (!rows.length || !shownRun || shownSource) return
+    if (!rows.length || !shownRun) return
     exporting = 'drawing the plot…'
     try {
       const svg = chart(PLOT_W, PLOT_H)
@@ -341,7 +353,11 @@
   })
   $effect(() => {
     const kb = urls.reduce((a, u) => a + u.kb, 0)
-    chrome.timing = shownRun ? `${plural(rows.length, 'row')} · ${kb.toLocaleString('en-US')} kB · ${(totalMs / 1000).toFixed(1)} s (mask ${(maskMs / 1000).toFixed(2)} s)` : ''
+    // what actually loaded: the live window's rows, or the precomputed file's rows (and its build date) plus the one slice
+    const what = shownSource
+      ? `${plural(fileRows, 'row')} (precomputed ${fmtDay(shownSource.asOf ?? shownSource.through)}) + 1 slice`
+      : plural(rows.length, 'row')
+    chrome.timing = shownRun ? `${what} · ${kb.toLocaleString('en-US')} kB · ${(totalMs / 1000).toFixed(1)} s (mask ${(maskMs / 1000).toFixed(2)} s)` : ''
   })
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
@@ -363,8 +379,14 @@
     const ds = dataset, v = variable, p = place
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
-    busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null; shownSource = null
-    squares = null; points = null; stepDate = ''; shownRun = null; maskInfo = null; copied = ''; exporting = ''
+    // the same target again (a brushed window): the strip's series stays on screen while the window rows
+    // and the map slice are redone, so the chart does not blink; any other pick starts from nothing
+    const tkey = [p.place_id, ds.id, v.name].join('|')
+    const keep = !!series && tkey === seriesKey
+    busy = true; error = ''; urls = []; note = ''
+    squares = null; points = null; stepDate = ''; maskInfo = null; copied = ''; exporting = ''
+    if (keep) { if (shownSource) shownSource = { ...shownSource, mapDate: null, failed: false } }
+    else { rows = []; series = null; seriesSpan = null; seriesKey = ''; fileRows = 0; shownVar = null; shownSource = null; shownRun = null }
     if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
     try {
@@ -385,29 +407,53 @@
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
 
-      // precomputed first: the weekly stats for this (dataset, variable, place), if published, fill the
-      // Time strip and the table at once; the live run below replaces them. Any failure is ignored.
-      // The listing is the cached stats/collection.json, so an unpublished combination costs no request.
-      // (the listing is prefetched with the gazetteer; a host that does not answer in 4 s is skipped)
+      // precomputed first: the weekly stats for this (dataset, variable, place), if published, are the Time
+      // strip's whole series at once, and the window rows come out of them; only the latest time step is
+      // then fetched live, for the map (planRun). A window that starts before the file, an empty or missing
+      // file, a slow host or any failure takes the full live path below. The listing is the cached
+      // stats/collection.json, so an unpublished combination costs no request (prefetched with the
+      // gazetteer; a host that does not answer in 4 s is skipped).
       const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
       if (h.stale()) return
-      if (usePrecomputed({ protocol: ds.protocol, has: hasPrecomputed(listed, ds.datasetId, v.name, p.place_id) })) {
-        if (h.stale()) return
+      const has = hasPrecomputed(listed, ds.datasetId, v.name, p.place_id)
+      let plan: RunPlan = { strip: 'live', map: 'window', slice: null }
+      let preUrl = ''
+      if (usePrecomputed({ protocol: ds.protocol, has })) {
         try {
           status = 'reading the precomputed statistics…'
-          const url = precomputedUrl(ds.datasetId, v.name, p.place_id)
-          const [pre, asOf] = await Promise.all([
-            loadPrecomputed(url, v.categorical ? 'categorical' : 'continuous', { start, end }, { signal: h.signal }),
-            precomputedAsOf(url, { signal: h.signal }),
-          ])
-          if (h.stale()) return
-          if (pre.rows.length && windowCovered(pre.coverage, { start, end })) {
-            rows = pre.rows; shownVar = v; shownProtocol = ds.protocol
-            shownSource = { kind: 'precomputed', through: pre.coverage!.end, asOf, failed: false }
-            status = 'precomputed statistics shown; refreshing from ERDDAP…'
+          preUrl = precomputedUrl(ds.datasetId, v.name, p.place_id)
+          if (preMem?.url !== preUrl) {
+            const t = performance.now()
+            const [pre, asOf] = await Promise.all([
+              loadPrecomputed(preUrl, v.categorical ? 'categorical' : 'continuous', undefined, { signal: h.signal }),
+              precomputedAsOf(preUrl, { signal: h.signal }),
+            ])
+            preMem = { url: preUrl, pre, asOf, ms: Math.round(performance.now() - t) }
           }
-        } catch (e) { if (h.stale()) return; console.debug('precomputed stats skipped', e) }
+          if (h.stale()) return
+          const { pre, asOf, ms: preMs } = preMem!
+          plan = planRun({ protocol: ds.protocol, has, coverage: pre.coverage }, { start, end }, ext?.end)
+          if (plan.strip === 'precomputed') {
+            series = pre.rows; seriesSpan = pre.coverage; seriesKey = tkey; fileRows = pre.rows.length
+            rows = inWindow(pre.rows, { start, end }); shownVar = v; shownProtocol = ds.protocol
+            shownSource = { kind: 'precomputed', through: pre.coverage!.end, asOf, mapDate: null, failed: false }
+            urls = [{ url: preUrl, kb: Math.round(pre.bytes / 1024), ms: preMs },
+                    { url: provenanceUrl(preUrl), kb: 0, ms: 0, label: 'provenance: when the file was generated, and from what' }]
+            shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
+            sql = `-- the statistics are not recomputed here: they are the rows of the precomputed file above for ${start} to ${end}\n` +
+                  `-- (the whole series, ${pre.coverage!.start} to ${pre.coverage!.end}, is what the Time strip draws).\n` +
+                  `-- the same SQL ran at build time: sql/${statsTemplate(v, ds.protocol)}.sql`
+            totalMs = performance.now() - t0
+            status = 'precomputed statistics shown; fetching the latest time step for the map…'
+          }
+        } catch (e) { if (h.stale()) return; console.debug('precomputed stats skipped', e); plan = { strip: 'live', map: 'window', slice: null } }
       }
+      if (plan.strip === 'live') {
+        // the full live path: nothing from a previous precomputed view may stay on screen
+        rows = []; series = null; seriesSpan = null; seriesKey = ''; fileRows = 0; shownVar = null; shownSource = null; shownRun = null
+      }
+      // the one step the map needs when the statistics are precomputed
+      const sliceAt = plan.map === 'slice' ? timeInstant(plan.slice!, ext, noonZ) : null
 
       // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))
@@ -460,13 +506,17 @@
         // mask cells go back into the server's own longitude frame, so they join the slab directly
         for (const c of m.cells) cells.push(shifted ? { ...c, lon: toDatasetLon(c.lon, ds.lonRange) } : c)
 
-        const url = griddapUrl({
+        const grid = {
           base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name,
-          time: [timeInstant(start, ext, noonZ), timeInstant(end, ext, noonZ)],
-          lat : [lat[lat.length - 1], lat[0]], lon: [lonSrv[0], lonSrv[lonSrv.length - 1]],
+          lat : [lat[lat.length - 1], lat[0]] as [number, number], lon: [lonSrv[0], lonSrv[lonSrv.length - 1]] as [number, number],
           latDescending: ds.latDescending, depth: ds.depth, format: ds.format,
-        })
-        status = `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
+        }
+        const url = sliceAt
+          ? griddapSliceUrl({ ...grid, at: sliceAt })
+          : griddapUrl({ ...grid, time: [timeInstant(start, ext, noonZ), timeInstant(end, ext, noonZ)] })
+        status = sliceAt
+          ? `lobe ${i + 1}/${lobes.length}: fetching the latest ${ext?.stepLabel ?? 'daily'} step (${plan.slice}) of ${v.name} as .${ds.format}…`
+          : `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
         const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
         if (h.stale()) return
         const file = isParquet(ds.format) ? `slab_${i}.parquet` : `slab_${i}`
@@ -497,13 +547,15 @@
         status = `${cells.length} of ${pts.length} sample positions are inside ${p.name}`
       }
 
-      status = 'computing the statistics…'
+      status = plan.map === 'slice' ? 'computing the map…' : 'computing the statistics…'
       await engine.insertMask(cells)
       if (h.stale()) return
-      const out = await engine.runTemplate(statsTemplate(v, ds.protocol), { expr, slab, mask: 'mask' })
-      if (h.stale()) return                 // a newer pick is on screen: do not render this result
-      rows = out; shownVar = v; shownProtocol = ds.protocol; shownSource = null
-      sql  = engine.lastSql
+      if (plan.map === 'window') {
+        const out = await engine.runTemplate(statsTemplate(v, ds.protocol), { expr, slab, mask: 'mask' })
+        if (h.stale()) return                 // a newer pick is on screen: do not render this result
+        rows = out; shownVar = v; shownProtocol = ds.protocol; shownSource = null
+        sql  = engine.lastSql
+      }
       // the map layer: a square per grid cell, or a point per tabledap station
       const last = await engine.runTemplate(tabular ? 'points_tabledap' : 'last_step',
                                             { expr, slab, mask: 'mask' })
@@ -520,6 +572,7 @@
         ? new Date(Math.max(...last.map((r: any) => +new Date(r.date)))).toISOString().slice(0, 10)
         : ''
       totalMs = performance.now() - t0
+      if (shownSource) shownSource = { ...shownSource, mapDate: stepDate || plan.slice }
       // what the exports, the reproduce panel and the permalink describe
       shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
       maskInfo = { cells: cells.length, lobes: lobes.length,
@@ -531,11 +584,14 @@
              (tabular
                ? `${cells.length} station${cells.length === 1 ? '' : 's'} inside the place, ` +
                  `${start} to ${end}, monthly roll-up, `
-               : `${cells.length} masked cells, ` +
-                 `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, `) +
+               : plan.map === 'slice'
+                 ? `${cells.length} masked cells, statistics from the precomputed file (${fileRows} rows to ${shownSource?.through}), ` +
+                   `the map is one live step (${stepDate || plan.slice}), `
+                 : `${cells.length} masked cells, ` +
+                   `${start} to ${end} = ${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}, `) +
              `mask ${(maskMs / 1000).toFixed(2)} s, ` +
              `ERDDAP ${ds.version ?? '?'} (.${ds.format})`
-      status = `done: ${rows.length} rows for ${p.name} in ${(totalMs / 1000).toFixed(1)} s ` +
+      status = `done: ${plan.map === 'slice' ? `${fileRows} precomputed rows + the latest slice` : `${rows.length} rows`} for ${p.name} in ${(totalMs / 1000).toFixed(1)} s ` +
                `(mask ${(maskMs / 1000).toFixed(2)} s)`
     } catch (e) {
       if (!h.stale() && !isAbort(e)) {
@@ -549,11 +605,13 @@
   }
 
   // ── the Time strip ──────────────────────────────────────────────────────────
-  // the window sits inside a context span (the window again on each side, within the dataset's
-  // extent) and is drawn as the brush; dragging a new brush sets the window and runs it. no extra
-  // data is fetched for the context: only the window is ever requested.
+  // the window is drawn as the brush on the strip's span: the whole precomputed series when there is
+  // one, otherwise the window again on each side, within the dataset's extent (no extra data is fetched
+  // for that context: only the window is ever requested). dragging a new brush sets the window and runs it.
   const ms = (d: string) => Date.parse(`${d.slice(0, 10)}T00:00:00Z`)
   const ctx = $derived.by((): [number, number] => {
+    // a precomputed series: the strip spans the whole file (the window is a brush inside it)
+    if (series && seriesSpan) return [ms(seriesSpan.start), Math.max(ms(seriesSpan.end), ms(endDate)) + 864e5]
     const len = Math.max(1, nDays)
     let a = ms(addDays(startDate, -len)), b = ms(addDays(endDate, len))
     if (extent?.start) a = Math.max(a, Math.min(ms(startDate), ms(extent.start.slice(0, 10))))
@@ -586,17 +644,18 @@
     : `${statLabel(stat)} · ${step ?? 'daily'}${unit ? ` · ${unit}` : ''}`)
 
   function chart(width: number, height: number): Element | null {
-    if (!rows.length || !shownVar) return null
+    if (!plotRows.length || !shownVar) return null
+    const long = (ctx[1] - ctx[0]) / 864e5 > 150          // a year of days wants month ticks, not day ticks
     const x = { domain: [new Date(ctx[0]), new Date(ctx[1])], type: 'utc' as const, label: null,
-                ticks: Math.max(2, Math.floor(width / 90)), tickFormat: pointRun ? '%b %Y' : '%-d %b' }
+                ticks: Math.max(2, Math.floor(width / (long ? 70 : 90))), tickFormat: pointRun || long ? '%b %Y' : '%-d %b' }
     const base = { width, height, marginLeft: PL, marginRight: PR, marginTop: 8, marginBottom: 22,
                    style: { background: 'transparent', color: ink, fontSize: '10px' } }
     if (pointRun)
       return Plot.plot({ ...base, x, y: { label: null, grid: true },
         marks: [
-          Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'min', y2: 'max', fill: main, fillOpacity: 0.15, curve: 'step' }),
-          Plot.line(rows, { x: (r: any) => new Date(r.date), y: 'mean', stroke: main, strokeWidth: 1.8 }),
-          Plot.dot(rows,  { x: (r: any) => new Date(r.date), y: 'mean', fill: main, r: 2.5,
+          Plot.areaY(plotRows, { x: (r: any) => new Date(r.date), y1: 'min', y2: 'max', fill: main, fillOpacity: 0.15, curve: 'step' }),
+          Plot.line(plotRows, { x: (r: any) => new Date(r.date), y: 'mean', stroke: main, strokeWidth: 1.8 }),
+          Plot.dot(plotRows,  { x: (r: any) => new Date(r.date), y: 'mean', fill: main, r: 2.5,
             title: (r: any) => `${new Date(r.date).toISOString().slice(0, 7)}\n${Number(r.mean).toFixed(2)}\n${r.n} measurements, ${r.n_casts} casts` }),
         ] })
     if (categorical) {
@@ -604,15 +663,15 @@
       return Plot.plot({ ...base, x, y: { label: null, grid: true, percent: true },
         color: { domain, range: classList.map((c) => colours.get(String(c))!) },
         marks: [
-          Plot.areaY(catRows, { x: 'date', y: 'fraction', fill: 'label', offset: 'normalize', order: domain, curve: 'step',
+          Plot.areaY(catPlot, { x: 'date', y: 'fraction', fill: 'label', offset: 'normalize', order: domain, curve: 'step',
             title: (d: any) => `${d.date.toISOString().slice(0, 10)}\n${d.label}\n${(d.fraction * 100).toFixed(1)}% of area, ${d.n} cells` }),
           Plot.ruleY([0]),
         ] })
     }
-    const pts = (k: string) => rows.map((r) => ({ date: new Date(r.date), value: r[k] }))
+    const pts = (k: string) => plotRows.map((r) => ({ date: new Date(r.date), value: r[k] }))
     return Plot.plot({ ...base, x, y: { label: null, grid: true },
       marks: [
-        Plot.areaY(rows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: main, fillOpacity: 0.13 }),
+        Plot.areaY(plotRows, { x: (r: any) => new Date(r.date), y1: 'p10', y2: 'p90', fill: main, fillOpacity: 0.13 }),
         // the comparison: thin and dashed, so two lines 0.04 °C apart stay two lines
         ...(stat === 'mean_wt' || stat === 'mean'
           ? [Plot.line(pts(altStat), { x: 'date', y: 'value', stroke: alt, strokeWidth: 1.2, strokeDasharray: '4,3' })] : []),
@@ -689,8 +748,8 @@
 {#snippet sharePanel()}
   <div class="pane-col">
     <div class="pane-row">
-      <Button variant="action" size="sm" onclick={saveCsv} disabled={!rows.length || !!shownSource}>Download CSV</Button>
-      <Button variant="quiet" size="sm" onclick={saveParquet} disabled={!rows.length || !!shownSource}>Parquet</Button>
+      <Button variant="action" size="sm" onclick={saveCsv} disabled={!rows.length}>Download CSV</Button>
+      <Button variant="quiet" size="sm" onclick={saveParquet} disabled={!rows.length}>Parquet</Button>
       <Button variant="quiet" size="sm" onclick={savePng} disabled={!shownRun}>PNG of the view</Button>
     </div>
     <div class="pane-row">
@@ -713,7 +772,7 @@
         <div class="pane-col">
           <Button variant="quiet" size="sm" onclick={() => copy(reproduce, 'reproduce block')}>Copy all</Button>
           {#each urls as u}
-            <p class="pane-mono"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.kb} kB in {(u.ms / 1000).toFixed(1)} s</p>
+            <p class="pane-mono"><a href={u.url} target="_blank" rel="noreferrer">{u.url}</a> — {u.label ?? `${u.kb} kB in ${(u.ms / 1000).toFixed(1)} s`}</p>
           {/each}
           {#if maskInfo && pointRun}
             <p class="pane-note">{plural(maskInfo.cells, 'sample position')} inside the place, in {plural(maskInfo.lobes, 'lobe')}</p>
@@ -721,7 +780,7 @@
             <p class="pane-note">{plural(maskInfo.cells, 'cell')} in {plural(maskInfo.lobes, 'lobe')}, total area weight {maskInfo.weight.toFixed(3)}, {plural(maskInfo.partial, 'partial (boundary) cell')}</p>
           {/if}
           {#if note}<p class="pane-note">{note}</p>{/if}
-          <span class="mbon-label">sql/{statsTemplate(shownVar, shownProtocol)}.sql</span>
+          <span class="mbon-label">{shownSource ? 'statistics' : `sql/${statsTemplate(shownVar, shownProtocol)}.sql`}</span>
           <pre class="pane-pre">{sql}</pre>
           <span class="mbon-label">sql/{pointRun ? 'points_tabledap' : 'last_step'}.sql (the map layer)</span>
           <pre class="pane-pre">{mapSql}</pre>
@@ -810,7 +869,8 @@
                domain={ctx} plotLeft={PL} plotRight={PR} bind:brush {onbrushend} onclear={() => { brush = winBrush }}>
       {#snippet actions()}
         {#if shownSource}
-          <span class="source-note" role="status" title={shownSource.asOf ? `weekly precompute of ${fmtDay(shownSource.asOf)}` : 'weekly precompute'}>{sourceLabel(shownSource, fmtDay)}</span>
+          <span class="source-note" role="status"
+                title={`the whole series is the weekly precompute${shownSource.asOf ? ` of ${fmtDay(shownSource.asOf)}` : ''}; the table, the downloads and the shaded window are its rows inside the window; the map is the latest ERDDAP time step`}><span class="src-long">{sourceLabel(shownSource, fmtDay)}</span><span class="src-short">{sourceLabel(shownSource, fmtDay, true)}</span></span>
         {/if}
         {#if timeTab === 'plot' && rows.length && !categorical && !pointRun}
           <span class="chart-key" aria-label="chart key">
@@ -824,9 +884,9 @@
         <span class="dl-menu">
           <Menu label="⬇" ariaLabel="Download the table or the plot" align="end">
             {#snippet children(close)}
-              <button type="button" disabled={!rows.length || !!shownSource} onclick={() => { saveCsv(); close() }}>CSV</button>
-              <button type="button" disabled={!rows.length || !!shownSource} onclick={() => { saveParquet(); close() }}>Parquet</button>
-              <button type="button" disabled={!rows.length || !!shownSource || !shownRun} onclick={() => { savePlotPng(); close() }}>PNG of plot</button>
+              <button type="button" disabled={!rows.length} onclick={() => { saveCsv(); close() }}>CSV</button>
+              <button type="button" disabled={!rows.length} onclick={() => { saveParquet(); close() }}>Parquet</button>
+              <button type="button" disabled={!rows.length || !shownRun} onclick={() => { savePlotPng(); close() }}>PNG of plot</button>
             {/snippet}
           </Menu>
         </span>

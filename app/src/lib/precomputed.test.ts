@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  hasPrecomputed, itemId, parseStatsCollection, precomputedIndex, precomputedPath, precomputedUrl, provenanceUrl,
+  hasPrecomputed, inWindow, itemId, planRun, parseStatsCollection, precomputedIndex, precomputedPath, precomputedUrl, provenanceUrl,
   readPrecomputed, resetPrecomputedIndex, shapeRows, sourceLabel, usePrecomputed, windowCovered, loadPrecomputed,
 } from './precomputed'
 import { GAZETTEER_BASE, GAZETTEER_FALLBACK } from './gazetteer'
@@ -85,9 +85,41 @@ describe('the run decision', () => {
     expect(windowCovered(cov, { start: '2026-10-07', end: '2026-10-08' })).toBe(false)
     expect(windowCovered(null, { start: '2026-10-01', end: '2026-10-08' })).toBe(false)
   })
-  it('words the strip header', () => {
-    expect(sourceLabel({ through: '2026-10-06' }, fmtDay)).toBe('precomputed to 6 Oct 2026; refreshing…')
-    expect(sourceLabel({ through: '2026-10-06', failed: true }, fmtDay)).toBe('precomputed to 6 Oct 2026; live refresh failed')
+  it('words the strip header: the series is precomputed, the map is the live slice', () => {
+    expect(sourceLabel({ through: '2026-10-06', mapDate: '2026-10-08' }, fmtDay)).toBe('precomputed to 6 Oct 2026 · map: live 8 Oct 2026')
+    expect(sourceLabel({ through: '2026-10-06' }, fmtDay)).toBe('precomputed to 6 Oct 2026 · map: loading…')
+    expect(sourceLabel({ through: '2026-10-06', failed: true }, fmtDay)).toBe('precomputed to 6 Oct 2026 · map: unavailable')
+  })
+  it('has a compact form for a phone: no words, the shared year dropped', () => {
+    expect(sourceLabel({ through: '2026-10-06', mapDate: '2026-10-08' }, fmtDay, true)).toBe('precomputed 6 Oct · map 8 Oct')
+    expect(sourceLabel({ through: '2025-12-30', mapDate: '2026-01-02' }, fmtDay, true)).toBe('precomputed 30 Dec 2025 · map 2 Jan 2026')
+    expect(sourceLabel({ through: '2026-10-06' }, fmtDay, true)).toBe('precomputed 6 Oct 2026')
+    expect(sourceLabel({ through: '2026-10-06', failed: true }, fmtDay, true)).toBe('precomputed 6 Oct 2026 · map failed')
+  })
+})
+
+describe('planRun: what a run loads', () => {
+  const coverage = { start: '2025-10-07', end: '2026-10-06' }
+  const grid = { protocol: 'griddap', has: true, coverage }
+  it('precomputed + a window inside the range: the whole series is the strip, the map is ONE slice', () => {
+    expect(planRun(grid, { start: '2026-09-07', end: '2026-10-06' }, '2026-10-06T12:00:00Z'))
+      .toEqual({ strip: 'precomputed', map: 'slice', slice: '2026-10-06' })
+  })
+  it('the slice is the window end, but never past the dataset\'s last step', () => {
+    expect(planRun(grid, { start: '2026-09-09', end: '2026-10-08' }, '2026-10-07T12:00:00Z').slice).toBe('2026-10-07')   // the file lags the server
+    expect(planRun(grid, { start: '2026-01-01', end: '2026-01-30' }, '2026-10-07T12:00:00Z').slice).toBe('2026-01-30')   // a brushed past window
+    expect(planRun(grid, { start: '2026-09-09', end: '2026-10-08' }).slice).toBe('2026-10-08')                           // extent unknown
+  })
+  it('a window that starts before the file takes the full live path (whole window slab)', () => {
+    expect(planRun(grid, { start: '2025-09-01', end: '2025-10-30' }, '2026-10-06T12:00:00Z'))
+      .toEqual({ strip: 'live', map: 'window', slice: null })
+  })
+  it('a window after the file, an empty file, no file, or a tabledap target is live too', () => {
+    const live = { strip: 'live', map: 'window', slice: null }
+    expect(planRun(grid, { start: '2026-10-07', end: '2026-10-08' })).toEqual(live)
+    expect(planRun({ ...grid, coverage: null }, { start: '2026-09-07', end: '2026-10-06' })).toEqual(live)
+    expect(planRun({ ...grid, has: false }, { start: '2026-09-07', end: '2026-10-06' })).toEqual(live)
+    expect(planRun({ ...grid, protocol: 'tabledap' }, { start: '2026-09-07', end: '2026-10-06' })).toEqual(live)
   })
 })
 
@@ -105,6 +137,19 @@ describe('rows from a Parquet file', () => {
     const { rows, coverage } = await readPrecomputed(bytes('continuous.parquet'), 'continuous', { start: '2026-01-02', end: '2026-01-04' })
     expect(rows.map((r) => r.date)).toEqual([D('2026-01-02'), D('2026-01-03'), D('2026-01-04')])
     expect(coverage).toEqual({ start: '2026-01-01', end: '2026-01-06' })
+  })
+  it('without a window the rows are the whole series, and inWindow() takes the window out of it', async () => {
+    const { rows, bytes: n } = await readPrecomputed(bytes('continuous.parquet'), 'continuous')
+    expect(n).toBe(bytes('continuous.parquet').byteLength)
+    expect(rows).toHaveLength(6)
+    expect(inWindow(rows, { start: '2026-01-02', end: '2026-01-04' }).map((r) => r.date)).toEqual([D('2026-01-02'), D('2026-01-03'), D('2026-01-04')])
+    expect(inWindow(rows, { start: '2026-01-06', end: '2026-02-01' })).toHaveLength(1)    // a window running past the file's end
+    expect(inWindow(rows, { start: '2027-01-01', end: '2027-01-30' })).toEqual([])
+  })
+  it('categorical: inWindow() keeps every class of a day', async () => {
+    const { rows } = await readPrecomputed(bytes('categorical.parquet'), 'categorical')
+    expect(inWindow(rows, { start: '2026-01-05', end: '2026-01-09' }).map((r) => [r.date, r.class]))
+      .toEqual([[D('2026-01-09'), 1], [D('2026-01-09'), 2]])
   })
   it('a window outside the file has no rows', async () => {
     expect((await readPrecomputed(bytes('continuous.parquet'), 'continuous', { start: '2027-01-01', end: '2027-01-30' })).rows).toEqual([])

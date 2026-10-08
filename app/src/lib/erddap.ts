@@ -59,6 +59,16 @@ export function griddapUrl(s: GriddapSpec): string {
   return `${stripSlash(s.base)}/griddap/${s.datasetId}${EXT[fmt]}?${q}${tail}`
 }
 
+/**
+ * the griddap URL for ONE time step (`[(t):1:(t)]`), for the map when the statistics come from the
+ * precomputed file: the same axis order, longitude range and depth as griddapUrl(), but a single step
+ * (`at` is the ISO instant of that step, e.g. the dataset's last time).
+ */
+export function griddapSliceUrl(s: Omit<GriddapSpec, 'time'> & { at: string }): string {
+  const { at, ...rest } = s
+  return griddapUrl({ ...rest, time: [at, at] })
+}
+
 /** one URL per polygon lobe (bbox = [lonMin, latMin, lonMax, latMax]). */
 export function griddapUrls(s: Omit<GriddapSpec, 'lat' | 'lon'>, bboxes: Array<[number, number, number, number]>): string[] {
   return bboxes.map((b) => griddapUrl({ ...s, lon: [b[0], b[2]], lat: [b[1], b[3]] }))

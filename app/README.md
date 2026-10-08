@@ -9,6 +9,10 @@ place GeoJSON ─┐
 ERDDAP axes  ──┘
                  griddapUrl() → one .parquet per lobe  (src/lib/erddap.ts)
                  DuckDB-WASM  → slab ⋈ mask, per day   (src/lib/engine.ts + ../sql/stats_daily.sql)
+
+  a listed target skips the two lines above for the statistics: the whole precomputed series is read
+  (src/lib/precomputed.ts) and only ONE time step is fetched live, for the map (griddapSliceUrl() →
+  ../sql/last_step.sql); planRun() chooses, and the full path above stays for everything else
 ```
 
 `src/App.svelte` picks a place from the published gazetteer (`places.parquet`, read with hyparquet,
@@ -46,13 +50,14 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 - **Time strip** (kit `TimeStrip`), bottom, with two tabs in its header (app 0.2.0, kit 0.3.0):
   **Plot** and **Table**. Plot: Statistics draws the daily series (the chosen statistic
   solid, the other mean dashed, the p10–p90 band; key in the strip bar) over a context of the window
-  again on each side, with the **window as the brush**: drag a new one and it runs (capped at 90
-  days). Only the window is fetched. Then vs Now draws the day-of-year chart (Then years blue, Now
+  again on each side (or, for a target with a precomputed file, the **whole precomputed series**, about a
+  year), with the **window as the brush**: drag a new one and it runs (capped at 90 days). A live run
+  fetches only the window; a precomputed one fetches only the latest map slice. Then vs Now draws the day-of-year chart (Then years blue, Now
   red, the previous year orange, the Then mean dashed), ◀ ▶ ▶| step and play the day, a brush picks a
   day, and *anomaly series* switches to the Now year's anomaly.
   **Table** (Statistics only): the per-day, per-class or monthly table, scrolling inside the strip
   (the date column stays put on a phone). The brush belongs to the Plot tab. The header's **⬇ menu**
-  downloads *CSV*, *Parquet* (both off while the rows are still the precomputed ones) or *PNG of
+  downloads *CSV*, *Parquet* (the rows inside the window, precomputed or live) or *PNG of
   plot* (the chart rebuilt at 900 × 340 px, serialised as SVG, drawn through an `<img>` onto a canvas
   at 2×, and composed by `viewPng()` under the title sentence and over the data stamp, no new
   dependency; `…_plot.png` so it never collides with the map's *PNG of the view*). The **Expand**
@@ -75,6 +80,12 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 gets a ⬇ download menu (CSV, Parquet, PNG of plot) and Expand, and the kit moves to 0.3.0 (smaller
 Sentence and Chip, the selected tab in accent, `TimeStrip` tabs / `expandable`); the app's own
 sentence font-size overrides are gone, the kit default is the size.
+
+**app 0.2.1** (2026-10-08): a picked place with a precomputed file shows its whole series in the Time
+strip at once (about a year of daily values, or the full monthly record), with the window as a brush
+inside it; the table, the downloads and the sentence use the rows inside the window, and the map fetches
+only the latest time step live ("Precomputed stats first" below). 0.2.0 had cut the precomputed rows to
+the 30-day window, so the strip looked the same as the live run.
 
 ### URL grammar
 
@@ -172,7 +183,8 @@ the entry CSS and the lazy Then vs Now chunk, and sums the self-hosted fonts:
 Help, the tour and feedback (U4) added 8.2 KB to the entry JS (570.7 → 578.9 KB: the welcome card,
 the tour, the modals, the sources and the citations), 1.0 KB to the entry CSS (17.5 KB) and 0.2 KB to
 the Then vs Now chunk (35.0 KB); no budget was raised. App 0.2.0 (the Time strip's tabs, ⬇ menu and PNG of plot, kit 0.3.0): entry JS 581.5 KB, entry CSS 17.8 KB, the
-Then vs Now chunk 35.0 KB; no budget raised. The feedback dialog and html-to-image are their
+Then vs Now chunk 35.0 KB; no budget raised. App 0.2.1 (whole precomputed series, one-slice map): entry JS 582.5 KB, CSS and
+chunks unchanged; no budget raised. The feedback dialog and html-to-image are their
 own lazy chunks (`FeedbackDialog-*`, `capture-*`: 9.3 KB gzip), fetched on the first Feedback click,
 with a line of their own (budget 15 KB); the script fails if html-to-image (its `fontEmbedCSS` option
 name) shows up in the entry.
@@ -207,17 +219,34 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
   `stats/<dataset_id>/<variable>/<place_id>.parquet` (last 365 days, or the full record for the
   monthly series; `dataset_id` is `Dataset.datasetId`, e.g. `dhw_5km`). When a run starts for a griddap
   target that `stats/collection.json` lists (its `rel: "item"` links, fetched once from the bucket URL
-  like then-now, because the storage host's 302 has no CORS header, and cached; no HEAD per run, so an unpublished combination costs no request), `run()` reads the file
-  with hyparquet (no DuckDB-WASM needed), keeps the rows inside the window and puts them in the Time
-  strip (plot and table) at once, shaped exactly like a live run (`frac_area` / `pct_cells` become
-  `fraction` / `percent_cells`, `date` is epoch ms). The strip header says "precomputed to 6 Oct 2026;
-  refreshing…" (`shownSource`), the CSV / Parquet buttons stay off, and `shownRun`, the permalink, the
-  map layer and the sentence's cell count stay empty until the live run completes and replaces the
-  rows. A window that starts before the file or after its end, an empty file (`NMS:MNMS`), a missing
-  file or a slow host (6 s) is ignored silently (`console.debug`), and the live run goes ahead; if the
-  live run then fails the precomputed rows stay, labelled "live refresh failed". Tests:
-  `precomputed.test.ts` on the closed-form fixtures in `src/lib/__fixtures__/stats/`
-  (`make_stats_fixture.sh`).
+  like then-now, because the storage host's 302 has no CORS header, and cached; no HEAD per run, so an
+  unpublished combination costs no request), `run()` reads the whole file with hyparquet (no DuckDB-WASM
+  needed; kept in memory, so a brushed window does not download it again) and `planRun()` decides:
+  - **strip `precomputed`, map `slice`** (the file covers the window's start): the Time strip draws the
+    WHOLE series at once (`series`, ~a year; its x-domain is the file's span, and the window is the brush
+    inside it, so you can drag a different window anywhere in the file), while `rows`, the Table tab, the
+    CSV / Parquet downloads and the sentence's window are the rows inside the window, cut out of the same
+    series (`inWindow()`; same columns as a live run: `frac_area` / `pct_cells` become `fraction` /
+    `percent_cells`, `date` is epoch ms). The statistics SQL is not run. The map needs one live request:
+    the same griddap URL as a full run (axis vectors, `erddap:lat_descending`, the longitude clamp, one
+    request per lobe, the catalog's format rung) but `[(t):1:(t)]` for the window's last day, never past
+    the dataset's last step (`griddapSliceUrl()`), run through `last_step.sql` only. `shownRun` is set
+    as soon as the file is read (permalink, file names, Reproduce), the strip note reads "precomputed to
+    6 Oct 2026 · map: live 8 Oct 2026" (compact "precomputed 6 Oct · map 8 Oct" below 1500 px,
+    `sourceLabel()`), and the footer says what loaded: "364 rows (precomputed 7 Oct 2026) + 1 slice · 23 kB ·
+    2.0 s". Reproduce lists the Parquet URL, its provenance JSON and the one-slice URL. The sentence's
+    cell count is the local mask, as always. If the slice fails the series stays and the note says
+    "map: unavailable".
+  - **strip `live`, map `window`**: a window that starts before the file or after its end, an empty file
+    (`NMS:MNMS`), a missing file, a tabledap target, or a slow host (6 s) takes the full live path
+    (the whole window slab, `stats_daily.sql` / `stats_categorical.sql` and `last_step.sql` in
+    DuckDB-WASM), as before; the reason is a `console.debug`.
+  - **Downloads**: CSV and Parquet export the rows inside the window (the same on both paths; the
+    table on screen), not the whole file; the file names carry the window. *PNG of plot* draws what the
+    strip draws, the whole series.
+  Tests: `precomputed.test.ts` on the closed-form fixtures in `src/lib/__fixtures__/stats/`
+  (`make_stats_fixture.sh`: names, listing, `planRun()` cases, `inWindow()`, labels) and
+  `erddap.test.ts` (`griddapSliceUrl()`).
 - **Permalink**: written on every successful run (the run on screen, plus `stat`, `show`, `hide`)
   and read on load, so a shared link reproduces the view.
 
