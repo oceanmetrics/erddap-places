@@ -6,7 +6,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cardPosition, TABS, tourKey, tourStep, TOUR_STOPS } from './tour'
 import { OWNS_ARROWS, shortcutFor, SHORTCUTS } from './keys'
-import { doors, onLoad, parseHelpQuery, QUESTIONS, recentMd, withoutHelpQuery } from './start'
+import { doors, onLoad, pageBase, parseHelpQuery, QUESTIONS, recentMd, withoutHelpQuery } from './start'
 import { appCitation, citeText, gazetteerCitation } from './cite'
 import { datasetSources, fixedSources } from './sources'
 import { issueTitle, issueUrl, ISSUE_BASE, MAX_ISSUE_URL_LENGTH, reportBody, type FeedbackReport } from '../feedback/issue'
@@ -70,6 +70,8 @@ describe('?tour= and ?modal=', () => {
   it('drops the switches from a page URL and keeps the rest', () => {
     expect(withoutHelpQuery('?tour=off&modal=keys')).toBe('')
     expect(withoutHelpQuery('?theme=dark&tour=on')).toBe('?theme=dark')
+    // a view link (Copy link, the citation, the feedback report) never carries them
+    expect(pageBase({ origin: 'https://oceanmetrics.io', pathname: '/erddap-places/', search: '?tour=off&modal=sources' })).toBe('https://oceanmetrics.io/erddap-places/')
   })
 })
 

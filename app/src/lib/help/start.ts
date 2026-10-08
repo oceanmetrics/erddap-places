@@ -40,6 +40,11 @@ export function withoutHelpQuery(search: string): string {
   return s ? `?${s}` : ''
 }
 
+/** the page URL a view link is built on: origin, path and any other query, without the help switches */
+export function pageBase(loc: { origin: string; pathname: string; search: string } | undefined = typeof location === 'undefined' ? undefined : location): string {
+  return loc ? `${loc.origin}${loc.pathname}${withoutHelpQuery(loc.search)}` : ''
+}
+
 /** "this day" for the Then vs Now door: today less a week (the archive runs a few days behind), as MM-DD */
 export function recentMd(now: Date = new Date(), lagDays = 7): string {
   const d = new Date(now.getTime() - lagDays * 864e5)

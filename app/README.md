@@ -138,7 +138,7 @@ the entry CSS and the lazy Then vs Now chunk, and sums the self-hosted fonts:
 | Then vs Now chunk JS + CSS, gzip | 28.9 KB | 34.8 KB | 40 KB |
 | fonts (woff2, raw; a page fetches only the faces it uses) | 0 | 514 KB | 560 KB |
 
-Help, the tour and feedback (U4) added 8.1 KB to the entry JS (570.7 → 578.8 KB: the welcome card,
+Help, the tour and feedback (U4) added 8.2 KB to the entry JS (570.7 → 578.9 KB: the welcome card,
 the tour, the modals, the sources and the citations), 1.0 KB to the entry CSS (17.5 KB) and 0.2 KB to
 the Then vs Now chunk (35.0 KB); no budget was raised. The feedback dialog and html-to-image are their
 own lazy chunks (`FeedbackDialog-*`, `capture-*`: 9.3 KB gzip), fetched on the first Feedback click,

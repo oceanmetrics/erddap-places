@@ -25,6 +25,7 @@
   import { datasetBlurb, fmtDay, fmtMonths, fmtRange, isStat, plural, shortPlace, STATS, statLabel, variableWords, type StatId } from './lib/sentence'
   import { grabMap, viewPng } from './lib/png'
   import { citeText } from './lib/help/cite'
+  import { pageBase } from './lib/help/start'
   import type { LensApi } from './lib/help/lensApi'
 
   interface Props {
@@ -204,7 +205,7 @@
     const { show, hide } = encodePanes(paneUrlState(panes, PANES0, VW), 'stats')
     return withExtras(encodeHash(shownRun), { stat: stat !== 'mean_wt' ? stat : null, show, hide })
   })
-  const link = $derived(viewHash && typeof location !== 'undefined' ? location.href.split('#')[0] + viewHash : '')
+  const link = $derived(viewHash && typeof location !== 'undefined' ? pageBase() + viewHash : '')
   $effect(() => {
     const h = viewHash
     if (h && typeof history !== 'undefined' && h !== location.hash)

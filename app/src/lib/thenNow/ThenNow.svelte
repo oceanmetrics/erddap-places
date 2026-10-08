@@ -26,6 +26,7 @@
   import { BASELINES, decodeThenNow, encodeThenNow, isBaseline, parseRange, type ThenNowState } from './state'
   import SwipeMap, { type Img } from './SwipeMap.svelte'
   import { citeText, thenNowCitation } from '../help/cite'
+  import { pageBase } from '../help/start'
   import type { LensApi } from '../help/lensApi'
 
   interface Props {
@@ -452,7 +453,7 @@
   // ── share ───────────────────────────────────────────────────────────────────
   let copied = $state('')
   let mapA: any = null, mapB: any = null
-  const link = $derived(typeof location === 'undefined' ? '' : location.href.split('#')[0] + viewHash)
+  const link = $derived(typeof location === 'undefined' ? '' : pageBase() + viewHash)
   async function copy(text: string, what: string) {
     copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
     setTimeout(() => { copied = '' }, 2500)

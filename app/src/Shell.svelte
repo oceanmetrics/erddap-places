@@ -13,7 +13,7 @@
   import Modal from './lib/help/Modal.svelte'
   import Welcome from './lib/help/Welcome.svelte'
   import Tour from './lib/help/Tour.svelte'
-  import { onLoad, parseHelpQuery, withoutHelpQuery, WELCOME_SEEN_KEY, type HelpModal, type StartView } from './lib/help/start'
+  import { onLoad, pageBase, parseHelpQuery, withoutHelpQuery, WELCOME_SEEN_KEY, type HelpModal, type StartView } from './lib/help/start'
   import { OWNS_ARROWS, shortcutFor, SHORTCUTS } from './lib/help/keys'
   import { datasetSources, fixedSources, type Source } from './lib/help/sources'
   import { APP_REPO } from './lib/help/cite'
@@ -63,6 +63,9 @@
   const helpQuery = typeof location === 'undefined' ? { tour: null, modal: null } as const : parseHelpQuery(location.search)
   const seen = (() => { try { return localStorage.getItem(WELCOME_SEEN_KEY) === '1' } catch { return true } })()
   const atLoad = onLoad(helpQuery, seen)
+  // the switches did their job: drop them from the address bar, so a copied address is just the view
+  if (typeof location !== 'undefined' && (helpQuery.tour || helpQuery.modal || /[?&](tour|modal)=/.test(location.search)))
+    history.replaceState(history.state, '', location.pathname + withoutHelpQuery(location.search) + location.hash)
   let helpModal     = $state<HelpModal>(atLoad.modal ?? 'about')
   let helpModalOpen = $state(atLoad.modal !== null)
   let welcomeOpen   = $state(atLoad.welcome)
@@ -119,7 +122,7 @@
     } finally { fbBusy = false }
   }
   const feedbackReport = () => ({
-    url       : location.href,
+    url       : pageBase() + location.hash,
     lens      : LENS_LABEL[current],
     appVersion: `${__APP_VERSION__}${__APP_COMMIT__ ? ` (${__APP_COMMIT__})` : ''}`,
     release   : chrome.release || null,
