@@ -48,6 +48,18 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   collection, not `sources.ts`.
   Mapping from the Shiny app and design notes: `docs/then-now.md`.
 
+## Precomputed stats first
+
+- `src/lib/precomputed.ts` shows the weekly `stats/<dataset_id>/<variable>/<place_id>.parquet`
+  rows in the Time strip before the live run finishes (README "Precomputed stats first"). Existence
+  comes only from the cached `stats/collection.json` item links (`hasPrecomputed()`): never HEAD or
+  GET a stats file for a combination that is not listed.
+- The shaped rows must keep the live run's columns (`stats_daily.sql` / `stats_categorical.sql`
+  output: `fraction`, `percent_cells`, `date` as epoch ms). Change the template and the shaping
+  together; `precomputed.test.ts` fails if they drift.
+- Every await in `run()` still checks `stale()`; precomputed rows never set `shownRun` (file names and
+  the permalink come from the live result only), and the live result clears `shownSource`.
+
 ## Then-now data contract
 
 Under the gazetteer root (`https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/`,

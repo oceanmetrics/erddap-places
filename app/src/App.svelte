@@ -18,6 +18,7 @@
   import PlotBox from './lib/PlotBox.svelte'
   import { cellPoints, cellSquares, placeMapBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
+  import { hasPrecomputed, loadPrecomputed, precomputedAsOf, precomputedIndex, precomputedUrl, sourceLabel, usePrecomputed, windowCovered } from './lib/precomputed'
   import { decodeHash, encodeHash, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
   import { chrome, theme } from './lib/chrome.svelte'
@@ -93,6 +94,8 @@
   // only the newest run may touch the UI: a run started while another is in flight supersedes it
   const runs    = new Runs()
   let shownVar  = $state.raw<CubeVariable | null>(null)   // the variable `rows` came from
+  // where `rows` came from while the live run is still going: the weekly precomputed file (null = live)
+  let shownSource = $state.raw<{ kind: 'precomputed'; through: string; asOf: string | null; failed: boolean } | null>(null)
   // the map layer: the last time step of the slab, one square per masked cell (raw, never deep state)
   let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
   let points    = $state.raw<ReturnType<typeof cellPoints> | null>(null)
@@ -275,6 +278,7 @@
   $effect(() => {
     untrack(async () => {
       try {
+        void precomputedIndex()          // which stats files are published: cached for the runs
         const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
         places = ps; datasets = ds
         if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
@@ -341,7 +345,7 @@
     const ds = dataset, v = variable, p = place
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
-    busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null
+    busy = true; error = ''; rows = []; urls = []; note = ''; shownVar = null; shownSource = null
     squares = null; points = null; stepDate = ''; shownRun = null; maskInfo = null; copied = ''; exporting = ''
     if (superseding) status = 'superseding the run in flight…'
     const t0 = performance.now()
@@ -362,6 +366,30 @@
       startDate = start; endDate = end
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
+
+      // precomputed first: the weekly stats for this (dataset, variable, place), if published, fill the
+      // Time strip and the table at once; the live run below replaces them. Any failure is ignored.
+      // The listing is the cached stats/collection.json, so an unpublished combination costs no request.
+      // (the listing is prefetched with the gazetteer; a host that does not answer in 4 s is skipped)
+      const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
+      if (h.stale()) return
+      if (usePrecomputed({ protocol: ds.protocol, has: hasPrecomputed(listed, ds.datasetId, v.name, p.place_id) })) {
+        if (h.stale()) return
+        try {
+          status = 'reading the precomputed statistics…'
+          const url = precomputedUrl(ds.datasetId, v.name, p.place_id)
+          const [pre, asOf] = await Promise.all([
+            loadPrecomputed(url, v.categorical ? 'categorical' : 'continuous', { start, end }, { signal: h.signal }),
+            precomputedAsOf(url, { signal: h.signal }),
+          ])
+          if (h.stale()) return
+          if (pre.rows.length && windowCovered(pre.coverage, { start, end })) {
+            rows = pre.rows; shownVar = v; shownProtocol = ds.protocol
+            shownSource = { kind: 'precomputed', through: pre.coverage!.end, asOf, failed: false }
+            status = 'precomputed statistics shown; refreshing from ERDDAP…'
+          }
+        } catch (e) { if (h.stale()) return; console.debug('precomputed stats skipped', e) }
+      }
 
       // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))
@@ -456,7 +484,7 @@
       if (h.stale()) return
       const out = await engine.runTemplate(statsTemplate(v, ds.protocol), { expr, slab, mask: 'mask' })
       if (h.stale()) return                 // a newer pick is on screen: do not render this result
-      rows = out; shownVar = v; shownProtocol = ds.protocol
+      rows = out; shownVar = v; shownProtocol = ds.protocol; shownSource = null
       sql  = engine.lastSql
       // the map layer: a square per grid cell, or a point per tabledap station
       const last = await engine.runTemplate(tabular ? 'points_tabledap' : 'last_step',
@@ -492,7 +520,10 @@
       status = `done: ${rows.length} rows for ${p.name} in ${(totalMs / 1000).toFixed(1)} s ` +
                `(mask ${(maskMs / 1000).toFixed(2)} s)`
     } catch (e) {
-      if (!h.stale() && !isAbort(e)) fail(e)
+      if (!h.stale() && !isAbort(e)) {
+        if (shownSource) shownSource = { ...shownSource, failed: true }     // the precomputed rows stay, labelled
+        fail(e)
+      }
     } finally {
       runs.finish(h)
       if (!h.stale()) busy = false          // a superseded run leaves `busy` to the run that took over
@@ -637,8 +668,8 @@
 {#snippet sharePanel()}
   <div class="pane-col">
     <div class="pane-row">
-      <Button variant="action" size="sm" onclick={saveCsv} disabled={!rows.length}>Download CSV</Button>
-      <Button variant="quiet" size="sm" onclick={saveParquet} disabled={!rows.length}>Parquet</Button>
+      <Button variant="action" size="sm" onclick={saveCsv} disabled={!rows.length || !!shownSource}>Download CSV</Button>
+      <Button variant="quiet" size="sm" onclick={saveParquet} disabled={!rows.length || !!shownSource}>Parquet</Button>
       <Button variant="quiet" size="sm" onclick={savePng} disabled={!shownRun}>PNG of the view</Button>
     </div>
     <div class="pane-row">
@@ -812,6 +843,9 @@
     <TimeStrip title={stripTitle} bind:collapsed={timeFolded} bind:height={stripH} minHeight={90} maxHeight={360}
                domain={ctx} plotLeft={PL} plotRight={PR} bind:brush {onbrushend} onclear={() => { brush = winBrush }}>
       {#snippet actions()}
+        {#if shownSource}
+          <span class="source-note" style="font: var(--text-xs)/1 var(--font-mono); color: var(--text-muted)" role="status" title={shownSource.asOf ? `weekly precompute of ${fmtDay(shownSource.asOf)}` : 'weekly precompute'}>{sourceLabel(shownSource, fmtDay)}</span>
+        {/if}
         {#if rows.length && !categorical && !pointRun}
           <span class="chart-key" aria-label="chart key">
             <span><svg width="18" height="8" aria-hidden="true"><line x1="0" y1="4" x2="18" y2="4" stroke={main} stroke-width="2" /></svg> {statLabel(stat)}</span>

@@ -182,6 +182,21 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
   and the link stamped below).
 - **Reproduce** (Share tab, closed): the exact griddap URL(s) used, the mask summary (cells, lobes,
   total area weight, partial boundary cells) and the rendered SQL of both queries, with *Copy all*.
+- **Precomputed stats first** (`src/lib/precomputed.ts`): the weekly precompute publishes
+  `stats/<dataset_id>/<variable>/<place_id>.parquet` (last 365 days, or the full record for the
+  monthly series; `dataset_id` is `Dataset.datasetId`, e.g. `dhw_5km`). When a run starts for a griddap
+  target that `stats/collection.json` lists (its `rel: "item"` links, fetched once from the bucket URL
+  like then-now, because the storage host's 302 has no CORS header, and cached; no HEAD per run, so an unpublished combination costs no request), `run()` reads the file
+  with hyparquet (no DuckDB-WASM needed), keeps the rows inside the window and puts them in the Time
+  strip and the table at once, shaped exactly like a live run (`frac_area` / `pct_cells` become
+  `fraction` / `percent_cells`, `date` is epoch ms). The strip header says "precomputed to 6 Oct 2026;
+  refreshing…" (`shownSource`), the CSV / Parquet buttons stay off, and `shownRun`, the permalink, the
+  map layer and the sentence's cell count stay empty until the live run completes and replaces the
+  rows. A window that starts before the file or after its end, an empty file (`NMS:MNMS`), a missing
+  file or a slow host (6 s) is ignored silently (`console.debug`), and the live run goes ahead; if the
+  live run then fails the precomputed rows stay, labelled "live refresh failed". Tests:
+  `precomputed.test.ts` on the closed-form fixtures in `src/lib/__fixtures__/stats/`
+  (`make_stats_fixture.sh`).
 - **Permalink**: written on every successful run (the run on screen, plus `stat`, `show`, `hide`)
   and read on load, so a shared link reproduces the view.
 

@@ -1,0 +1,34 @@
+{
+ "type": "Collection",
+ "id": "stats",
+ "links": [
+  {
+   "rel": "root",
+   "href": "../catalog.json"
+  },
+  {
+   "rel": "item",
+   "href": "./items/cmems_biogeochem_phyto_chl_NMS-CBNMS.json",
+   "type": "application/geo+json",
+   "title": "NMS:CBNMS \u2014 chl"
+  },
+  {
+   "rel": "item",
+   "href": "./items/dhw_5km_CRW_SST_NMS-FKNMS.json",
+   "type": "application/geo+json",
+   "title": "NMS:FKNMS \u2014 CRW_SST"
+  },
+  {
+   "rel": "item",
+   "href": "./items/noaa_aoml_seascapes_8day_CLASS_PSGID-939.json",
+   "type": "application/geo+json",
+   "title": "PSGID:939 \u2014 CLASS"
+  },
+  {
+   "rel": "item",
+   "href": "./items/dhw_5km_CRW_SST_NMS-TEST.json",
+   "type": "application/geo+json",
+   "title": "NMS:TEST \u2014 CRW_SST"
+  }
+ ]
+}
