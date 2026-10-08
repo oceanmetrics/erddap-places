@@ -3,15 +3,20 @@
 - `build_places.R` — builds `places/places.parquet` and `places/places.pmtiles` (20 marine place
   polygons: NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID). Sanctuary boundaries are the
   official NOAA ONMS shapefile downloads (urls in onmsR `sanctuaries.csv`, cached in `cache/imast/`,
-  git-ignored; delete a zip to re-download). Run with `Rscript catalog/build_places.R`, copy
-  `places/places.{parquet,pmtiles}` into `gazetteer/places/`, then `portolan add places/` and
-  `portolan version bump places <x.y.z>` from `gazetteer/`.
+  git-ignored; delete a zip to re-download). The PMTiles carry `name`, `description` and an HTML
+  `attribution` (NOAA ONMS, MarineRegions.org, ProtectedSeas) in their metadata. Run with
+  `Rscript catalog/build_places.R`, or do the whole release (build, copy to `gazetteer/places/`,
+  `portolan add`, `portolan version bump`, `rashid check`, upload) with `publish_places.sh`.
+- `publish_places.sh` — `catalog/publish_places.sh <new_version> -m "note" [--no-build] [--no-upload]`.
+  Edit the "Changes" list in `gazetteer/places/README.md` first. Leaves the other collections'
+  STAC untouched, stops if `rashid check` fails, and uploads only `places/` and the root
+  `versions.json` (no deletes).
 - `build_erddap_collections.ts` — (re)generates the `gazetteer/erddap/<id>/` collections (plus
   README/AGENTS and the `catalog.json` child links) for the datasets re-served from the USF IMaRS
   ERDDAP, from each server's `info/<id>/index.json`. Run with
   `cd precompute && npx tsx ../catalog/build_erddap_collections.ts [<id> ...]`.
 - `places/` — build output directory. `gazetteer/places/` is the published copy tracked by
-  Portolan (currently synced by hand after each rebuild; not auto-linked).
+  Portolan (synced from here by `publish_places.sh`).
 - `build_then_now.py` — builds the Then vs Now `gazetteer/rasters/`, `climatology/`, `series/`
   collections (see below).
 - `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` + Then vs Now collections).
@@ -75,6 +80,7 @@ layout and are not converted yet.
 ## Publish
 
 ```bash
+catalog/publish_places.sh 1.2.0 -m "note"     # places: build, copy, add, bump, check, upload
 portolan push catalog/gazetteer s3://oceanmetrics.io-public/gazetteer --collection places
 portolan push catalog/gazetteer s3://oceanmetrics.io-public/gazetteer --collection erddap/dhw_5km
 portolan push catalog/gazetteer s3://oceanmetrics.io-public/gazetteer --collection erddap/jplMURSST41

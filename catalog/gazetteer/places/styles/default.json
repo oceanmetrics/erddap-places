@@ -4,7 +4,7 @@
   "sources": {
     "data": {
       "type": "vector",
-      "url": "pmtiles://../places.pmtiles",
+      "url": "pmtiles://https://storage.oceanmetrics.io/gazetteer/places/places.pmtiles",
       "minzoom": 0,
       "maxzoom": 12
     }

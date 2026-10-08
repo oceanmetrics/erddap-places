@@ -95,7 +95,7 @@
       "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
     }
   ],
-  "updated": "2026-10-07T17:08:14Z",
+  "updated": "2026-10-08T13:10:24Z",
   "pmtiles:min_zoom": 0,
   "pmtiles:max_zoom": 12,
   "pmtiles:tile_type": "mvt",
@@ -167,8 +167,8 @@
     "places": {
       "href": "./places.parquet",
       "type": "application/vnd.apache.parquet",
-      "file:size": 4185432,
-      "file:checksum": "1220c063822e93576a1b9f6ef79b93f8560129fcdb47c14a485842e2579e32910d8d",
+      "file:size": 4185438,
+      "file:checksum": "1220869294c31b32aaf6244c14db429b534fa0d53083e2de83fc7abf44350762b6ac",
       "roles": [
         "data"
       ]
@@ -177,8 +177,8 @@
       "href": "./places.pmtiles",
       "type": "application/vnd.pmtiles",
       "title": "places (vector tiles)",
-      "file:size": 2321182,
-      "file:checksum": "12207ada4a1021ba6f819f15bec6879379e648c4425b3d7929cab89f9e6f0ffd14ba",
+      "file:size": 2097271,
+      "file:checksum": "1220a4b74819476e1fdff7f1097e3205abbf75413ea47fd34c7ec77476fd52e95e4a",
       "roles": [
         "visual"
       ]
@@ -187,8 +187,8 @@
       "href": "./styles/default.json",
       "type": "application/vnd.mapbox.style+json",
       "title": "Default",
-      "file:size": 451,
-      "file:checksum": "1220cd2635d8d2a98c92aa2a602480b275adfd87b84c7fc5c95588a43702f355b538",
+      "file:size": 497,
+      "file:checksum": "12209376e740633724b38b31568bba0361cabec8a56e50176ab3bca7d20cf8061849",
       "roles": [
         "style",
         "default"
@@ -206,8 +206,8 @@
     "documentation": {
       "href": "./README.md",
       "type": "text/markdown",
-      "file:size": 2565,
-      "file:checksum": "12206bb65b2ca6827380fca96b0b9285c019758a8c028524022a029df98c548d143a",
+      "file:size": 2945,
+      "file:checksum": "12202b603655d6631dac6d6e990ac3641aa18a6682255ff1f0d78f82dd2893e6f6e1",
       "roles": [
         "documentation"
       ]

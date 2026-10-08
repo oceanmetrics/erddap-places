@@ -15,6 +15,10 @@ Built by [`catalog/build_places.R`](../../build_places.R).
 
 ## Changes
 
+- **1.2.0 (2026-10-08)**: `places.pmtiles` now carries tile metadata (`name` "places", a description and
+  an HTML `attribution` crediting NOAA ONMS, MarineRegions.org and ProtectedSeas); `styles/default.json`
+  points at the absolute published PMTiles URL; the builder writes the GeoParquet `bbox` struct itself.
+  Geometries and attributes are unchanged.
 - **1.1.0 (2026-10-07)**: sanctuary polygons now built directly from the official NOAA ONMS
   downloads (previously the onmsR `sanctuary_polygons/*.geojson` copies) and new columns
   `source_url`, `source_date`. Geometries and areas are unchanged to within 0.1 km² (same upstream
@@ -41,7 +45,7 @@ Built by [`catalog/build_places.R`](../../build_places.R).
 | area_km2 | double | polygon area in square kilometers |
 | source_url | string | URL the boundary was downloaded from (official NOAA ONMS zip, MarineRegions gazetteer record, ProtectedSeas API) |
 | source_date | date | date (ISO 8601) the boundary was downloaded |
-| bbox | struct<xmin,ymin,xmax,ymax: double> | GeoParquet bbox-covering column (added by `portolan add` for query pushdown) |
+| bbox | struct<xmin,ymin,xmax,ymax: double> | GeoParquet bbox-covering column (written by the builder; `portolan add` adds the covering metadata) |
 | geometry | binary (WKB) | MULTIPOLYGON, EPSG:4326, split at ±180 antimeridian |
 
 See [`../AGENTS.md`](../AGENTS.md) for query patterns.

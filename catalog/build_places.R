@@ -144,13 +144,8 @@ places <- places |>
     area_km2 = sf::st_area(geometry) |>
       units::set_units(km^2) |>
       as.numeric() |>
-      round(1),
-    # note: for antimeridian-crossing places (e.g. PMNM), bbox spans nearly -180..180
-    bbox = sapply(sf::st_geometry(geometry), \(g) {
-      b <- sf::st_bbox(g)
-      jsonlite::toJSON(as.numeric(b), digits = 6)
-    })) |>
-  select(place_id, gazetteer, name, area_km2, bbox, source_url, source_date, geometry) |>
+      round(1)) |>
+  select(place_id, gazetteer, name, area_km2, source_url, source_date, geometry) |>
   arrange(gazetteer, place_id)
 
 # outputs ------------------------------------------------------------------------------
@@ -170,16 +165,32 @@ if (fs::file_exists(f_parquet)) fs::file_delete(f_parquet)
 system(glue::glue(
   "duckdb -c \"",
   "INSTALL spatial; LOAD spatial; ",
-  "COPY (SELECT place_id, gazetteer, name, area_km2, bbox, source_url, CAST(source_date AS DATE) AS source_date, geom AS geometry FROM ST_Read('{f_tmp_geojson}')) ",
+  "COPY (SELECT place_id, gazetteer, name, area_km2, source_url, CAST(source_date AS DATE) AS source_date, ",
+  # bbox is the geoparquet bbox-covering struct (for antimeridian-crossing places such as PMNM it
+  # spans -180..180); written here so the output matches what portolan publishes
+  "{{'xmin': ST_XMin(geom), 'ymin': ST_YMin(geom), 'xmax': ST_XMax(geom), 'ymax': ST_YMax(geom)}} AS bbox, ",
+  "geom AS geometry FROM ST_Read('{f_tmp_geojson}')) ",
   "TO '{f_parquet}' (FORMAT PARQUET);\""))
 fs::file_delete(f_tmp_geojson)
 
 if (fs::file_exists(f_geojson)) fs::file_delete(f_geojson)
 sf::st_write(places, f_geojson, delete_dsn = TRUE, quiet = TRUE)
 
-system(glue::glue(
-  "/opt/homebrew/bin/tippecanoe -o {f_pmtiles} -l places -zg ",
-  "--drop-densest-as-needed --extend-zooms-if-still-dropping --force {f_geojson}"))
+# tile metadata: name, description and attribution (shown by maplibre's attribution control)
+tile_name <- "places"
+tile_desc <- paste(
+  "Ocean Metrics gazetteer: 20 marine place polygons (18 NOAA National Marine Sanctuaries,",
+  "1 MarineRegions EEZ, 1 ProtectedSeas MPA); layer 'places', keyed by place_id.")
+tile_attr <- paste0(
+  '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a> | ',
+  '<a href="https://www.marineregions.org" target="_blank">MarineRegions.org</a> (CC-BY-4.0) | ',
+  '<a href="https://protectedseas.net" target="_blank">ProtectedSeas</a>')
+
+system2(
+  "/opt/homebrew/bin/tippecanoe",
+  c("-o", shQuote(f_pmtiles), "-l", "places", "-zg",
+    "-n", shQuote(tile_name), "-N", shQuote(tile_desc), "--attribution", shQuote(tile_attr),
+    "--drop-densest-as-needed", "--extend-zooms-if-still-dropping", "--force", shQuote(f_geojson)))
 
 fs::file_delete(f_geojson)
 
