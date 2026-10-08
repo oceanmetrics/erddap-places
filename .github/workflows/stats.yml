@@ -94,11 +94,17 @@ jobs:
           aws sts get-caller-identity
           # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file.
           # rasters/, climatology/ and series/ (Then vs Now) are built on the Mac mini by
-          # catalog/build_then_now.py and uploaded from there; their data files are not in git, so
-          # this sync must neither delete them nor overwrite their STAC from a checkout without data
-          aws s3 sync catalog/gazetteer/ s3://oceanmetrics.io-public/gazetteer/ \
-            --delete --exclude '.portolan/*' --exclude 'stats/*' \
-            --exclude 'rasters/*' --exclude 'climatology/*' --exclude 'series/*'
+          # catalog/build_then_now.py and uploaded from there; their data files are not in git.
+          # the bucket now has a second publisher (oceanmetrics/places): sync per collection dir
+          # owned by THIS checkout, --delete scoped inside each, and never touch the root
+          # catalog.json / versions.json here (they list the other publisher's collections too;
+          # publish-time scripts maintain them)
+          for d in catalog/gazetteer/*/; do
+            name=$(basename "$d")
+            case "$name" in stats|rasters|climatology|series) continue ;; esac
+            aws s3 sync "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
+              --delete --exclude '.portolan/*'
+          done
           aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
             --exclude '.portolan/*'
 

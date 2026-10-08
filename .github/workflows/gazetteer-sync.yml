@@ -185,8 +185,34 @@ jobs:
             slug=${b%%:*}
             aws s3 sync "catalog/gazetteer/$slug/" "s3://oceanmetrics.io-public/gazetteer/$slug/" --delete --exclude '.portolan/*'
           done
-          aws s3 cp catalog/gazetteer/versions.json s3://oceanmetrics.io-public/gazetteer/versions.json
-          aws s3 cp catalog/gazetteer/catalog.json  s3://oceanmetrics.io-public/gazetteer/catalog.json
+          # the bucket has a second publisher (oceanmetrics/places): merge this run's entries into
+          # the PUBLISHED root files instead of overwriting them from the checkout
+          aws s3 cp s3://oceanmetrics.io-public/gazetteer/versions.json /tmp/pub_versions.json
+          aws s3 cp s3://oceanmetrics.io-public/gazetteer/catalog.json  /tmp/pub_catalog.json
+          python3 - "${{ steps.build.outputs.built }}" <<'PYEOF'
+          import datetime, json, sys
+          built = [b.split(":")[0] for b in sys.argv[1].split()]
+          now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+          root = json.load(open("/tmp/pub_versions.json"))
+          for slug in built:
+              led = json.load(open(f"catalog/gazetteer/{slug}/versions.json"))
+              cur = next(v for v in led["versions"] if v["version"] == led["current_version"])
+              root["collections"][slug] = {
+                  "current_version": led["current_version"], "updated": now,
+                  "asset_count": len(cur["assets"]),
+                  "total_size_bytes": sum(a["size_bytes"] for a in cur["assets"].values())}
+          root["updated"] = now
+          json.dump(root, open("/tmp/pub_versions.json", "w"), indent=2)
+          cat = json.load(open("/tmp/pub_catalog.json"))
+          have = {l.get("href") for l in cat["links"]}
+          for slug in built:
+              href = f"./{slug}/collection.json"
+              if href not in have:
+                  cat["links"].append({"rel": "child", "href": href, "type": "application/json", "title": slug})
+          json.dump(cat, open("/tmp/pub_catalog.json", "w"), indent=2)
+          PYEOF
+          aws s3 cp /tmp/pub_versions.json s3://oceanmetrics.io-public/gazetteer/versions.json --content-type application/json
+          aws s3 cp /tmp/pub_catalog.json  s3://oceanmetrics.io-public/gazetteer/catalog.json  --content-type application/json
 
       - name: fail the job if a collection failed to build
         if: ${{ steps.build.outcome == 'failure' }}
