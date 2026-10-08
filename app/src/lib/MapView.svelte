@@ -45,7 +45,7 @@
   import { Protocol } from 'pmtiles'
   import type { FeatureCollection } from 'geojson'
   import type { CellProps } from './cells'
-  import { PLACES_SOURCE_LAYER } from './gazetteer'
+  import { PLACES_SOURCE_LAYER, PLACES_ATTRIBUTION } from './gazetteer'
 
   interface Props {
     /** `pmtiles://…/places.pmtiles` is built from this (the gazetteer base that answered). */
@@ -165,7 +165,7 @@
     <!-- one row of map buttons at the top right; the title and the legend live in the sentence -->
     <NavigationControl position="top-right" />
     <ScaleControl position="bottom-left" />
-    <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
+    <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12} attribution={PLACES_ATTRIBUTION}>
       <!-- every place, outlined; clicking anywhere in one selects it in the picker -->
       <FillLayer
         sourceLayer={PLACES_SOURCE_LAYER}

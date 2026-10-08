@@ -5,7 +5,8 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { GAZETTEER_BASE, GAZETTEER_FALLBACK, gazetteerBase, gazetteerFetch, loadPlaces, placeLobes, type Place } from './gazetteer'
+import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, loadPlaces, placeLobes, placesPmtilesUrl, type Place } from './gazetteer'
+import { PMTiles } from 'pmtiles'
 
 const DIR   = path.dirname(fileURLToPath(import.meta.url))
 const LOCAL = path.resolve(DIR, '../../../catalog/gazetteer/places/places.parquet')
@@ -59,4 +60,10 @@ describe('published gazetteer', () => {
     expect(placeLobes(places.find((p) => p.place_id === 'NMS:PMNM')!)).toHaveLength(2)
     expect([GAZETTEER_BASE, GAZETTEER_FALLBACK]).toContain(gazetteerBase())
   }, 120_000)
+
+  it('credits the places source with the attribution the published PMTiles carry', async () => {
+    if (!(await online())) return
+    const meta = await new PMTiles(placesPmtilesUrl()).getMetadata() as { attribution?: string }
+    expect(meta.attribution).toBe(PLACES_ATTRIBUTION)
+  }, 60_000)
 })

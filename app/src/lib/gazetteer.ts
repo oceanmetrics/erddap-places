@@ -14,6 +14,16 @@ export const GAZETTEER_FALLBACK = 'https://s3.us-east-1.amazonaws.com/oceanmetri
 /** the tippecanoe layer inside places.pmtiles (`-l places`): place_id, name, gazetteer, area_km2. */
 export const PLACES_SOURCE_LAYER = 'places'
 
+/**
+ * credit for the places source, shown in the map's attribution control. the same string is the
+ * `attribution` field of the published PMTiles metadata (places 1.2.0); `gazetteer.test.ts` reads
+ * that metadata live and fails if the two drift.
+ */
+export const PLACES_ATTRIBUTION =
+  '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a> | ' +
+  '<a href="https://www.marineregions.org" target="_blank">MarineRegions.org</a> (CC-BY-4.0) | ' +
+  '<a href="https://protectedseas.net" target="_blank">ProtectedSeas</a>'
+
 let activeBase: string | null = null
 /** the base URL that last answered (after `gazetteerFetch`), for display. */
 export const gazetteerBase = () => activeBase ?? GAZETTEER_BASE
