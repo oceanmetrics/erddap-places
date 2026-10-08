@@ -1,0 +1,19 @@
+{
+  "slug": "boem_pacific_og_leases",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:34:33Z",
+  "record_count": 34,
+  "sources": [
+    {
+      "source_url": "https://gis.boem.gov/server/rest/services/BOEM_BSEE/POC_Layers/MapServer/7",
+      "source_item_id": "",
+      "component": null,
+      "data_last_edit": null,
+      "retrieved": "2026-10-08T13:34:33Z",
+      "record_count": 34,
+      "checksum": "da6bd112b876f923fb8879b7c7edbe13b368ac2037b584e47f9981a8945d9036",
+      "copyright_text": "BOEM / BSEE"
+    }
+  ],
+  "dropped": []
+}

@@ -1,0 +1,34 @@
+{
+  "version": 8,
+  "name": "Default",
+  "sources": {
+    "data": {
+      "type": "vector",
+      "url": "pmtiles://../places.pmtiles",
+      "minzoom": 0,
+      "maxzoom": 7
+    }
+  },
+  "layers": [
+    {
+      "id": "boem_wind_planning_rescinded-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "boem_wind_planning_rescinded",
+      "paint": {
+        "fill-color": "#e08a1e",
+        "fill-opacity": 0.45
+      }
+    },
+    {
+      "id": "boem_wind_planning_rescinded-line",
+      "type": "line",
+      "source": "data",
+      "source-layer": "boem_wind_planning_rescinded",
+      "paint": {
+        "line-color": "#a85f00",
+        "line-width": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "spec_version": "1.0.0",
+  "current_version": "1.0.0",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "created": "2026-10-08T14:58:54.320322Z",
+      "breaking": false,
+      "assets": {
+        "provenance.json": {
+          "sha256": "72aef5af6a8eef2b88e76148bea0ae4b31f9233b2956131f86e41cb6e53009f1",
+          "size_bytes": 541,
+          "href": "boem_pacific_og_leases/provenance.json",
+          "mtime": 1791471532.2807026
+        },
+        "places.parquet": {
+          "sha256": "71e1eb4dee66956481b15e041b6c82f5cb59ac4576de1aa58dc60ebeb3fead5a",
+          "size_bytes": 52559,
+          "href": "boem_pacific_og_leases/places.parquet",
+          "source_mtime": 1791471532.2810855,
+          "mtime": 1791471532.2810855,
+          "feature_count": 34,
+          "schema_fingerprint": "d479c6c4033d4221"
+        },
+        "README.md": {
+          "sha256": "7f426543d160c614b9cfe2672786fee9627f6e38e98ed310cf8dade4c146f77c",
+          "size_bytes": 6596,
+          "href": "boem_pacific_og_leases/README.md",
+          "mtime": 1791471532.2814076
+        },
+        "places.pmtiles": {
+          "sha256": "02f2f0c49bfa514df8edfb7a6190976cff6c83538297febdc7c8ac87dc7f632e",
+          "size_bytes": 28903,
+          "href": "boem_pacific_og_leases/places.pmtiles",
+          "mtime": 1791471532.2820854
+        },
+        "places.thumb.jpg": {
+          "sha256": "a50c49923bbbda7949552a1a114e51a07a79e3b7ccec10d920d04cefe49ced48",
+          "size_bytes": 2598,
+          "href": "boem_pacific_og_leases/places.thumb.jpg",
+          "mtime": 1791471535.251606
+        }
+      },
+      "changes": [
+        "provenance.json",
+        "places.parquet",
+        "README.md",
+        "places.pmtiles",
+        "places.thumb.jpg"
+      ]
+    }
+  ]
+}

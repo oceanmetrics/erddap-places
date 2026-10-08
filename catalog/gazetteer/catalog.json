@@ -159,6 +159,42 @@
       "href": "./series/collection.json",
       "type": "application/json",
       "title": "Then vs Now: daily area series"
+    },
+    {
+      "rel": "child",
+      "href": "./boem_wind_leases/collection.json",
+      "type": "application/json",
+      "title": "boem_wind_leases"
+    },
+    {
+      "rel": "child",
+      "href": "./boem_wind_planning_rescinded/collection.json",
+      "type": "application/json",
+      "title": "boem_wind_planning_rescinded"
+    },
+    {
+      "rel": "child",
+      "href": "./boem_ocs_planning/collection.json",
+      "type": "application/json",
+      "title": "boem_ocs_planning"
+    },
+    {
+      "rel": "child",
+      "href": "./boem_program_11_draft/collection.json",
+      "type": "application/json",
+      "title": "boem_program_11_draft"
+    },
+    {
+      "rel": "child",
+      "href": "./boem_pacific_og_leases/collection.json",
+      "type": "application/json",
+      "title": "boem_pacific_og_leases"
+    },
+    {
+      "rel": "child",
+      "href": "./noaa_aoa_socal/collection.json",
+      "type": "application/json",
+      "title": "noaa_aoa_socal"
     }
   ],
   "title": "Ocean Metrics gazetteer",

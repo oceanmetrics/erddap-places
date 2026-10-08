@@ -1,0 +1,405 @@
+{
+  "type": "Collection",
+  "id": "boem_wind_planning_rescinded",
+  "stac_version": "1.1.0",
+  "description": "Wind energy areas, call areas and proposed-sale areas that BOEM de-designated on 2025-07-30 (BOEM notice \"BOEM Rescinds Designated Wind Energy Areas on the Outer Continental Shelf\"). Two BOEM layers are combined: the dissolved outlines (`component` = outline) and the OCS blocks and sub-blocks that make them up (`component` = block). Every row is `status` = rescinded, `status_date` = 2025-07-30; the native `AREA_STATUS` column keeps BOEM's own, stale value (the Oregon areas are still marked Active). The outline layer holds one row with no geometry and no attributes (OBJECTID 2068); it is dropped. Built by catalog/build_erin_layers.py from 2 source layer(s).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "boem_wind_planning_rescinded"
+      ]
+    },
+    {
+      "rel": "license",
+      "href": "https://www.usa.gov/publicdomain/label/1.0/",
+      "type": "text/html",
+      "title": "U.S. federal government work (BOEM), public domain; the AGOL items carry the usa.gov public-domain label."
+    },
+    {
+      "rel": "via",
+      "href": "https://www.boem.gov/newsroom/notes-stakeholders/boem-rescinds-designated-wind-energy-areas-outer-continental-shelf",
+      "type": "text/html",
+      "title": "Upstream publisher page"
+    },
+    {
+      "rel": "via",
+      "href": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Area_Boundaries__BOEM_/FeatureServer/0",
+      "type": "text/html",
+      "title": "Source layer (outline)"
+    },
+    {
+      "rel": "via",
+      "href": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Areas__BOEM_/FeatureServer/7",
+      "type": "text/html",
+      "title": "Source layer (block)"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 3325,
+  "table:row_count": 3325,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed, unique id (e.g. BOEM:OCS-P 0561, BOEM:PA:SOC, AOA:N1-A)"
+    },
+    {
+      "name": "authority",
+      "type": "string",
+      "description": "organisation that publishes the boundary (BOEM, AOA = NOAA Aquaculture Opportunity Areas)"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "description": "the source layer's own identifier for the feature (lease number, planning-area code, OBJECTID, AOA code)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable name"
+    },
+    {
+      "name": "place_type",
+      "type": "string",
+      "description": "kind of place: lease, planning_area or aoa"
+    },
+    {
+      "name": "geom_type",
+      "type": "string",
+      "description": "geometry type after normalisation (MultiPolygon)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "lifecycle status (e.g. active, cancelled, relinquished, settlement_pending, rescinded, draft_proposed, identified)"
+    },
+    {
+      "name": "status_source",
+      "type": "string",
+      "description": "URL that documents the status"
+    },
+    {
+      "name": "status_date",
+      "type": "string",
+      "description": "ISO date (or year) the status took effect or was last confirmed; may be empty"
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "description": "the service endpoint or download the boundary was fetched from"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date of the source's last data edit (retrieval date when the source serves none)"
+    },
+    {
+      "name": "retrieved",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "UTC time the boundary was fetched"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "description": "collection release version this row was built for"
+    },
+    {
+      "name": "license",
+      "type": "string",
+      "description": "SPDX identifier of the licence (CC-PDDC = public-domain U.S. government work)"
+    },
+    {
+      "name": "attribution",
+      "type": "string",
+      "description": "credit line to show with the data"
+    },
+    {
+      "name": "component",
+      "type": "string",
+      "description": "which source layer of the collection the row comes from"
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int64",
+      "description": "native attribute of the source layer (OBJECTID)"
+    },
+    {
+      "name": "PROTRACTION_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (PROTRACTION_NUMBER)"
+    },
+    {
+      "name": "ADDITIONAL_INFORMATION",
+      "type": "string",
+      "description": "native attribute of the source layer (ADDITIONAL_INFORMATION)"
+    },
+    {
+      "name": "CATEGORY1",
+      "type": "string",
+      "description": "native attribute of the source layer (CATEGORY1)"
+    },
+    {
+      "name": "CATEGORY2",
+      "type": "string",
+      "description": "native attribute of the source layer (CATEGORY2)"
+    },
+    {
+      "name": "URL1",
+      "type": "string",
+      "description": "native attribute of the source layer (URL1)"
+    },
+    {
+      "name": "URL2",
+      "type": "string",
+      "description": "native attribute of the source layer (URL2)"
+    },
+    {
+      "name": "AREA_STATUS",
+      "type": "string",
+      "description": "native attribute of the source layer (AREA_STATUS)"
+    },
+    {
+      "name": "Shape__Area",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Area)"
+    },
+    {
+      "name": "Shape__Length",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Length)"
+    },
+    {
+      "name": "BLOCK_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (BLOCK_NUMBER)"
+    },
+    {
+      "name": "BLOCK_LABEL",
+      "type": "string",
+      "description": "native attribute of the source layer (BLOCK_LABEL)"
+    },
+    {
+      "name": "SUB_BLOCK",
+      "type": "string",
+      "description": "native attribute of the source layer (SUB_BLOCK)"
+    },
+    {
+      "name": "PRIMARY_WPA_CATEGORY",
+      "type": "string",
+      "description": "native attribute of the source layer (PRIMARY_WPA_CATEGORY)"
+    },
+    {
+      "name": "SECONDARY_WPA_CATEGORY",
+      "type": "string",
+      "description": "native attribute of the source layer (SECONDARY_WPA_CATEGORY)"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column (xmin, ymin, xmax, ymax)"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "updated": "2026-10-08T14:58:54Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 7,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -74.53125,
+    37.71024,
+    7
+  ],
+  "pmtiles:layers": [
+    "boem_wind_planning_rescinded"
+  ],
+  "gazetteer:authority": "BOEM",
+  "gazetteer:place_type": "planning_area",
+  "gazetteer:cadence": "weekly",
+  "gazetteer:attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+  "gazetteer:provenance": {
+    "slug": "boem_wind_planning_rescinded",
+    "version": "1.0.0",
+    "built": "2026-10-08T13:35:04Z",
+    "record_count": 3325,
+    "sources": [
+      {
+        "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Area_Boundaries__BOEM_/FeatureServer/0",
+        "source_item_id": "f4bafa57366c49ffb84db33fa52c134c",
+        "component": "outline",
+        "data_last_edit": "2025-02-20T16:17:31Z",
+        "retrieved": "2026-10-08T13:35:00Z",
+        "record_count": 19,
+        "checksum": "bc0623cee11e64bbc6ac4143265a175d8442b02d825cc0df517c084206ee7b33",
+        "item_title": "Offshore Wind Planning Area Outlines (Rescinded July 30, 2025)",
+        "item_owner": "BOEM_GeoSEAS",
+        "item_modified": "2026-04-03T14:05:12Z",
+        "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+        "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+      },
+      {
+        "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Areas__BOEM_/FeatureServer/7",
+        "source_item_id": "ad4e83ed78d24319b641ebbaf1f7298e",
+        "component": "block",
+        "data_last_edit": "2025-02-20T16:28:20Z",
+        "retrieved": "2026-10-08T13:35:04Z",
+        "record_count": 3307,
+        "checksum": "be6ec83f2884718ccfc1c04baa21f2fa220a19cea30eb7092f5995b973532e6f",
+        "item_title": "Offshore Wind Planning Areas (Rescinded July 30, 2025)",
+        "item_owner": "BOEM_GeoSEAS",
+        "item_modified": "2026-04-03T14:05:47Z",
+        "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+        "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+      }
+    ],
+    "dropped": [
+      "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Area_Boundaries__BOEM_/FeatureServer/0: dropped feature with no polygon (attributes: {'OBJECTID': 2068})"
+    ]
+  },
+  "title": "BOEM offshore wind planning areas (rescinded 2025-07-30)",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -158.663621,
+          20.776513,
+          -72.002210756,
+          43.950633
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-PDDC",
+  "providers": [
+    {
+      "name": "Bureau of Ocean Energy Management (BOEM)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.boem.gov/renewable-energy"
+    },
+    {
+      "name": "NOAA Office for Coastal Management (MarineCadastre.gov)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://hub.marinecadastre.gov"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 519506,
+      "file:checksum": "1220e3e4dadcd6e78e64f79ed21d9e42429c3bfaa443963929b2b923e16ec375fbb3",
+      "proj:code": "EPSG:4326",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "boem_wind_planning_rescinded (vector tiles)",
+      "file:size": 434757,
+      "file:checksum": "1220cbfae5c5f8b4404fe8325b65673b4092218864a50237ee82424e16c5a9f02ea2",
+      "roles": [
+        "visual"
+      ]
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 698,
+      "file:checksum": "1220ed2e8aa33943ddcf4b71d840e11638b9254dfa608c41edef02648973c5229198",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "provenance": {
+      "href": "./provenance.json",
+      "type": "application/json",
+      "title": "Source provenance and change-detection record",
+      "file:size": 1947,
+      "file:checksum": "1220357881b872f37b958a0c111908d4de807a9bd9f6265f4afefc1b645bbc5d0f39",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 5653,
+      "file:checksum": "1220361d959214e78b1f7bf625c590f4b3be5a79493c0534ea3b88adf1a2b4e9abfc",
+      "roles": [
+        "documentation"
+      ]
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2023,
+      "file:checksum": "12201e37855a8637cbea03d58cbf184460c5c4960d03ef6768d30b094d5d8a8fff79"
+    }
+  }
+}

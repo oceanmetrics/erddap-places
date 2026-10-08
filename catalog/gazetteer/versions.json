@@ -8,7 +8,43 @@
       "updated": "2026-10-08T13:10:25.379755+00:00",
       "asset_count": 3,
       "total_size_bytes": 6285032
+    },
+    "boem_wind_leases": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 7788257
+    },
+    "boem_wind_planning_rescinded": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 963886
+    },
+    "boem_ocs_planning": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 16403040
+    },
+    "boem_program_11_draft": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 7970966
+    },
+    "boem_pacific_og_leases": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 91197
+    },
+    "noaa_aoa_socal": {
+      "current_version": "1.0.0",
+      "updated": "2026-10-08T14:58:55.923447+00:00",
+      "asset_count": 5,
+      "total_size_bytes": 36649
     }
   },
-  "updated": "2026-10-08T13:10:25.379755+00:00"
+  "updated": "2026-10-08T14:58:55.923447+00:00"
 }

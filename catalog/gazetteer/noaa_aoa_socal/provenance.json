@@ -1,0 +1,24 @@
+{
+  "slug": "noaa_aoa_socal",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:35:07Z",
+  "record_count": 10,
+  "sources": [
+    {
+      "source_url": "https://www.fisheries.noaa.gov/s3//2025-09/aoa-socal.zip",
+      "source_item_id": "",
+      "component": null,
+      "data_last_edit": "2025-08-19T00:00:00Z",
+      "retrieved": "2026-10-08T13:35:07Z",
+      "record_count": 10,
+      "checksum": "a47945d257a273e29b4cc48eba023f35d4ca6e6b11396eec09e2e1e7ebca822f",
+      "http": {
+        "etag": "\"909f3a43a222b9b7db23dc0c028de256\"",
+        "last_modified": "Wed, 17 Sep 2025 16:46:35 GMT",
+        "content_length": 79309380
+      },
+      "zip_bytes": 79309380
+    }
+  ],
+  "dropped": []
+}

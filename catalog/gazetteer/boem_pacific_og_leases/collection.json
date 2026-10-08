@@ -1,0 +1,459 @@
+{
+  "type": "Collection",
+  "id": "boem_pacific_og_leases",
+  "stac_version": "1.1.0",
+  "description": "The 34 active oil and gas leases in the Pacific OCS (off California), from BOEM's Pacific Region map service (POC_Layers layer 7). `LEASE_STATUS_CD` is BOEM's own code (UNIT = committed to a unit, PROD = producing, RENACV is kept as served); `status` is `active` for all of them because the layer lists active leases only. Lease numbers are served as P00202 and published in BOEM's formal form `OCS-P 0202`. Built by catalog/build_erin_layers.py from 1 source layer(s).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "boem_pacific_og_leases"
+      ]
+    },
+    {
+      "rel": "license",
+      "href": "https://www.usa.gov/publicdomain/label/1.0/",
+      "type": "text/html",
+      "title": "U.S. federal government work (BOEM / BSEE), public domain; the service carries no separate terms."
+    },
+    {
+      "rel": "via",
+      "href": "https://www.boem.gov/oil-gas-energy/mapping-and-data/pacific-cadastral-data",
+      "type": "text/html",
+      "title": "Upstream publisher page"
+    },
+    {
+      "rel": "via",
+      "href": "https://gis.boem.gov/server/rest/services/BOEM_BSEE/POC_Layers/MapServer/7",
+      "type": "text/html",
+      "title": "Source layer"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 34,
+  "table:row_count": 34,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed, unique id (e.g. BOEM:OCS-P 0561, BOEM:PA:SOC, AOA:N1-A)"
+    },
+    {
+      "name": "authority",
+      "type": "string",
+      "description": "organisation that publishes the boundary (BOEM, AOA = NOAA Aquaculture Opportunity Areas)"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "description": "the source layer's own identifier for the feature (lease number, planning-area code, OBJECTID, AOA code)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable name"
+    },
+    {
+      "name": "place_type",
+      "type": "string",
+      "description": "kind of place: lease, planning_area or aoa"
+    },
+    {
+      "name": "geom_type",
+      "type": "string",
+      "description": "geometry type after normalisation (MultiPolygon)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "lifecycle status (e.g. active, cancelled, relinquished, settlement_pending, rescinded, draft_proposed, identified)"
+    },
+    {
+      "name": "status_source",
+      "type": "string",
+      "description": "URL that documents the status"
+    },
+    {
+      "name": "status_date",
+      "type": "string",
+      "description": "ISO date (or year) the status took effect or was last confirmed; may be empty"
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "description": "the service endpoint or download the boundary was fetched from"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date of the source's last data edit (retrieval date when the source serves none)"
+    },
+    {
+      "name": "retrieved",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "UTC time the boundary was fetched"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "description": "collection release version this row was built for"
+    },
+    {
+      "name": "license",
+      "type": "string",
+      "description": "SPDX identifier of the licence (CC-PDDC = public-domain U.S. government work)"
+    },
+    {
+      "name": "attribution",
+      "type": "string",
+      "description": "credit line to show with the data"
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int64",
+      "description": "native attribute of the source layer (OBJECTID)"
+    },
+    {
+      "name": "LEASE_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_NUMBER)"
+    },
+    {
+      "name": "SN_TRACTS_FK",
+      "type": "double",
+      "description": "native attribute of the source layer (SN_TRACTS_FK)"
+    },
+    {
+      "name": "BID_SYSTEM_CODE",
+      "type": "string",
+      "description": "native attribute of the source layer (BID_SYSTEM_CODE)"
+    },
+    {
+      "name": "IBLA_APPEAL_FLAG",
+      "type": "string",
+      "description": "native attribute of the source layer (IBLA_APPEAL_FLAG)"
+    },
+    {
+      "name": "LEASE_EXPIR_DATE",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "native attribute of the source layer (LEASE_EXPIR_DATE)"
+    },
+    {
+      "name": "LEASE_SECT_AREA",
+      "type": "double",
+      "description": "native attribute of the source layer (LEASE_SECT_AREA)"
+    },
+    {
+      "name": "LEASE_SEGR_FLAG",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_SEGR_FLAG)"
+    },
+    {
+      "name": "MINERAL_TYPE_CD",
+      "type": "string",
+      "description": "native attribute of the source layer (MINERAL_TYPE_CD)"
+    },
+    {
+      "name": "LSE_STAT_EFF_DT",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "native attribute of the source layer (LSE_STAT_EFF_DT)"
+    },
+    {
+      "name": "TRACT_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (TRACT_NUMBER)"
+    },
+    {
+      "name": "SERIAL_TYPE_CODE",
+      "type": "string",
+      "description": "native attribute of the source layer (SERIAL_TYPE_CODE)"
+    },
+    {
+      "name": "SEGR_XREF_NUM",
+      "type": "string",
+      "description": "native attribute of the source layer (SEGR_XREF_NUM)"
+    },
+    {
+      "name": "RGN_APPEAL_FLAG",
+      "type": "string",
+      "description": "native attribute of the source layer (RGN_APPEAL_FLAG)"
+    },
+    {
+      "name": "PEND_LITIG_FLAG",
+      "type": "string",
+      "description": "native attribute of the source layer (PEND_LITIG_FLAG)"
+    },
+    {
+      "name": "LEASE_STATUS_CD",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_STATUS_CD)"
+    },
+    {
+      "name": "LEASE_EFF_DATE",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "native attribute of the source layer (LEASE_EFF_DATE)"
+    },
+    {
+      "name": "CURRENT_AREA",
+      "type": "double",
+      "description": "native attribute of the source layer (CURRENT_AREA)"
+    },
+    {
+      "name": "LEASE_EXPT_EXPIR",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "native attribute of the source layer (LEASE_EXPT_EXPIR)"
+    },
+    {
+      "name": "ROYALTY_RATE",
+      "type": "double",
+      "description": "native attribute of the source layer (ROYALTY_RATE)"
+    },
+    {
+      "name": "INITIAL_AREA",
+      "type": "double",
+      "description": "native attribute of the source layer (INITIAL_AREA)"
+    },
+    {
+      "name": "SALE_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (SALE_NUMBER)"
+    },
+    {
+      "name": "RENT_PER_UNIT",
+      "type": "double",
+      "description": "native attribute of the source layer (RENT_PER_UNIT)"
+    },
+    {
+      "name": "LEASE_STATUS_CHANGE_DT",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "native attribute of the source layer (LEASE_STATUS_CHANGE_DT)"
+    },
+    {
+      "name": "REN_ACQUISITION_FEE_AMT",
+      "type": "double",
+      "description": "native attribute of the source layer (REN_ACQUISITION_FEE_AMT)"
+    },
+    {
+      "name": "REN_AUCTION_FORMAT_CD",
+      "type": "string",
+      "description": "native attribute of the source layer (REN_AUCTION_FORMAT_CD)"
+    },
+    {
+      "name": "REN_FERC_APPROVAL_FL",
+      "type": "string",
+      "description": "native attribute of the source layer (REN_FERC_APPROVAL_FL)"
+    },
+    {
+      "name": "REN_LEASE_TYPE_CD",
+      "type": "string",
+      "description": "native attribute of the source layer (REN_LEASE_TYPE_CD)"
+    },
+    {
+      "name": "REN_MULT_ACTIVITY_FL",
+      "type": "string",
+      "description": "native attribute of the source layer (REN_MULT_ACTIVITY_FL)"
+    },
+    {
+      "name": "SHAPE.AREA",
+      "type": "double",
+      "description": "native attribute of the source layer (SHAPE.AREA)"
+    },
+    {
+      "name": "SHAPE.LEN",
+      "type": "double",
+      "description": "native attribute of the source layer (SHAPE.LEN)"
+    },
+    {
+      "name": "ACLABS",
+      "type": "string",
+      "description": "native attribute of the source layer (ACLABS)"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column (xmin, ymin, xmax, ymax)"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "updated": "2026-10-08T14:58:54Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 10,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -120.058594,
+    34.452093,
+    10
+  ],
+  "pmtiles:layers": [
+    "boem_pacific_og_leases"
+  ],
+  "gazetteer:authority": "BOEM",
+  "gazetteer:place_type": "lease",
+  "gazetteer:cadence": "weekly",
+  "gazetteer:attribution": "Bureau of Ocean Energy Management (BOEM) and Bureau of Safety and Environmental Enforcement (BSEE), Pacific Region. Public domain. Processed by Ocean Metrics.",
+  "gazetteer:provenance": {
+    "slug": "boem_pacific_og_leases",
+    "version": "1.0.0",
+    "built": "2026-10-08T13:34:33Z",
+    "record_count": 34,
+    "sources": [
+      {
+        "source_url": "https://gis.boem.gov/server/rest/services/BOEM_BSEE/POC_Layers/MapServer/7",
+        "source_item_id": "",
+        "component": null,
+        "data_last_edit": null,
+        "retrieved": "2026-10-08T13:34:33Z",
+        "record_count": 34,
+        "checksum": "da6bd112b876f923fb8879b7c7edbe13b368ac2037b584e47f9981a8945d9036",
+        "copyright_text": "BOEM / BSEE"
+      }
+    ],
+    "dropped": []
+  },
+  "title": "BOEM Pacific active oil and gas leases",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -124.81159845979433,
+          33.5022019,
+          -118.069592,
+          44.588995
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-PDDC",
+  "providers": [
+    {
+      "name": "Bureau of Ocean Energy Management (BOEM)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.boem.gov/oil-gas-energy/mapping-and-data/pacific-cadastral-data"
+    },
+    {
+      "name": "Bureau of Safety and Environmental Enforcement (BSEE)",
+      "roles": [
+        "producer"
+      ],
+      "url": "https://www.bsee.gov"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 52559,
+      "file:checksum": "122071e1eb4dee66956481b15e041b6c82f5cb59ac4576de1aa58dc60ebeb3fead5a",
+      "proj:code": "EPSG:4326",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "boem_pacific_og_leases (vector tiles)",
+      "file:size": 28903,
+      "file:checksum": "122002f2f0c49bfa514df8edfb7a6190976cff6c83538297febdc7c8ac87dc7f632e",
+      "roles": [
+        "visual"
+      ]
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 675,
+      "file:checksum": "1220535d334b8d0ee12251ab18bd0e35577ba9452503a04c81b20545b872ad1a4f17",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "provenance": {
+      "href": "./provenance.json",
+      "type": "application/json",
+      "title": "Source provenance and change-detection record",
+      "file:size": 541,
+      "file:checksum": "122072aef5af6a8eef2b88e76148bea0ae4b31f9233b2956131f86e41cb6e53009f1",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 6596,
+      "file:checksum": "12207f426543d160c614b9cfe2672786fee9627f6e38e98ed310cf8dade4c146f77c",
+      "roles": [
+        "documentation"
+      ]
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2598,
+      "file:checksum": "1220a50c49923bbbda7949552a1a114e51a07a79e3b7ccec10d920d04cefe49ced48"
+    }
+  }
+}

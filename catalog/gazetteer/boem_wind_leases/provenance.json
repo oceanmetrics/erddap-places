@@ -1,0 +1,23 @@
+{
+  "slug": "boem_wind_leases",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:34:48Z",
+  "record_count": 52,
+  "sources": [
+    {
+      "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Lease_Boundaries__BOEM_/FeatureServer/8",
+      "source_item_id": "709831444a234968966667d84bcc0357",
+      "component": null,
+      "data_last_edit": "2025-03-04T19:31:41Z",
+      "retrieved": "2026-10-08T13:34:48Z",
+      "record_count": 52,
+      "checksum": "530364bc2e73de9fdbca235cf4948739bf5bac8f02e59a441d09c64f5296b13b",
+      "item_title": "Offshore Wind Lease Outlines",
+      "item_owner": "BOEM_GeoSEAS",
+      "item_modified": "2026-04-03T14:06:34Z",
+      "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+      "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+    }
+  ],
+  "dropped": []
+}

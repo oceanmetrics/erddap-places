@@ -1,0 +1,39 @@
+{
+  "slug": "boem_wind_planning_rescinded",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:35:04Z",
+  "record_count": 3325,
+  "sources": [
+    {
+      "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Area_Boundaries__BOEM_/FeatureServer/0",
+      "source_item_id": "f4bafa57366c49ffb84db33fa52c134c",
+      "component": "outline",
+      "data_last_edit": "2025-02-20T16:17:31Z",
+      "retrieved": "2026-10-08T13:35:00Z",
+      "record_count": 19,
+      "checksum": "bc0623cee11e64bbc6ac4143265a175d8442b02d825cc0df517c084206ee7b33",
+      "item_title": "Offshore Wind Planning Area Outlines (Rescinded July 30, 2025)",
+      "item_owner": "BOEM_GeoSEAS",
+      "item_modified": "2026-04-03T14:05:12Z",
+      "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+      "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+    },
+    {
+      "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Areas__BOEM_/FeatureServer/7",
+      "source_item_id": "ad4e83ed78d24319b641ebbaf1f7298e",
+      "component": "block",
+      "data_last_edit": "2025-02-20T16:28:20Z",
+      "retrieved": "2026-10-08T13:35:04Z",
+      "record_count": 3307,
+      "checksum": "be6ec83f2884718ccfc1c04baa21f2fa220a19cea30eb7092f5995b973532e6f",
+      "item_title": "Offshore Wind Planning Areas (Rescinded July 30, 2025)",
+      "item_owner": "BOEM_GeoSEAS",
+      "item_modified": "2026-04-03T14:05:47Z",
+      "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+      "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+    }
+  ],
+  "dropped": [
+    "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Planning_Area_Boundaries__BOEM_/FeatureServer/0: dropped feature with no polygon (attributes: {'OBJECTID': 2068})"
+  ]
+}

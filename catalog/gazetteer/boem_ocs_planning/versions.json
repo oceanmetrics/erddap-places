@@ -1,0 +1,53 @@
+{
+  "spec_version": "1.0.0",
+  "current_version": "1.0.0",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "created": "2026-10-08T14:58:54.308466Z",
+      "breaking": false,
+      "assets": {
+        "provenance.json": {
+          "sha256": "3c943b2a7898bcf9349e5af3eed7b775f7d1156050cb32ea68a13be12834a131",
+          "size_bytes": 1079,
+          "href": "boem_ocs_planning/provenance.json",
+          "mtime": 1791471532.2272
+        },
+        "places.parquet": {
+          "sha256": "d5f0be81756510e29b9040626d04ae77b712b03d172d9fbd11377e3c36fd5dcc",
+          "size_bytes": 13134311,
+          "href": "boem_ocs_planning/places.parquet",
+          "source_mtime": 1791471532.2349405,
+          "mtime": 1791471532.2349405,
+          "feature_count": 27,
+          "schema_fingerprint": "2c4c1b7351d73800"
+        },
+        "README.md": {
+          "sha256": "d057618a5cb6267e9f88c50a571a3f0c87f566a291b8fcf3581e5ecaaf100327",
+          "size_bytes": 4151,
+          "href": "boem_ocs_planning/README.md",
+          "mtime": 1791471532.235968
+        },
+        "places.pmtiles": {
+          "sha256": "0a92c6a9c64856f6740ebca707aa262242648e712226e8b8468e0922c9f22f95",
+          "size_bytes": 3260507,
+          "href": "boem_ocs_planning/places.pmtiles",
+          "mtime": 1791471532.2499907
+        },
+        "places.thumb.jpg": {
+          "sha256": "53ce1189adc7372c66d83d8cb398cbee606fb0f07da45899fc539f08bfa014fc",
+          "size_bytes": 2992,
+          "href": "boem_ocs_planning/places.thumb.jpg",
+          "mtime": 1791471535.2142782
+        }
+      },
+      "changes": [
+        "provenance.json",
+        "places.parquet",
+        "README.md",
+        "places.pmtiles",
+        "places.thumb.jpg"
+      ]
+    }
+  ]
+}

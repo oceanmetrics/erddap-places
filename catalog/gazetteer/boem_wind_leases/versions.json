@@ -1,0 +1,53 @@
+{
+  "spec_version": "1.0.0",
+  "current_version": "1.0.0",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "created": "2026-10-08T14:58:54.296318Z",
+      "breaking": false,
+      "assets": {
+        "provenance.json": {
+          "sha256": "0e1ff62091a8bc3310dbfefba120b406ecfd5232374d209269a9203bcc431b77",
+          "size_bytes": 905,
+          "href": "boem_wind_leases/provenance.json",
+          "mtime": 1791471532.1997306
+        },
+        "places.parquet": {
+          "sha256": "784239e69642c71613bdb9a8520ac9eef8265711d37fcc0aa978b26e74d236b2",
+          "size_bytes": 2749681,
+          "href": "boem_wind_leases/places.parquet",
+          "source_mtime": 1791471532.2036548,
+          "mtime": 1791471532.2036548,
+          "feature_count": 52,
+          "schema_fingerprint": "db731181fb8b2246"
+        },
+        "README.md": {
+          "sha256": "684984704bb4d94c95a647181f31ee7004117f840c6657d417ee9f080f291afa",
+          "size_bytes": 6084,
+          "href": "boem_wind_leases/README.md",
+          "mtime": 1791471532.204078
+        },
+        "places.pmtiles": {
+          "sha256": "6a9f8d07922f029be6a1f41b02e18240c109cffc3a772dcd87a1115398042ec6",
+          "size_bytes": 5029340,
+          "href": "boem_wind_leases/places.pmtiles",
+          "mtime": 1791471532.2076056
+        },
+        "places.thumb.jpg": {
+          "sha256": "a7350f7148c547209d9cb8189c2abf41cc5ee1cefe3ae1837d018c8cc9b0f800",
+          "size_bytes": 2247,
+          "href": "boem_wind_leases/places.thumb.jpg",
+          "mtime": 1791471535.4592097
+        }
+      },
+      "changes": [
+        "provenance.json",
+        "places.parquet",
+        "README.md",
+        "places.pmtiles",
+        "places.thumb.jpg"
+      ]
+    }
+  ]
+}

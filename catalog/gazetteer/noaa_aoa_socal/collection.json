@@ -1,0 +1,322 @@
+{
+  "type": "Collection",
+  "id": "noaa_aoa_socal",
+  "stac_version": "1.1.0",
+  "description": "The ten Aquaculture Opportunity Areas (AOAs) NOAA identified in federal waters off Southern California (decision signed 2025-09-10, identified 2025-09-19) in two study areas (North, Central North). Source is the NOAA Fisheries shapefile (NAD83(2011) / California Albers), reprojected to EPSG:4326. `AOA` is the area code (e.g. N1-A, CN1-B). Built by catalog/build_erin_layers.py from 1 source layer(s).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "noaa_aoa_socal"
+      ]
+    },
+    {
+      "rel": "license",
+      "href": "https://www.usa.gov/publicdomain/label/1.0/",
+      "type": "text/html",
+      "title": "U.S. federal government work (NOAA Fisheries). The download page states no terms; treated as public domain under 17 U.S.C. 105. Credit NOAA and do not imply endorsement."
+    },
+    {
+      "rel": "via",
+      "href": "https://www.fisheries.noaa.gov/west-coast/aquaculture/southern-california-aquaculture-opportunity-areas",
+      "type": "text/html",
+      "title": "Upstream publisher page"
+    },
+    {
+      "rel": "via",
+      "href": "https://www.fisheries.noaa.gov/s3//2025-09/aoa-socal.zip",
+      "type": "text/html",
+      "title": "Source layer"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 10,
+  "table:row_count": 10,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed, unique id (e.g. BOEM:OCS-P 0561, BOEM:PA:SOC, AOA:N1-A)"
+    },
+    {
+      "name": "authority",
+      "type": "string",
+      "description": "organisation that publishes the boundary (BOEM, AOA = NOAA Aquaculture Opportunity Areas)"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "description": "the source layer's own identifier for the feature (lease number, planning-area code, OBJECTID, AOA code)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable name"
+    },
+    {
+      "name": "place_type",
+      "type": "string",
+      "description": "kind of place: lease, planning_area or aoa"
+    },
+    {
+      "name": "geom_type",
+      "type": "string",
+      "description": "geometry type after normalisation (MultiPolygon)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "lifecycle status (e.g. active, cancelled, relinquished, settlement_pending, rescinded, draft_proposed, identified)"
+    },
+    {
+      "name": "status_source",
+      "type": "string",
+      "description": "URL that documents the status"
+    },
+    {
+      "name": "status_date",
+      "type": "string",
+      "description": "ISO date (or year) the status took effect or was last confirmed; may be empty"
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "description": "the service endpoint or download the boundary was fetched from"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date of the source's last data edit (retrieval date when the source serves none)"
+    },
+    {
+      "name": "retrieved",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "UTC time the boundary was fetched"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "description": "collection release version this row was built for"
+    },
+    {
+      "name": "license",
+      "type": "string",
+      "description": "SPDX identifier of the licence (CC-PDDC = public-domain U.S. government work)"
+    },
+    {
+      "name": "attribution",
+      "type": "string",
+      "description": "credit line to show with the data"
+    },
+    {
+      "name": "Shape_Leng",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape_Leng)"
+    },
+    {
+      "name": "Shape_Area",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape_Area)"
+    },
+    {
+      "name": "StudyArea",
+      "type": "string",
+      "description": "native attribute of the source layer (StudyArea)"
+    },
+    {
+      "name": "AOA",
+      "type": "string",
+      "description": "native attribute of the source layer (AOA)"
+    },
+    {
+      "name": "Acres",
+      "type": "int64",
+      "description": "native attribute of the source layer (Acres)"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column (xmin, ymin, xmax, ymax)"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "updated": "2026-10-08T14:58:54Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 8,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -118.828125,
+    33.95995,
+    8
+  ],
+  "pmtiles:layers": [
+    "noaa_aoa_socal"
+  ],
+  "gazetteer:authority": "AOA",
+  "gazetteer:place_type": "aoa",
+  "gazetteer:cadence": "monthly",
+  "gazetteer:attribution": "NOAA Fisheries, West Coast Region, Southern California Aquaculture Opportunity Areas (2025). Public domain. Processed by Ocean Metrics.",
+  "gazetteer:provenance": {
+    "slug": "noaa_aoa_socal",
+    "version": "1.0.0",
+    "built": "2026-10-08T13:35:07Z",
+    "record_count": 10,
+    "sources": [
+      {
+        "source_url": "https://www.fisheries.noaa.gov/s3//2025-09/aoa-socal.zip",
+        "source_item_id": "",
+        "component": null,
+        "data_last_edit": "2025-08-19T00:00:00Z",
+        "retrieved": "2026-10-08T13:35:07Z",
+        "record_count": 10,
+        "checksum": "a47945d257a273e29b4cc48eba023f35d4ca6e6b11396eec09e2e1e7ebca822f",
+        "http": {
+          "etag": "\"909f3a43a222b9b7db23dc0c028de256\"",
+          "last_modified": "Wed, 17 Sep 2025 16:46:35 GMT",
+          "content_length": 79309380
+        },
+        "zip_bytes": 79309380
+      }
+    ],
+    "dropped": []
+  },
+  "title": "NOAA Southern California Aquaculture Opportunity Areas",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -119.596764,
+          33.959949726664256,
+          -118.55830066070192,
+          34.288238131953925
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-PDDC",
+  "providers": [
+    {
+      "name": "NOAA Fisheries West Coast Region",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.fisheries.noaa.gov/west-coast/aquaculture/southern-california-aquaculture-opportunity-areas"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 24262,
+      "file:checksum": "12205ec215017f85a45aa80895af9366c704cac1d21793b9d0bac3929cbb13b44158",
+      "proj:code": "EPSG:4326",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "noaa_aoa_socal (vector tiles)",
+      "file:size": 4995,
+      "file:checksum": "1220a3939bed5f24981f7989bfd71b4958a6455b31fd2019a557c4a5b321d5cbe40f",
+      "roles": [
+        "visual"
+      ]
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 642,
+      "file:checksum": "122036308fff3ffd030b445a698876813a38fcebc6749e9e4ad945b74777d49f08e7",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "provenance": {
+      "href": "./provenance.json",
+      "type": "application/json",
+      "title": "Source provenance and change-detection record",
+      "file:size": 697,
+      "file:checksum": "1220c17cd50cdb854773699377e54b5d782a4e0d61793877d7793ed2bafb5db90644",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 4123,
+      "file:checksum": "122087c98fd65dab25630b609b2c77570f38d104d77754b4491018f41ebba6aaa184",
+      "roles": [
+        "documentation"
+      ]
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2572,
+      "file:checksum": "1220837d0efa08d5bd50fc26062c4725adf96bc1d79c26bff07a0306357bcef4f271"
+    }
+  }
+}

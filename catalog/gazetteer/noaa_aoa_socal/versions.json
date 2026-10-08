@@ -1,0 +1,53 @@
+{
+  "spec_version": "1.0.0",
+  "current_version": "1.0.0",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "created": "2026-10-08T14:58:54.326126Z",
+      "breaking": false,
+      "assets": {
+        "provenance.json": {
+          "sha256": "c17cd50cdb854773699377e54b5d782a4e0d61793877d7793ed2bafb5db90644",
+          "size_bytes": 697,
+          "href": "noaa_aoa_socal/provenance.json",
+          "mtime": 1791471532.2883458
+        },
+        "places.parquet": {
+          "sha256": "5ec215017f85a45aa80895af9366c704cac1d21793b9d0bac3929cbb13b44158",
+          "size_bytes": 24262,
+          "href": "noaa_aoa_socal/places.parquet",
+          "source_mtime": 1791471532.2886448,
+          "mtime": 1791471532.2886448,
+          "feature_count": 10,
+          "schema_fingerprint": "4b27c2af2927fdf7"
+        },
+        "README.md": {
+          "sha256": "87c98fd65dab25630b609b2c77570f38d104d77754b4491018f41ebba6aaa184",
+          "size_bytes": 4123,
+          "href": "noaa_aoa_socal/README.md",
+          "mtime": 1791471532.2888644
+        },
+        "places.pmtiles": {
+          "sha256": "a3939bed5f24981f7989bfd71b4958a6455b31fd2019a557c4a5b321d5cbe40f",
+          "size_bytes": 4995,
+          "href": "noaa_aoa_socal/places.pmtiles",
+          "mtime": 1791471532.2894192
+        },
+        "places.thumb.jpg": {
+          "sha256": "837d0efa08d5bd50fc26062c4725adf96bc1d79c26bff07a0306357bcef4f271",
+          "size_bytes": 2572,
+          "href": "noaa_aoa_socal/places.thumb.jpg",
+          "mtime": 1791471535.6870112
+        }
+      },
+      "changes": [
+        "provenance.json",
+        "places.parquet",
+        "README.md",
+        "places.pmtiles",
+        "places.thumb.jpg"
+      ]
+    }
+  ]
+}

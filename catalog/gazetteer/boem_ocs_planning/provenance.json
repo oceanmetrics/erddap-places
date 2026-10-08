@@ -1,0 +1,24 @@
+{
+  "slug": "boem_ocs_planning",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:33:34Z",
+  "record_count": 27,
+  "sources": [
+    {
+      "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/OCS_Planning_Area_Polygons/FeatureServer/5",
+      "source_item_id": "49604c94c8244f5fb42d6b021446b0d6",
+      "component": null,
+      "data_last_edit": "2025-04-10T16:51:02Z",
+      "retrieved": "2026-10-08T13:33:34Z",
+      "record_count": 27,
+      "checksum": "754e2e4f10089ff09e0ec798f630374d41b818a346b603a2d3264f897855d498",
+      "item_title": "OCS Planning Area Polygons",
+      "item_owner": "BOEM_GeoSEAS",
+      "item_modified": "2026-04-03T15:20:00Z",
+      "source_license": "<p>https://www.usa.gov/publicdomain/label/1.0/</p>",
+      "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)",
+      "copyright_text": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)"
+    }
+  ],
+  "dropped": []
+}

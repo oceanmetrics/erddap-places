@@ -1,0 +1,24 @@
+{
+  "slug": "boem_program_11_draft",
+  "version": "1.0.0",
+  "built": "2026-10-08T13:34:40Z",
+  "record_count": 20,
+  "sources": [
+    {
+      "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/11th_National_Draft_Proposed_Program_Areas/FeatureServer/16",
+      "source_item_id": "ed65f4351e494ff3a3c5589bb1960bae",
+      "component": null,
+      "data_last_edit": "2025-11-03T18:15:16Z",
+      "retrieved": "2026-10-08T13:34:40Z",
+      "record_count": 20,
+      "checksum": "5692afb6da159d5af5d90e9526211d721c5e758391b820ccdc241334c7c4015b",
+      "item_title": "11th National Draft Proposed Program Areas",
+      "item_owner": "BOEM_GeoSEAS",
+      "item_modified": "2025-11-03T18:15:20Z",
+      "source_license": "<div style='text-align:Left;'><div><div><p><span><span>https://www.usa.gov/publicdomain/label/1.0/</span></span></p></div></div></div>",
+      "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)",
+      "copyright_text": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)"
+    }
+  ],
+  "dropped": []
+}

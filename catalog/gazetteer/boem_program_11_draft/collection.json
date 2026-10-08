@@ -1,0 +1,349 @@
+{
+  "type": "Collection",
+  "id": "boem_program_11_draft",
+  "stac_version": "1.1.0",
+  "description": "The 20 program areas in the Draft Proposed Program of the 11th National OCS Oil and Gas Leasing Program (November 2025), including the Northern, Central and Southern California Program Areas. A draft stage only: every row is `status` = draft_proposed. Built by catalog/build_erin_layers.py from 1 source layer(s).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "boem_program_11_draft"
+      ]
+    },
+    {
+      "rel": "license",
+      "href": "https://www.usa.gov/publicdomain/label/1.0/",
+      "type": "text/html",
+      "title": "U.S. federal government work (BOEM), public domain; the AGOL item carries the usa.gov public-domain label."
+    },
+    {
+      "rel": "via",
+      "href": "https://www.boem.gov/oil-gas-energy/national-ocs-program",
+      "type": "text/html",
+      "title": "Upstream publisher page"
+    },
+    {
+      "rel": "via",
+      "href": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/11th_National_Draft_Proposed_Program_Areas/FeatureServer/16",
+      "type": "text/html",
+      "title": "Source layer"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 20,
+  "table:row_count": 20,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed, unique id (e.g. BOEM:OCS-P 0561, BOEM:PA:SOC, AOA:N1-A)"
+    },
+    {
+      "name": "authority",
+      "type": "string",
+      "description": "organisation that publishes the boundary (BOEM, AOA = NOAA Aquaculture Opportunity Areas)"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "description": "the source layer's own identifier for the feature (lease number, planning-area code, OBJECTID, AOA code)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable name"
+    },
+    {
+      "name": "place_type",
+      "type": "string",
+      "description": "kind of place: lease, planning_area or aoa"
+    },
+    {
+      "name": "geom_type",
+      "type": "string",
+      "description": "geometry type after normalisation (MultiPolygon)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "lifecycle status (e.g. active, cancelled, relinquished, settlement_pending, rescinded, draft_proposed, identified)"
+    },
+    {
+      "name": "status_source",
+      "type": "string",
+      "description": "URL that documents the status"
+    },
+    {
+      "name": "status_date",
+      "type": "string",
+      "description": "ISO date (or year) the status took effect or was last confirmed; may be empty"
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "description": "the service endpoint or download the boundary was fetched from"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date of the source's last data edit (retrieval date when the source serves none)"
+    },
+    {
+      "name": "retrieved",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "UTC time the boundary was fetched"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "description": "collection release version this row was built for"
+    },
+    {
+      "name": "license",
+      "type": "string",
+      "description": "SPDX identifier of the licence (CC-PDDC = public-domain U.S. government work)"
+    },
+    {
+      "name": "attribution",
+      "type": "string",
+      "description": "credit line to show with the data"
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int64",
+      "description": "native attribute of the source layer (OBJECTID)"
+    },
+    {
+      "name": "NAME_src",
+      "type": "string",
+      "description": "native attribute of the source layer (NAME_src)"
+    },
+    {
+      "name": "PROGRAM_DESIG",
+      "type": "string",
+      "description": "native attribute of the source layer (PROGRAM_DESIG)"
+    },
+    {
+      "name": "BOEM_OCS_REGION",
+      "type": "string",
+      "description": "native attribute of the source layer (BOEM_OCS_REGION)"
+    },
+    {
+      "name": "PLANNING_AREA",
+      "type": "string",
+      "description": "native attribute of the source layer (PLANNING_AREA)"
+    },
+    {
+      "name": "SOURCE",
+      "type": "string",
+      "description": "native attribute of the source layer (SOURCE)"
+    },
+    {
+      "name": "Label",
+      "type": "string",
+      "description": "native attribute of the source layer (Label)"
+    },
+    {
+      "name": "Shape__Area",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Area)"
+    },
+    {
+      "name": "Shape__Length",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Length)"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column (xmin, ymin, xmax, ymax)"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "updated": "2026-10-08T14:58:54Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 10,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -133.417969,
+    55.078241,
+    10
+  ],
+  "pmtiles:layers": [
+    "boem_program_11_draft"
+  ],
+  "gazetteer:authority": "BOEM",
+  "gazetteer:place_type": "planning_area",
+  "gazetteer:cadence": "weekly",
+  "gazetteer:attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+  "gazetteer:provenance": {
+    "slug": "boem_program_11_draft",
+    "version": "1.0.0",
+    "built": "2026-10-08T13:34:40Z",
+    "record_count": 20,
+    "sources": [
+      {
+        "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/11th_National_Draft_Proposed_Program_Areas/FeatureServer/16",
+        "source_item_id": "ed65f4351e494ff3a3c5589bb1960bae",
+        "component": null,
+        "data_last_edit": "2025-11-03T18:15:16Z",
+        "retrieved": "2026-10-08T13:34:40Z",
+        "record_count": 20,
+        "checksum": "5692afb6da159d5af5d90e9526211d721c5e758391b820ccdc241334c7c4015b",
+        "item_title": "11th National Draft Proposed Program Areas",
+        "item_owner": "BOEM_GeoSEAS",
+        "item_modified": "2025-11-03T18:15:20Z",
+        "source_license": "<div style='text-align:Left;'><div><div><p><span><span>https://www.usa.gov/publicdomain/label/1.0/</span></span></p></div></div></div>",
+        "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)",
+        "copyright_text": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD)"
+      }
+    ],
+    "dropped": []
+  },
+  "title": "BOEM 11th National OCS Program, Draft Proposed Program areas",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          24.2456,
+          180.0,
+          82.477380102
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-PDDC",
+  "providers": [
+    {
+      "name": "Bureau of Ocean Energy Management (BOEM)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.boem.gov/oil-gas-energy"
+    },
+    {
+      "name": "NOAA Office for Coastal Management (MarineCadastre.gov)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://hub.marinecadastre.gov"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 6578523,
+      "file:checksum": "12209e523db18f15cf2deb8014c77b24fe710e5a9a402fffabed374a7ff39959168c",
+      "proj:code": "EPSG:4326",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "boem_program_11_draft (vector tiles)",
+      "file:size": 1384000,
+      "file:checksum": "122071d714a17e491717e6c0e9ceb068dd1065e55c3f6823d838cea8fc992454a21e",
+      "roles": [
+        "visual"
+      ]
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 671,
+      "file:checksum": "12200bc79867dd405174895cc174148a00393925f49ee081d8e844d9d486bd97e18f",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "provenance": {
+      "href": "./provenance.json",
+      "type": "application/json",
+      "title": "Source provenance and change-detection record",
+      "file:size": 1200,
+      "file:checksum": "1220568cd9ef40d923e18a382cca43850d5df2c2e676ebe5c0f0c29e0d1622ffe956",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 4481,
+      "file:checksum": "12204c4710e2011be486e2a0d93994c649a98d09c6d0de5a8a7082cee622c05e97c7",
+      "roles": [
+        "documentation"
+      ]
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2762,
+      "file:checksum": "122036d15d6877ef797782696d460c0cfdaf43c4827c1063bbc598c787f3ab497f21"
+    }
+  }
+}

@@ -1,0 +1,408 @@
+{
+  "type": "Collection",
+  "id": "boem_wind_leases",
+  "stac_version": "1.1.0",
+  "description": "Outlines of the offshore wind energy leases and grid/export easements issued by the Bureau of Ocean Energy Management (BOEM) on the U.S. Outer Continental Shelf (52 polygons, 5 of them off California). The layer itself carries no status field and still lists the five California leases (OCS-P 0561-0565) after BOEM's 2026 cancellations and relinquishment, so `status`, `status_source` and `status_date` come from a hand-maintained overlay (catalog/sources/boem/wind_lease_status.csv, from BOEM's California page) joined on the lease number. Every other lease is `active` as of the layer's last edit. Built by catalog/build_erin_layers.py from 1 source layer(s).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Ocean Metrics gazetteer"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Human-readable documentation"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "pmtiles:layers": [
+        "boem_wind_leases"
+      ]
+    },
+    {
+      "rel": "license",
+      "href": "https://www.usa.gov/publicdomain/label/1.0/",
+      "type": "text/html",
+      "title": "U.S. federal government work (BOEM), public domain; the AGOL item carries the usa.gov public-domain label."
+    },
+    {
+      "rel": "via",
+      "href": "https://www.boem.gov/renewable-energy/state-activities/california",
+      "type": "text/html",
+      "title": "Upstream publisher page"
+    },
+    {
+      "rel": "via",
+      "href": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Lease_Boundaries__BOEM_/FeatureServer/8",
+      "type": "text/html",
+      "title": "Source layer"
+    }
+  ],
+  "stac_extensions": [
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
+  ],
+  "geoparquet:geometry_type": "MultiPolygon",
+  "geoparquet:feature_count": 52,
+  "table:row_count": 52,
+  "table:primary_geometry": "geometry",
+  "table:columns": [
+    {
+      "name": "place_id",
+      "type": "string",
+      "description": "prefixed, unique id (e.g. BOEM:OCS-P 0561, BOEM:PA:SOC, AOA:N1-A)"
+    },
+    {
+      "name": "authority",
+      "type": "string",
+      "description": "organisation that publishes the boundary (BOEM, AOA = NOAA Aquaculture Opportunity Areas)"
+    },
+    {
+      "name": "source_id",
+      "type": "string",
+      "description": "the source layer's own identifier for the feature (lease number, planning-area code, OBJECTID, AOA code)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "human-readable name"
+    },
+    {
+      "name": "place_type",
+      "type": "string",
+      "description": "kind of place: lease, planning_area or aoa"
+    },
+    {
+      "name": "geom_type",
+      "type": "string",
+      "description": "geometry type after normalisation (MultiPolygon)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "lifecycle status (e.g. active, cancelled, relinquished, settlement_pending, rescinded, draft_proposed, identified)"
+    },
+    {
+      "name": "status_source",
+      "type": "string",
+      "description": "URL that documents the status"
+    },
+    {
+      "name": "status_date",
+      "type": "string",
+      "description": "ISO date (or year) the status took effect or was last confirmed; may be empty"
+    },
+    {
+      "name": "source_url",
+      "type": "string",
+      "description": "the service endpoint or download the boundary was fetched from"
+    },
+    {
+      "name": "source_date",
+      "type": "date32[day]",
+      "description": "date of the source's last data edit (retrieval date when the source serves none)"
+    },
+    {
+      "name": "retrieved",
+      "type": "timestamp[ms, tz=UTC]",
+      "description": "UTC time the boundary was fetched"
+    },
+    {
+      "name": "version",
+      "type": "string",
+      "description": "collection release version this row was built for"
+    },
+    {
+      "name": "license",
+      "type": "string",
+      "description": "SPDX identifier of the licence (CC-PDDC = public-domain U.S. government work)"
+    },
+    {
+      "name": "attribution",
+      "type": "string",
+      "description": "credit line to show with the data"
+    },
+    {
+      "name": "OBJECTID",
+      "type": "int64",
+      "description": "native attribute of the source layer (OBJECTID)"
+    },
+    {
+      "name": "LEASE_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_NUMBER)"
+    },
+    {
+      "name": "LEASE_DOCUMENT1",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_DOCUMENT1)"
+    },
+    {
+      "name": "LEASE_DOCUMENT2",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_DOCUMENT2)"
+    },
+    {
+      "name": "LEASE_TYPE",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_TYPE)"
+    },
+    {
+      "name": "RESOURCE",
+      "type": "string",
+      "description": "native attribute of the source layer (RESOURCE)"
+    },
+    {
+      "name": "COMPANY",
+      "type": "string",
+      "description": "native attribute of the source layer (COMPANY)"
+    },
+    {
+      "name": "LEASE_NUMBER_COMPANY",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_NUMBER_COMPANY)"
+    },
+    {
+      "name": "LEASE_DATE",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_DATE)"
+    },
+    {
+      "name": "LEASE_TERM",
+      "type": "string",
+      "description": "native attribute of the source layer (LEASE_TERM)"
+    },
+    {
+      "name": "PROJECT_EASEMENT",
+      "type": "string",
+      "description": "native attribute of the source layer (PROJECT_EASEMENT)"
+    },
+    {
+      "name": "ACRES",
+      "type": "int64",
+      "description": "native attribute of the source layer (ACRES)"
+    },
+    {
+      "name": "STATE",
+      "type": "string",
+      "description": "native attribute of the source layer (STATE)"
+    },
+    {
+      "name": "PROTRACTION_NUMBER",
+      "type": "string",
+      "description": "native attribute of the source layer (PROTRACTION_NUMBER)"
+    },
+    {
+      "name": "PROTRACTION_NAME",
+      "type": "string",
+      "description": "native attribute of the source layer (PROTRACTION_NAME)"
+    },
+    {
+      "name": "PROJECT_NAME_1",
+      "type": "string",
+      "description": "native attribute of the source layer (PROJECT_NAME_1)"
+    },
+    {
+      "name": "PROJECT_NAME_2",
+      "type": "string",
+      "description": "native attribute of the source layer (PROJECT_NAME_2)"
+    },
+    {
+      "name": "PROJECT_NAME_3",
+      "type": "string",
+      "description": "native attribute of the source layer (PROJECT_NAME_3)"
+    },
+    {
+      "name": "FAST41",
+      "type": "string",
+      "description": "native attribute of the source layer (FAST41)"
+    },
+    {
+      "name": "Shape__Area",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Area)"
+    },
+    {
+      "name": "Shape__Length",
+      "type": "double",
+      "description": "native attribute of the source layer (Shape__Length)"
+    },
+    {
+      "name": "bbox",
+      "type": "struct<xmin: double, ymin: double, xmax: double, ymax: double>",
+      "description": "GeoParquet bbox-covering column (xmin, ymin, xmax, ymax)"
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
+    }
+  ],
+  "updated": "2026-10-08T14:58:54Z",
+  "pmtiles:min_zoom": 0,
+  "pmtiles:max_zoom": 16,
+  "pmtiles:tile_type": "mvt",
+  "pmtiles:center": [
+    -72.688293,
+    40.703546,
+    16
+  ],
+  "pmtiles:layers": [
+    "boem_wind_leases"
+  ],
+  "gazetteer:authority": "BOEM",
+  "gazetteer:place_type": "lease",
+  "gazetteer:cadence": "weekly",
+  "gazetteer:attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+  "gazetteer:provenance": {
+    "slug": "boem_wind_leases",
+    "version": "1.0.0",
+    "built": "2026-10-08T13:34:48Z",
+    "record_count": 52,
+    "sources": [
+      {
+        "source_url": "https://services7.arcgis.com/G5Ma95RzqJRPKsWL/arcgis/rest/services/Wind_Lease_Boundaries__BOEM_/FeatureServer/8",
+        "source_item_id": "709831444a234968966667d84bcc0357",
+        "component": null,
+        "data_last_edit": "2025-03-04T19:31:41Z",
+        "retrieved": "2026-10-08T13:34:48Z",
+        "record_count": 52,
+        "checksum": "530364bc2e73de9fdbca235cf4948739bf5bac8f02e59a441d09c64f5296b13b",
+        "item_title": "Offshore Wind Lease Outlines",
+        "item_owner": "BOEM_GeoSEAS",
+        "item_modified": "2026-04-03T14:06:34Z",
+        "source_license": "https://www.usa.gov/publicdomain/label/1.0/",
+        "source_attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP)"
+      }
+    ],
+    "dropped": []
+  },
+  "title": "BOEM offshore wind lease outlines",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -124.811561,
+          29.028114,
+          -68.572706807,
+          43.341308
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          null,
+          null
+        ]
+      ]
+    }
+  },
+  "license": "CC-PDDC",
+  "providers": [
+    {
+      "name": "Bureau of Ocean Energy Management (BOEM)",
+      "roles": [
+        "producer",
+        "licensor"
+      ],
+      "url": "https://www.boem.gov/renewable-energy"
+    },
+    {
+      "name": "NOAA Office for Coastal Management (MarineCadastre.gov)",
+      "roles": [
+        "processor"
+      ],
+      "url": "https://hub.marinecadastre.gov"
+    },
+    {
+      "name": "Ocean Metrics LLC",
+      "roles": [
+        "processor",
+        "host"
+      ],
+      "url": "https://oceanmetrics.io"
+    }
+  ],
+  "assets": {
+    "places": {
+      "href": "./places.parquet",
+      "type": "application/vnd.apache.parquet",
+      "file:size": 2749681,
+      "file:checksum": "1220784239e69642c71613bdb9a8520ac9eef8265711d37fcc0aa978b26e74d236b2",
+      "proj:code": "EPSG:4326",
+      "roles": [
+        "data"
+      ]
+    },
+    "places-tiles": {
+      "href": "./places.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "boem_wind_leases (vector tiles)",
+      "file:size": 5029340,
+      "file:checksum": "12206a9f8d07922f029be6a1f41b02e18240c109cffc3a772dcd87a1115398042ec6",
+      "roles": [
+        "visual"
+      ]
+    },
+    "styles/default": {
+      "href": "./styles/default.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Default",
+      "file:size": 651,
+      "file:checksum": "122079db7bca2e453ea26e0c4e62e2f97d6c19489d08202f3e76aefd26dc31162a92",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "provenance": {
+      "href": "./provenance.json",
+      "type": "application/json",
+      "title": "Source provenance and change-detection record",
+      "file:size": 905,
+      "file:checksum": "12200e1ff62091a8bc3310dbfefba120b406ecfd5232374d209269a9203bcc431b77",
+      "roles": [
+        "metadata"
+      ]
+    },
+    "documentation": {
+      "href": "./README.md",
+      "type": "text/markdown",
+      "file:size": 6084,
+      "file:checksum": "1220684984704bb4d94c95a647181f31ee7004117f840c6657d417ee9f080f291afa",
+      "roles": [
+        "documentation"
+      ]
+    },
+    "thumbnail": {
+      "href": "./places.thumb.jpg",
+      "type": "image/jpeg",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 2247,
+      "file:checksum": "1220a7350f7148c547209d9cb8189c2abf41cc5ee1cefe3ae1837d018c8cc9b0f800"
+    }
+  }
+}
