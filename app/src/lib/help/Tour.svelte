@@ -63,9 +63,13 @@
       card?.querySelector<HTMLButtonElement>(".tour-next")?.focus({ preventScroll: true });
     }, 50);
     const t2 = setTimeout(place, 400);
+    // the page keeps moving under a stop (the sentence wraps once the data are in, a pane unfolds):
+    // follow it
+    const t3 = setInterval(place, 500);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearInterval(t3);
     };
   });
 

@@ -29,6 +29,19 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   `src/lib/chrome.svelte.ts`.
 - `npm run size-budget` after a build (README "Size budget"); raise a budget only with a reason
   recorded there.
+- **Help, the tour and feedback stay in step with the layout** (README "Help, the tour and
+  feedback"). A control that moves or is renamed updates its tour stop (`TOUR_STOPS` in
+  `src/lib/help/tour.ts`: order, selectors, words) and the Keyboard list (`SHORTCUTS` in `keys.ts`).
+  A lens reaches the Shell only through the `LensApi` it registers (`src/lib/help/lensApi.ts`).
+  `?tour=` / `?modal=` are query switches, never hash keys. Screenshots open with `?tour=off`
+  (`docs/ui-assessment/shoot.mjs`). Feedback has no server: the GitHub issue URL (`issueUrl()`, under
+  7,500 characters), the clipboard and a PNG; never collect an email address.
+- **html-to-image stays lazy** (pinned 1.11.13 exactly). Only `src/lib/feedback/capture.ts` imports
+  it, and it and `FeedbackDialog.svelte` are reached only via `import()` in `Shell.svelte`
+  (`help.test.ts` and the size budget's `fontEmbedCSS` check enforce it).
+- A new ERDDAP collection in the catalog gets its Data sources row and citation from its STAC
+  (`providers`, `license`, a `license` link, a `cite-as` / `sci:doi` / doi.org `about` link); fix the
+  collection, not `sources.ts`.
   Mapping from the Shiny app and design notes: `docs/then-now.md`.
 
 ## Then-now data contract

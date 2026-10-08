@@ -1,6 +1,9 @@
 // screenshots for the UI assessment: node shoot.mjs <which>   which = ep | oh | shiny | ep-after
 //   ep-after: the MBON re-layout (U2) into after/, from EP_URL (default the live app; a local
 //   `npm run preview` works too: EP_URL=http://localhost:4179/ node shoot.mjs ep-after)
+//   Since Help, the tour and feedback (U4) every ep-after state opens with `?tour=off`, so no welcome
+//   card or tour lands in it; `welcome_*` is a first visit and `tour-stop-1_*` is `?tour=on`, each in
+//   both themes (`?theme=`) at the three widths. `node shoot.mjs ep-after welcome` shoots only those.
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 const which = process.argv[2];
@@ -69,9 +72,23 @@ const epAfter = async (p) => {
   const s = (await p.locator(".sentence-bar .mbon-sentence").innerText()).replace(/\s*▾\s*/g, " ").replace(/\s+/g, " ");
   return s + " || " + (await p.locator(".mbon-footer").innerText()).replace(/\n/g, " · ");
 };
+const epWelcome = async (p) => { await p.waitForSelector(".welcome", { timeout: 60000 }); return (await epAfter(p)) + " || welcome"; };
+const epTour = async (p) => {
+  await p.waitForSelector(".tour-card", { timeout: 60000 });
+  const n = await epAfter(p);
+  return n + " || " + (await p.locator(".tour-card h2").innerText());
+};
 if (which === "ep-after") {
-  const EPA = process.env.EP_URL ?? EP;
+  const EPB = process.env.EP_URL ?? EP;
+  const EPA = `${EPB}?tour=off`;
   const out = `${HOME}/Github/oceanmetrics/erddap-places/docs/ui-assessment/after`; mkdirSync(out, { recursive: true });
+  // the first visit: the welcome card, and the tour's first stop
+  for (const t of ["dark", "light"]) for (const vp of Object.keys(VP)) {
+    await shot({ url: `${EPB}?theme=${t}`, vp, theme: t, ready: epWelcome, file: `${out}/welcome_${t}_${vp}.png` });
+    await shot({ url: `${EPB}?theme=${t}&tour=on`, vp, theme: t, ready: epTour, file: `${out}/tour-stop-1_${t}_${vp}.png`,
+      after: async (p) => { await p.waitForTimeout(600); } });
+  }
+  if (process.argv[3] === "welcome") { await b.close(); process.exit(0); }
   const states = [
     ["stats_initial", EPA],
     ["stats_fknms-sst", `${EPA}#place=NMS:FKNMS&dataset=erddap/dhw_5km&variable=CRW_SST`],
