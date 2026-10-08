@@ -294,3 +294,20 @@ What changed against §4–§6:
   the place; the then-now rasters are still the box + 20 %, not masked on the map;
 - kept: every old link opens the same view (`mode=` is rewritten to `lens=`), one griddap Parquet
   per lobe (FKNMS 159 kB) and 6 range requests / 56 kB for a Then vs Now first view, all tests.
+
+## 8. Help, the tour and feedback (U4, 2026-10-08)
+
+Every state above now opens with `?tour=off`, so no welcome card or tour lands in it. Two new states,
+in both themes at the three widths (`shoot.mjs ep-after`; `shoot.mjs ep-after welcome` for these
+only): a first visit with the welcome card, and `?tour=on` at the tour's first stop.
+
+| | phone 390×844 | laptop 1280×800 | projector 1920×1080 |
+|---|---|---|---|
+| welcome, light | ![](ui-assessment/after/welcome_light_phone.png) | ![](ui-assessment/after/welcome_light_laptop.png) | ![](ui-assessment/after/welcome_light_projector.png) |
+| welcome, dark | ![](ui-assessment/after/welcome_dark_phone.png) | ![](ui-assessment/after/welcome_dark_laptop.png) | ![](ui-assessment/after/welcome_dark_projector.png) |
+| tour stop 1, light | ![](ui-assessment/after/tour-stop-1_light_phone.png) | ![](ui-assessment/after/tour-stop-1_light_laptop.png) | ![](ui-assessment/after/tour-stop-1_light_projector.png) |
+| tour stop 1, dark | ![](ui-assessment/after/tour-stop-1_dark_phone.png) | ![](ui-assessment/after/tour-stop-1_dark_laptop.png) | ![](ui-assessment/after/tour-stop-1_dark_projector.png) |
+
+*Send feedback* (the §7 exception) is now the header's Feedback dialog: a picture of the view with a
+mark-up, a prefilled GitHub issue, no email. The app is described in `app/README.md` ("Help, the tour
+and feedback").

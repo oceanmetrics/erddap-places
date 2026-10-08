@@ -24,8 +24,7 @@ else floats over it. `src/Shell.svelte` holds the frame and swaps the **lens** i
 chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-assessment/after/`.
 
 - **Header** (kit `Header`): MBON wordmark, *erddap-places*, "place statistics from ERDDAP, in your
-  browser", the lens word (*Statistics* · *Then vs Now*), Help ▾ (About, Data sources & attribution,
-  Keyboard; the guided tour and user guide are placeholders), Feedback, the theme toggle. The dark
+  browser", the lens word (*Statistics* · *Then vs Now*), Help ▾ (below), Feedback, the theme toggle. The dark
   theme switches the basemap to Esri World Dark Gray in place (`setBasemap()` flips two raster layers;
   no `setStyle`, so the place and cell layers stay).
 - **Title sentence** (kit `Sentence` + `Chip`), dataset → place → method → time. Statistics:
@@ -59,6 +58,7 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 - **Footer** (kit `Footer`), one line: built by Ocean Metrics · the data release ("NOAA Coral Reef
   Watch — Daily Global 5km SST + DHW · ERDDAP 2.29 · data through 6 Oct 2026") · "updating… <step>"
   or the timings ("30 rows · 159 kB · 2.3 s (mask 0.19 s)") · source.
+- **Help, the tour and feedback**: see the section below.
 - **Errors** are a dismissable `Notice` over the map; the old status box, "N days requested" line
   and meta line are gone (their content is in the footer and under Share → Reproduce).
 
@@ -72,11 +72,59 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
 | `place`, `variable`, `md`, `then`, `now`, `swipe`, `anom`, `pal`, `data`, `dataset` | Then vs Now | as before |
 | `show`, `hide` | both | comma lists of panes that differ from the default: `controls`, `time`, and `table` (Statistics) / `exceedance` (Then vs Now) |
 
+Two **query** switches sit before the hash and are never part of a view (a copied link drops them):
+`?tour=off` suppresses the welcome card and the tour (screenshots use it), `?tour=on` replays the tour,
+and `?modal=about|sources|keys` opens a Help modal (`?modal=sources` is the data sources page).
+`?theme=light|dark` is the kit's.
+
 **Compatibility**: `mode=then-now` (every Then vs Now link before 2026-10-08) still opens Then vs
 Now; `src/Shell.svelte` rewrites it to `lens=then-now` in place with `history.replaceState`
 (`migrateHash()` in `src/lib/view.ts`), and `mode=stats` / `lens=stats` are dropped. Every other key
 is kept, so an old link opens the same view. Switching lens carries the place over (a sanctuary into
 Then vs Now; CRW SST for that place back into Statistics) and pushes a history entry, so Back returns.
+
+### Help, the tour and feedback (U4, 2026-10-08)
+
+After calcofi.io/explore's "Help, the tour and feedback" and obis-hex's U4, so the two MBON apps
+behave alike. The logic is plain TypeScript under `src/lib/help/` and `src/lib/feedback/`, tested in
+`src/lib/help/help.test.ts`; the components only wire it. Each lens registers a `LensApi`
+(`src/lib/help/lensApi.ts`) with the Shell, so the tour and the keys can open its tabs and panes.
+
+- **Welcome card** ("Start here", `src/lib/help/Welcome.svelte`, words in `start.ts`): on a first
+  visit (localStorage `erddap-places-welcome`), and from Help ▾ → *Start here*. Two doors:
+  *Sea surface temperature in a sanctuary this month* (FKNMS × `dhw_5km` CRW_SST, the dataset's last 30
+  days) and *Then vs Now: this day against the 1985–2005 climatology* (FKNMS, today less a week, so
+  the archive has it). Three worked questions: the Seascapes classes of Monterey Bay; CMEMS
+  chlorophyll in Channel Islands over the whole record (Oct 2021 – Feb 2025, 41 months: a monthly grid
+  may now run its whole record, where a daily grid stays capped at 90 days); the Florida Keys anomaly
+  on 5 Aug 2023 with the exceedance open. Each is a real link; a click opens it in place.
+- **Tour** (`Tour.svelte`, stops in `tour.ts`; Help ▾ → *Take the tour*, the `?` key, `?tour=on`, or
+  the card's button): a ring and a card, no library; Back / Next / Done, ← → PageUp PageDown Home End
+  Esc, focus returns where it was, the ring only animates without `prefers-reduced-motion`, and the
+  tabs and panes go back as they were when it ends. Stops: the sentence → ① Place → ② Dataset &
+  variable → ③ Method (and the lens switch) → the legend line → the Time strip (brush) → the edge pill
+  → ④ Share → Help.
+- **Help ▾**: *Take the tour*, *Guide* (marinebon.org/tools/erddap-places/), *Start here*, *About*
+  (what the app is, how it computes, the gazetteer and the ERDDAP servers it reads, who built it, the
+  licence and version, and the view's citation), *Data sources and attribution* (one row per ERDDAP
+  collection in the catalog, built from the STAC: provider, server, citation, licence, DOI when the
+  collection links one; then the gazetteer, NOAA ONMS, MarineRegions, ProtectedSeas, the Then vs Now
+  rasters, the Esri basemaps and the software), *Keyboard*, *Register a product*, *Source code*.
+  The modals are native `<dialog>`s (`Modal.svelte`).
+- **Keys** (`keys.ts`): `?` tour, `t` theme, `1`–`4` the Controls tabs, `l` the other lens, `←` `→`
+  the day in Then vs Now, `Esc` closes. Never while typing, with a modifier, or on something that
+  owns its arrows (tabs, sliders, pane titles, the map, the Time strip).
+- **Feedback** (the header button; `src/lib/feedback/`, a lazy chunk): a note, a picture of the view
+  (html-to-image 1.11.13, pinned exactly as MarineSensitivity/atlas and obis-hex, with the MapLibre
+  canvases composited in, the swipe's clip kept) with a rectangle, arrow and text mark-up, and three
+  ways out, none through a server: *Open a GitHub issue* (title and body prefilled with the note, the
+  view URL, the sentence, the lens, the data line, the app version, the viewport and the theme; the
+  picture goes to the clipboard with a "paste it" hint; the URL stays under 7,500 characters by
+  cutting the note, never the details), *Copy report*, *Download PNG*. No email is asked for.
+  *Register a product* is the same dialog with "what did you build?".
+- **Cite this data** (④ Share, and About): the dataset's citation (producer, title, ERDDAP page,
+  access date, licence, DOI), the gazetteer's, and the app's with the view's link, with a copy
+  button (`cite.ts`). Then vs Now cites the CoralTemp rasters instead of an ERDDAP dataset.
 
 ### Size budget
 
@@ -89,6 +137,13 @@ the entry CSS and the lazy Then vs Now chunk, and sums the self-hosted fonts:
 | entry CSS, gzip | 10.6 KB | 16.5 KB | 20 KB |
 | Then vs Now chunk JS + CSS, gzip | 28.9 KB | 34.8 KB | 40 KB |
 | fonts (woff2, raw; a page fetches only the faces it uses) | 0 | 514 KB | 560 KB |
+
+Help, the tour and feedback (U4) added 8.2 KB to the entry JS (570.7 → 578.9 KB: the welcome card,
+the tour, the modals, the sources and the citations), 1.0 KB to the entry CSS (17.5 KB) and 0.2 KB to
+the Then vs Now chunk (35.0 KB); no budget was raised. The feedback dialog and html-to-image are their
+own lazy chunks (`FeedbackDialog-*`, `capture-*`: 9.3 KB gzip), fetched on the first Feedback click,
+with a line of their own (budget 15 KB); the script fails if html-to-image (its `fontEmbedCSS` option
+name) shows up in the entry.
 
 There was no budget before the re-layout; these are the first, set with ~8 % headroom over the
 measured sizes. The DuckDB engine (wasm + worker, ~15 MB gzip, fetched on first query) is listed by
@@ -144,7 +199,7 @@ npm run test     # vitest: WKB decode, gazetteer/lobes, gridMask counts, ERDDAP 
                  # (live PacIOOS/gazetteer tests skip when offline)
 npm run build    # → dist/ (base './', so it works from any GitHub Pages path)
 npm run check    # svelte-check + tsc
-npm run size-budget   # after build: entry JS / CSS / Then vs Now chunk / fonts against the budget
+npm run size-budget   # after build: entry JS / CSS / Then vs Now chunk / feedback chunks / fonts against the budget
 ```
 
 `ERDDAP_OFFLINE=1 npm run test` forces the live-network tests to skip.

@@ -1,9 +1,10 @@
 /// <reference types="vitest/config" />
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig, type Plugin } from 'vite'
-import { createReadStream, statSync } from 'node:fs'
+import { createReadStream, readFileSync, statSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { execSync } from 'node:child_process'
 
 // dev only: the then-now fixture (src/lib/thenNow/fixtures) served at /__then-now-fixture/ with Range
 // support, so `#mode=then-now&place=NMS:TEST&data=/__then-now-fixture/` runs offline. Vite's own
@@ -38,7 +39,14 @@ const thenNowFixture = (): Plugin => ({
 // `?url`, so Vite rewrites those URLs to the same base and they still resolve under the sub-path).
 // the duckdb-wasm bundles are self-hosted: src/lib/engine.ts imports them with `?url` so Vite copies
 // them beside the app; the dep optimizer must not touch the package (it ships its own worker + wasm).
+// the app's version (package.json) and commit, for the footer-free places that name a release: the
+// feedback report, the citation, About
+const PKG = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+let COMMIT = ''
+try { COMMIT = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() } catch { /* no git */ }
+
 export default defineConfig({
+  define       : { __APP_VERSION__: JSON.stringify(PKG.version), __APP_COMMIT__: JSON.stringify(COMMIT) },
   plugins      : [svelte(), thenNowFixture()],
   base         : process.env.VITE_BASE || './',
   publicDir    : 'static',

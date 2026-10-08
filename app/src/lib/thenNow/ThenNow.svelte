@@ -25,9 +25,16 @@
   import { seriesSql } from './series'
   import { BASELINES, decodeThenNow, encodeThenNow, isBaseline, parseRange, type ThenNowState } from './state'
   import SwipeMap, { type Img } from './SwipeMap.svelte'
+  import { citeText, thenNowCitation } from '../help/cite'
+  import { pageBase } from '../help/start'
+  import type { LensApi } from '../help/lensApi'
 
-  interface Props { setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void }
-  let { setLens }: Props = $props()
+  interface Props {
+    setLens?: (to: Lens, carry?: { place?: string; variable?: string; panes?: Panes }) => void
+    /** hands the Shell what Help, the tour and the shortcuts may ask of this lens */
+    register?: (api: LensApi) => void
+  }
+  let { setLens, register }: Props = $props()
 
   const RAW = typeof location === 'undefined' ? '' : location.hash
   const s = $state<ThenNowState>(decodeThenNow(RAW))
@@ -446,7 +453,7 @@
   // ── share ───────────────────────────────────────────────────────────────────
   let copied = $state('')
   let mapA: any = null, mapB: any = null
-  const link = $derived(typeof location === 'undefined' ? '' : location.href.split('#')[0] + viewHash)
+  const link = $derived(typeof location === 'undefined' ? '' : pageBase() + viewHash)
   async function copy(text: string, what: string) {
     copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
     setTimeout(() => { copied = '' }, 2500)
@@ -470,8 +477,11 @@
       download(blob, `${fileBase}.png`, 'image/png'); copied = ''
     } catch (e) { copied = `PNG failed: ${e instanceof Error ? e.message : String(e)}` }
   }
-  const cite = $derived(`NOAA Coral Reef Watch. CoralTemp daily global 5 km sea surface temperature (dhw_5km, ${s.variable}), ` +
-    `as daily rasters and day-of-year climatologies for ${place?.name ?? s.place}, Ocean Metrics gazetteer, ${root}, accessed ${new Date().toISOString().slice(0, 10)}.`)
+  // Cite this data: the CoralTemp rasters of this sanctuary, the gazetteer, this app with the view's link
+  const cite = $derived.by(() => {
+    const accessed = new Date().toISOString().slice(0, 10)
+    return citeText({ datasets: [], extra: [thenNowCitation(s.variable, place?.name ?? s.place, root, accessed)], accessed, url: link, appVersion: __APP_VERSION__ })
+  })
   const reproduce = $derived([
     `# erddap-places Then vs Now — ${place?.name ?? s.place} (${s.place}), ${s.variable}, ${s.md}: Then ${s.then} vs Now ${nowText}`,
     `# permalink: ${link}`,
@@ -481,6 +491,23 @@
     '', seriesSql({ src: 'series.parquet', then: thenRange, smooth }),
   ].join('\n'))
   const switchLens = () => setLens?.('stats', { place: s.place, variable: s.variable, panes })
+
+  // what Help, the tour and the shortcuts may ask of this lens (once: the Shell re-mounts a lens to change it)
+  // svelte-ignore state_referenced_locally
+  register?.({
+    ui   : () => ({ tab, controls: !controlsFolded, time: !timeFolded, side: !sideFolded }),
+    setUi: (u) => {
+      if (u.tab) tab = u.tab
+      if (u.controls !== undefined) controlsFolded = !u.controls
+      if (u.time !== undefined) timeFolded = !u.time
+      if (u.side !== undefined) sideFolded = !u.side
+    },
+    switchLens,
+    day     : (by) => { s.md = stepMd(s.md, by); mdLive = s.md },
+    sentence: () => titleText,
+    maps    : () => [mapA, mapB].filter(Boolean),
+    cite    : () => cite,
+  })
 </script>
 
 {#snippet placePicker(close?: () => void)}
@@ -541,7 +568,13 @@
       <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')}>Copy citation</Button>
       {#if copied}<span class="pane-note" role="status">{copied}</span>{/if}
     </div>
-    <details class="pane-details"><summary>Cite this data</summary><p class="pane-note">{cite}</p></details>
+    <details class="pane-details cite-this">
+      <summary>Cite this data</summary>
+      <div class="pane-col">
+        <pre class="pane-pre cite">{cite}</pre>
+        <Button variant="quiet" size="sm" onclick={() => copy(cite, 'citation')}>Copy citation</Button>
+      </div>
+    </details>
     <details class="pane-details">
       <summary>Reproduce: requests, SQL and timing</summary>
       <div class="pane-col">
@@ -633,7 +666,7 @@
       {#snippet footer()}{exceed ? `${exceed.valid} pixels · ` : ''}CoralTemp 5 km{busy ? ' · updating…' : ''}{/snippet}
     </Controls>
 
-    <Pane title="exceedance" id="tn-exceedance" anchor="top-right" offset={{ x: 0, y: 130 }} width={300}
+    <Pane title="exceedance" id="tn-exceedance" class="edge-pane" anchor="top-right" offset={{ x: 0, y: 130 }} width={300}
           bind:collapsed={sideFolded} pillLabel={s.anom && pct !== null && maskDone ? `Exceedance · ${Math.round(pct)} % > +1 ${unitLbl}` : 'Exceedance'}>
       <div class="pane-col">
         {#if exceed && pct !== null}

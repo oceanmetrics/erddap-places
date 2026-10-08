@@ -113,15 +113,34 @@ export function exceedanceLine(pct: number, threshold: number, unit: string, wha
   return `${Math.round(pct)} % of ${what} more than ${sign}${Math.abs(threshold)} ${unit} ${word}`.replace(/\s+/g, ' ').trim()
 }
 
+/** a collection's DOI as a URL: `cite-as`, then `sci:doi`, then an `about` link that is a doi.org URL. */
+export function datasetDoi(c: any): string {
+  const links: any[] = c?.links ?? []
+  const citeAs = links.find((l) => l?.rel === 'cite-as')?.href
+  if (citeAs) return String(citeAs)
+  if (c?.['sci:doi']) return `https://doi.org/${c['sci:doi']}`
+  const about = links.find((l) => l?.rel === 'about' && /^https?:\/\/(dx\.)?doi\.org\//.test(String(l?.href)))?.href
+  return about ? String(about) : ''
+}
+
+/** a collection's licence in words: the SPDX id, or for `other`/none the licence page when there is one. */
+export function datasetLicence(c: any): { text: string; href: string } {
+  const href = String((c?.links ?? []).find((l: any) => l?.rel === 'license')?.href ?? '')
+  const id = String(c?.license ?? '').trim()
+  if (id && id !== 'other' && id !== 'proprietary') return { text: id, href: href || `https://spdx.org/licenses/${id}.html` }
+  return { text: href ? `the producer's terms (${href})` : '', href }
+}
+
 /**
  * A citation for a dataset as the app used it: producer, title, the ERDDAP dataset page, the access
- * date, the licence, and the DOI or cite-as link when the collection has one.
+ * date, the licence, and the DOI when the collection has one (cite-as, sci:doi or a doi.org `about`).
  */
 export function citation(o: { collection: any; title: string; baseUrl: string; datasetId: string; protocol?: string }, accessed: string): string {
   const c = o.collection ?? {}
   const who = producer(c) || 'Unknown producer'
-  const doi = (c.links ?? []).find((l: any) => l?.rel === 'cite-as')?.href ?? (c['sci:doi'] ? `https://doi.org/${c['sci:doi']}` : '')
+  const doi = datasetDoi(c)
+  const lic = datasetLicence(c).text
   const page = `${String(o.baseUrl ?? '').replace(/\/$/, '')}/${o.protocol === 'tabledap' ? 'tabledap' : 'griddap'}/${o.datasetId}.html`
   return [`${who}. ${o.title} (ERDDAP dataset ${o.datasetId}).`, `${page}, accessed ${accessed}.`,
-          c.license ? `Licence: ${c.license}.` : '', doi ? `${doi}` : ''].filter(Boolean).join(' ')
+          lic ? `Licence: ${lic}.` : '', doi ? `${doi}` : ''].filter(Boolean).join(' ')
 }
