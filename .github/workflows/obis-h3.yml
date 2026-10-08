@@ -1,0 +1,125 @@
+# monthly refresh of the obis-h3 release that the obis-hex app reads:
+# sync OBIS open data -> build the H3 store -> export Parquet -> validate -> upload to
+# s3://oceanmetrics.io-public/obis-h3/<release>/ -> write obis-h3/latest.json last
+#
+# the work is data-raw/refresh_obis_h3.sh in marinebon/obisindicators, which is already checked out
+# on the host at /share/github/marinebon/obisindicators; this repo is not checked out (nothing here
+# is built). Runs on the self-hosted runner `msens` (see catalog/README.md "Where it runs"); the S3
+# upload uses the host's AWS profile (~ubuntu/.aws), the repository holds no AWS secrets (if
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are ever added they take precedence, as in stats.yml).
+# the OBIS sync, build and export take hours and ~110 GB of free disk: see data-raw/README.md
+name: obis-h3
+
+on:
+  schedule:
+    - cron: '17 3 1 * *'          # the 1st of each month, 03:17 UTC
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'release tag vYYYYMMDD (blank = the UTC date of the sync)'
+        required: false
+        default: ''
+      skip_sync:
+        description: 'skip the OBIS sync (reuse the snapshot on disk)'
+        type: boolean
+        required: false
+        default: false
+      skip_build:
+        description: 'skip the store build (reuse the newest obis_h3_global_*.duckdb)'
+        type: boolean
+        required: false
+        default: false
+      skip_export:
+        description: 'skip the Parquet export (reuse /share/data/obis-h3/<release>)'
+        type: boolean
+        required: false
+        default: false
+      skip_upload:
+        description: 'skip the S3 upload and latest.json'
+        type: boolean
+        required: false
+        default: false
+      dry_run:
+        description: 'print the steps only'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: obis-h3
+  cancel-in-progress: false       # never kill a run mid-build: it holds the lock and a half-written store
+
+jobs:
+  obis-h3:
+    runs-on: [self-hosted, msens]
+    timeout-minutes: 1440
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      OBIS_REPO: /share/github/marinebon/obisindicators
+      # obis_h3_export_parquet() is on this branch until it is merged to main; then change it to main
+      OBIS_BRANCH: export-parquet
+    steps:
+      - name: host tools
+        run: |
+          docker --version
+          aws --version
+          free -g
+          df -h /share
+
+      - name: update the obisindicators checkout
+        run: |
+          if ! git -C "$OBIS_REPO" diff --quiet || ! git -C "$OBIS_REPO" diff --cached --quiet; then
+            echo "::error::$OBIS_REPO has uncommitted changes; refusing to switch branches"
+            exit 1
+          fi
+          git -C "$OBIS_REPO" fetch origin "$OBIS_BRANCH"
+          git -C "$OBIS_REPO" checkout "$OBIS_BRANCH"
+          git -C "$OBIS_REPO" pull --ff-only origin "$OBIS_BRANCH"
+          git -C "$OBIS_REPO" log --oneline -1
+          test -f "$OBIS_REPO/R/export.R" || { echo "::error::R/export.R not on $OBIS_BRANCH"; exit 1; }
+
+      - name: refresh obis-h3
+        id: refresh
+        env:
+          AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          IN_RELEASE    : ${{ inputs.release }}
+          IN_SKIP_SYNC  : ${{ inputs.skip_sync }}
+          IN_SKIP_BUILD : ${{ inputs.skip_build }}
+          IN_SKIP_EXPORT: ${{ inputs.skip_export }}
+          IN_SKIP_UPLOAD: ${{ inputs.skip_upload }}
+          IN_DRY_RUN    : ${{ inputs.dry_run }}
+        run: |
+          # no secrets: fall back to the host's AWS profile (IAM user on msens)
+          if [ -z "$AWS_ACCESS_KEY_ID" ]; then
+            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+          fi
+          args=()
+          [ "$IN_SKIP_SYNC"   = true ] && args+=(--skip-sync)
+          [ "$IN_SKIP_BUILD"  = true ] && args+=(--skip-build)
+          [ "$IN_SKIP_EXPORT" = true ] && args+=(--skip-export)
+          [ "$IN_SKIP_UPLOAD" = true ] && args+=(--skip-upload)
+          [ "$IN_DRY_RUN"     = true ] && args+=(--dry-run)
+          [ -n "$IN_RELEASE" ] && args+=(--release "$IN_RELEASE")
+          export PKG_ROOT="$OBIS_REPO"
+          # exit 2 = not enough disk (prune old stores), 3 = locked, 4 = validation failed
+          "$OBIS_REPO/data-raw/refresh_obis_h3.sh" "${args[@]}"
+
+      # the script writes the log path to $GITHUB_OUTPUT as soon as it has one
+      - name: upload the log as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obis-h3-refresh-log
+          path: ${{ steps.refresh.outputs.log }}
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: disk and memory after the run
+        if: always()
+        run: |
+          df -h /share
+          free -g
