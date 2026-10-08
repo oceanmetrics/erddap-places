@@ -255,7 +255,12 @@ Offline then-now: `npm run dev`, then `http://localhost:5179/#lens=then-now&plac
   raster tiles, attributed in the map's own attribution control. The places come straight from the
   published `places/places.pmtiles` through the `pmtiles://` protocol, source layer **`places`**
   (`PLACES_SOURCE_LAYER` in `src/lib/gazetteer.ts`; its fields are `place_id`, `name`, `gazetteer`,
-  `area_km2`), so selecting or drawing a place costs no geometry work in JS at all. The basemap is
+  `area_km2`), so selecting or drawing a place costs no geometry work in JS at all. **The PMTiles
+  URL is the bucket's, not the storage host's** (`placesPmtilesUrl()`): `storage.oceanmetrics.io`
+  answers with a 302 that has no `Access-Control-Allow-Origin`, and browsers reject a cross-origin
+  redirect without it before following, so range requests through the host fail with status 0 from
+  any other origin (verified 2026-10-08). Until the Caddy vhost adds CORS to the redirect, nothing
+  that uses range requests may go through it. The basemap is
   Esri's keyless *World Ocean Base* (`OCEAN_TILES`, an ArcGIS REST `/tile/{z}/{y}/{x}` template —
   row before column, unlike XYZ).
 - **Drive the camera through `bind:bounds` only** (fixed 2026-09-15, regression test

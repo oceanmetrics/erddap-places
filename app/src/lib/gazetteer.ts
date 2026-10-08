@@ -17,8 +17,15 @@ export const PLACES_SOURCE_LAYER = 'places'
 let activeBase: string | null = null
 /** the base URL that last answered (after `gazetteerFetch`), for display. */
 export const gazetteerBase = () => activeBase ?? GAZETTEER_BASE
-/** the vector tiles of the places, for the map (same base as everything else). */
-export const placesPmtilesUrl = () => `${gazetteerBase()}places/places.pmtiles`
+/**
+ * the vector tiles of the places, for the map: always straight from the bucket. the storage host
+ * answers with a 302 that carries no `Access-Control-Allow-Origin`, and a browser rejects a
+ * cross-origin redirect without it before following, so `pmtiles://` range requests through
+ * `GAZETTEER_BASE` fail with status 0 from every origin but the host's own (verified 2026-10-08 with
+ * `curl -I -H 'Origin: http://localhost:5179'`). the bucket answers 206 with CORS on the first hop,
+ * and the tiles skip one redirect per range request. Then vs Now reads its COGs the same way.
+ */
+export const placesPmtilesUrl = () => `${GAZETTEER_FALLBACK}places/places.pmtiles`
 
 /** fetch `path` under the gazetteer base, falling back to the bucket URL on any failure. */
 export async function gazetteerFetch(path: string, init?: RequestInit): Promise<Response> {
