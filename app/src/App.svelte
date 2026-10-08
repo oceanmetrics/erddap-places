@@ -60,7 +60,7 @@
   const HASH    = typeof location === 'undefined' ? {} : decodeHash(location.hash)
   const RAW     = typeof location === 'undefined' ? '' : location.hash
   let hashWindow = Boolean(HASH.from && HASH.to)
-  let placeId   = $state(HASH.place ?? 'NMS:HIHWNMS')
+  let placeId   = $state(HASH.place ?? 'NMS:FKNMS')
   let dsId      = $state(HASH.dataset ?? 'erddap/dhw_5km')
   let varName   = $state(HASH.variable ?? 'CRW_SST')
   let endDate   = $state(HASH.to ?? iso(new Date(Date.now() - LAG_DAYS * 864e5)))

@@ -63,7 +63,7 @@
         ...base.layers,
         { id: 'outline', type: 'line', source: 'places', 'source-layer': PLACES_SOURCE_LAYER,
           filter: ['==', ['get', 'place_id'], placeId],
-          paint: { 'line-color': untrack(() => dark) ? '#eaf3f7' : '#111', 'line-width': 1.6 } },
+          paint: { 'line-color': untrack(() => dark) ? '#eaf3f7' : '#111', 'line-width': 2.5 } },
       ],
     }
   }
@@ -74,7 +74,7 @@
     // the basemap credit sits on the box (below), not on either map: one side is always clipped
     mapB = new maplibregl.Map({ container: elB!, ...opts, attributionControl: false })
     mapB.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
-    mapB.addControl(new maplibregl.FullscreenControl({ container: box! }), 'top-right')
+    mapB.addControl(new maplibregl.FullscreenControl({ container: (box!.closest('.lens') as HTMLElement | null) ?? box! }), 'top-right')
     mapA.addControl(new maplibregl.ScaleControl(), 'bottom-left')
     const unsync = syncMaps(mapA, mapB)
     let n = 0

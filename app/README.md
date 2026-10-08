@@ -273,6 +273,13 @@ Offline then-now: `npm run dev`, then `http://localhost:5179/#lens=then-now&plac
   the map exists and lands on an unsized container, where it is dropped — the page then opened on
   the whole world. `onload` re-assigns a fresh `LngLatBounds` once (an event handler, not an effect)
   so the fit happens for real.
+- **Map defaults** (`MapView.svelte`): the default place is FKNMS; the style carries
+  `projection: { type: 'globe' }` (the Then vs Now swipe maps stay Mercator: two synced globes with a
+  clipped image-source overlay were not verified); the map's fullscreen button is added in `onload`
+  with `container` = the enclosing `.lens`, so the sentence bar, legend, panes and Time strip stay
+  (`.lens:fullscreen` in `app.css` gives it the page background); the selected place has a 2.5 px
+  `selected-outline` line layer and the cell / station layers are inserted `beforeId` it, so the
+  outline stays on top after a run.
 - **Cell squares** (`src/lib/cells.ts`): after a run, `sql/last_step.sql` returns the masked cells of
   the newest time step (mask coordinates, weight, value) and `cellSquares()` turns them into a
   GeoJSON square each, sized by the **median gap between the distinct cell coordinates** (so the

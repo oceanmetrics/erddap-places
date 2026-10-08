@@ -6,6 +6,8 @@ body { overflow: hidden; }
 #app { height: 100%; }
 
 .lens { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* the map's fullscreen button fullscreens the whole lens, so the sentence bar, panes and Time strip stay */
+.lens:fullscreen { width: 100%; height: 100%; background: var(--bg-page); }
 
 /* the title sentence: dataset -> place -> method -> time, its chips open the same pickers as Controls */
 .sentence-bar { position: relative; z-index: 30; padding: var(--space-2) var(--space-4) var(--space-2);

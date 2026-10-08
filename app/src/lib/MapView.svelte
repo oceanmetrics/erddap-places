@@ -39,7 +39,7 @@
   // basemap: Esri's World Ocean Base raster tiles, which need no key and no account, with their
   // attribution. no geometry ever comes through this component as deep $state — App.svelte passes
   // the squares as a plain object built by cells.ts.
-  import { CircleLayer, FillLayer, FullscreenControl, GeoJSON, LineLayer, MapLibre, NavigationControl, Popup, ScaleControl, VectorTileSource } from 'svelte-maplibre'
+  import { CircleLayer, FillLayer, GeoJSON, LineLayer, MapLibre, NavigationControl, Popup, ScaleControl, VectorTileSource } from 'svelte-maplibre'
   import { untrack } from 'svelte'
   import maplibregl, { LngLatBounds, type LngLatBoundsLike, type StyleSpecification } from 'maplibre-gl'
   import { Protocol } from 'pmtiles'
@@ -88,10 +88,12 @@
     ;(globalThis as any).__pmtilesProtocol = protocol
   }
 
-  // the style is built once (the theme at mount); a theme change flips the two basemap layers
-  const style: StyleSpecification = { version: 8, ...basemapStyle(untrack(() => dark)) }
+  // the style is built once (the theme at mount); a theme change flips the two basemap layers.
+  // the default projection is the globe (MapLibre 5); bind:bounds fits work the same on it
+  const style: StyleSpecification = { version: 8, projection: { type: 'globe' }, ...basemapStyle(untrack(() => dark)) }
 
   let map = $state.raw<maplibregl.Map | undefined>(undefined)
+  const SELECTED_OUTLINE = 'selected-outline'
   const src = $derived(`pmtiles://${pmtilesUrl}`)
   // a place id the tiles can be filtered by; '' matches nothing, which is what we want before load
   const selected = $derived(['==', ['get', 'place_id'], placeId] as any)
@@ -131,7 +133,12 @@
   // the theme switches the basemap in place: no setStyle, so the place and cell layers stay put
   $effect(() => { const d = dark, m = map; if (m) setBasemap(m, d) })
   function onload() {
-    if (map) { setBasemap(map, dark); onmap?.(map) }
+    if (map) {
+      setBasemap(map, dark); onmap?.(map)
+      // fullscreen takes the whole lens (sentence bar, legend, panes, Time strip), not just the canvas
+      const lens = map.getContainer().closest('.lens') as HTMLElement | null
+      map.addControl(new maplibregl.FullscreenControl(lens ? { container: lens } : {}), 'top-right')
+    }
     if (refitted) return
     refitted = true
     const b = bounds
@@ -157,7 +164,6 @@
             attributionControl={{ compact: true }}>
     <!-- one row of map buttons at the top right; the title and the legend live in the sentence -->
     <NavigationControl position="top-right" />
-    <FullscreenControl position="top-right" />
     <ScaleControl position="bottom-left" />
     <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
       <!-- every place, outlined; clicking anywhere in one selects it in the picker -->
@@ -175,11 +181,21 @@
         filter={selected}
         interactive={false}
         paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.18, 'fill-outline-color': '#14448c' }} />
+      <!-- and its outline, a real line; the cells and stations below are inserted beneath it
+           (beforeId), so it stays visible after a run -->
+      <LineLayer
+        id={SELECTED_OUTLINE}
+        sourceLayer={PLACES_SOURCE_LAYER}
+        filter={selected}
+        interactive={false}
+        layout={{ 'line-join': 'round' }}
+        paint={{ 'line-color': '#14448c', 'line-width': 2.5 }} />
     </VectorTileSource>
 
     {#if squares}
       <GeoJSON id="cells" data={squares}>
         <FillLayer
+          beforeId={SELECTED_OUTLINE}
           paint={{ 'fill-color': fillColor, 'fill-opacity': 0.8, 'fill-outline-color': 'rgba(0,0,0,0.12)' }}
           hoverCursor="crosshair">
           {@render cellPopup()}
@@ -191,6 +207,7 @@
       <!-- tabledap: one circle per sample station, same colour ramp and same popup -->
       <GeoJSON id="stations" data={points}>
         <CircleLayer
+          beforeId={SELECTED_OUTLINE}
           paint={{ 'circle-color': fillColor, 'circle-opacity': 0.9, 'circle-radius': 5,
                    'circle-stroke-width': 1, 'circle-stroke-color': '#33333388' }}
           hoverCursor="crosshair">
