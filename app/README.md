@@ -4,6 +4,10 @@ Svelte 5 + Vite + TypeScript. The whole pipeline runs client-side: a place polyg
 dataset in, daily statistics out, with no server of ours in the request path.
 
 ```
+places_index.parquet ─► Place picker (14,734 places, 22 collections)       (src/lib/PlacePicker.svelte)
+layers.json ─► titles, PMTiles, credits, citations                         (src/lib/gazetteer.ts)
+<collection>/places.parquet ─► ONE polygon, read when the run needs it     (placeGeometry())
+        │
 place GeoJSON ─┐
                ├─ gridMask()  → cells + area weights   (src/lib/gridMask.ts)
 ERDDAP axes  ──┘
@@ -15,9 +19,11 @@ ERDDAP axes  ──┘
   ../sql/last_step.sql); planRun() chooses, and the full path above stays for everything else
 ```
 
-`src/App.svelte` picks a place from the published gazetteer (`places.parquet`, read with hyparquet,
-WKB decoded by `src/lib/wkb.ts`), splits it into lobes (one griddap request each, grouped by side of
-the antimeridian so PMNM works), and computes daily `CRW_SST` from PacIOOS `dhw_5km`.
+`src/App.svelte` picks a place from the whole published gazetteer (the place index and the layers
+manifest; the 20 `places` rows also come with their geometry in `places.parquet`, read with hyparquet,
+WKB decoded by `src/lib/wkb.ts`), reads the polygon of any other place when the run needs it, splits it
+into lobes (one griddap request each, grouped by side of the antimeridian so PMNM works), and
+computes daily `CRW_SST` from PacIOOS `dhw_5km`.
 
 ## The page (MBON re-layout, 2026-10-08)
 
@@ -39,8 +45,8 @@ chunk). Before/after screenshots: `../docs/ui-assessment.md` and `../docs/ui-ass
   line is the colour scale of the map layer and the counts ("map: 6 Oct 2026 · 462 cells · 278 on the
   boundary"); with the anomaly on it carries the headline ("76 % of the sanctuary more than +1 °C
   warmer", shown once the sanctuary mask is in). The words come from `src/lib/sentence.ts`.
-- **Controls** pane (kit `Controls`), top left: ① **Place** (gazetteer picker, sanctuaries first; or
-  click the map) ② **Dataset & variable** (datasets grouped by cadence, then the variable in words)
+- **Controls** pane (kit `Controls`), top left: ① **Place** (the whole gazetteer, see "Place picker"
+  below; or click the map) ② **Dataset & variable** (datasets grouped by cadence, then the variable in words)
   ③ **Method** (the lens: *Window statistics* | *Then vs Now*; for statistics the charted statistic,
   the area-weight note and the window; for Then vs Now, Then, Now, the anomaly, the day, and under
   *More options* the palette and smoothing) ④ **Share** (Download CSV, Parquet, PNG of the view, Copy
@@ -87,11 +93,20 @@ inside it; the table, the downloads and the sentence use the rows inside the win
 only the latest time step live ("Precomputed stats first" below). 0.2.0 had cut the precomputed rows to
 the 30-day window, so the strip looked the same as the live run.
 
+**app 0.3.0** (2026-10-08): the Place picker lists the whole gazetteer index (14,734 places in 22
+collections; the 10,585 polygons are selectable) instead of the 20-row `places.parquet`. A place outside
+the 20 reads its polygon when the run needs it (one range-read of its collection's Parquet, with the bytes
+in the status line), the map draws its outline from that collection's PMTiles, and the credit line, the
+Data sources row and *Cite this data* carry the collection's own credit, citation and licence. The 20
+precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
+of vertices (below).
+
 ### URL grammar
 
 | key | lens | what |
 |---|---|---|
-| `place`, `dataset`, `variable`, `from`, `to` | Statistics | the run, as before |
+| `place`, `dataset`, `variable`, `from`, `to` | Statistics | the run, as before. `place` is the gazetteer `place_id`, which may hold a space (`BOEM:OCS-A+0506`; `+` and `%20` both read as a space) or several colons (`ONMS:florida-keys-national-marine-sanctuary:northern-section`) |
+| `coll` | Statistics | the gazetteer collection (`boem_wind_leases`), written **only** when the `place_id` exists in more than one collection (three BOEM ids do); absent = the first collection in manifest order |
 | `stat` | Statistics | the charted statistic (`mean_wt` default, omitted; `mean`, `min`, `max`, `p10`, `p90`, `sd`) |
 | `lens` | both | `then-now`; absent = Statistics |
 | `place`, `variable`, `md`, `then`, `now`, `swipe`, `anom`, `pal`, `data`, `dataset` | Then vs Now | as before |
@@ -107,6 +122,78 @@ Now; `src/Shell.svelte` rewrites it to `lens=then-now` in place with `history.re
 (`migrateHash()` in `src/lib/view.ts`), and `mode=stats` / `lens=stats` are dropped. Every other key
 is kept, so an old link opens the same view. Switching lens carries the place over (a sanctuary into
 Then vs Now; CRW SST for that place back into Statistics) and pushes a history entry, so Back returns.
+
+### Place picker (app 0.3.0)
+
+`src/lib/PlacePicker.svelte` (logic in `src/lib/placePicker.ts`, tested) is the kit Picker's look
+(search box, *A–Z | by group*, groups, keyboard) written for 14,734 rows; the kit's `Picker` filters the
+items it is given and has no hook for a query, so it cannot sit on that many rows or run a ranked search.
+
+- **Selectable**: polygons only (`geom_type` MultiPolygon or Polygon: 10,585 of 14,734). A mask needs an
+  area, so lines and points (CalCOFI lines and stations, maritime limits, state lateral boundaries, most of
+  GEBCO) are not listed, and the Place tab says "Polygon places only; lines and points are not maskable".
+  A link to a line or point place shows that error instead of masking.
+- **No query**: a curated list of collections in this order: `places` ("Sanctuaries & places
+  (precomputed)", each row marked "✓ precomputed"), `noaa_marine_monuments`, `noaa_nerrs`,
+  `mpa_inventory`, `noaa_hapc`, `fws_critical_habitat_proposed`, `boem_wind_leases`,
+  `boem_pacific_og_leases`, `boem_ocs_planning`, `boem_program_11_draft`, `noaa_aoa_socal`,
+  `usace_danger_zones`, `noaa_vessel_routing_measures`, `noaa_state_submerged_lands`. Each group shows its
+  first 50 rows by name and then "… N more, type to search". `noaa_submarine_cables` (2,816),
+  `boem_wind_planning_rescinded` (3,325), and the collections that are not curated (`noaa_sanctuaries`,
+  `gebco_undersea`) sit behind one "show N more collections" row. About 520 DOM rows, never 14,000.
+- **A query**: the client's ranked `search(q, { geomType })` over every polygon place (name or
+  `place_id`, every word must match; exact name, prefix, word prefix, substring, then area), grouped by
+  collection. At most about 200 rows, and no collection takes more than its share (200 / the collections
+  with hits, 10 to 50 rows), so a word that matches 900 cable areas still shows the wind leases;
+  each group says how many more matches it has.
+- **Selection** is (collection, `place_id`): `place_id` is NOT unique across collections. `placeId` and
+  `coll` are the state; `resolvePlace()` picks the first collection in manifest order when `coll` is absent
+  or does not hold the id. Results (`shownRun`) carry `coll` only for an ambiguous id, so file names get the
+  collection only then (`resultFileName()`), and the permalink matches.
+
+### Data from the gazetteer (app 0.3.0)
+
+Everything is read from the **bucket host** (`https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/`),
+never `storage.oceanmetrics.io`: its 302 costs a redirect per range request. `configureGazetteer()` points
+the vendored client (`src/lib/places/`, re-vendored from places@345c22e = client 0.1.1; its header lists the three local patches) there and wraps its `fetch` (`meteredFetch()`).
+
+- the layers manifest (`index/layers.json`, canonical, falling back to `layers.json`; 37 kB, 22 layers: slug == collection == PMTiles source-layer; top-level `base_direct` is the redirect-free S3 host): title, credit, citation,
+  licence, paint. Its `pmtiles` URLs name the storage host; `loadLayers()` rewrites each to
+  `<bucket>/<slug>/places.pmtiles` (the path-style bucket URL the rest of the app uses; same bucket as `base_direct`).
+- `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 10 of its 14 columns and leaves
+  `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
+  through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads
+  the file whole (0.8 s). The index loads alongside the datasets and the 20 places, and a failure leaves the 20
+  places working.
+- `<collection>/places.parquet` (WKB, split at ±180): `placeGeometry()` reads ONE place with the client's
+  `getPlace(id, { slug, unwrap: false })` (the slug pins the collection exactly), a row-group filtered range read,
+  cached in a plain `Map` by (collection, `place_id`). **What it costs is the collection's row-group layout.**
+  First measured 2026-10-08 on the 1.0.0 files: `boem_wind_leases` 2.7 MB, `noaa_hapc` 22 MB, `mpa_inventory` ~26–30 MB of
+  its 69 MB (overlapping Morton row groups). The 15 wave-1 collections were then republished as 1.0.1 with tiny row groups:
+  `MPAINV:CA136` is 1.1 MB (a footer read once, ~1 MB, plus its row groups), `noaa_sanctuaries` is 47 one-row groups
+  (a sanctuary ~141 kB in all). `places/places.parquet` is still ONE 4.2 MB row group, so the 20 precomputed ids keep the
+  whole-file fast path (`loadPlaces()`). The run's status says "loading X polygon from <collection> (1.0 MB of 70.8 MB so far)…"
+  (bytes counted as the response streams, the file size from the HEAD hyparquet makes); the polygon's request is listed under
+  Share → Reproduce and its bytes are in the footer's kB.
+- **Dateline**: the index unwraps places cut at ±180 (bbox and `centroid_lon` may exceed 180: NMS:PMNM is 177.8..199.0,
+  centroid 188), so `indexBounds()` fits that bbox directly. The 10–15 rows that still read -180..180 (upstream's list) get
+  null until their geometry is loaded, and then `placeMapBounds()` walks it. The polygon itself stays split at ±180 for the lobes.
+- The 20 `places` ids come from `loadPlaces()` (4.2 MB, already in memory) and are the only ones with
+  precomputed statistics and Then vs Now rasters (`hasPrecomputed()` is asked only for the `places` collection).
+- **Map**: the `places` source (all 20 faint, click to select) is always there. A selected place of another
+  collection adds ONE extra `VectorTileSource` (that collection's PMTiles from the bucket, source-layer = slug)
+  with its selected fill and outline, replacing the `places` source's selected layers; it is swapped when the
+  collection changes (`{#key}` in `MapView.svelte`). Its other features get a near-transparent fill so a click
+  on one selects it (a click on a feature of the extra source wins over the `places` layer under it). The
+  map's credit gets the collection's `attribution_html` (`collectionAttribution()`, nothing for `places` or for
+  a string `PLACES_ATTRIBUTION` already says). The cells are inserted below the outline of whichever source is on.
+- **Credits**: *Cite this data* adds the collection's manifest `citation` and licence between the dataset's and
+  the gazetteer's; Help → Data sources gets a row for the collection (title, citation, licence link). Both read the
+  run on screen (`LensApi.placeLayer()`).
+- **Mask cost of a big polygon**: weighting each boundary cell clips the polygon to the cell, O(vertices) each,
+  so a single 79,000-vertex ring (the monuments collection's Papahanaumokuakea) took 54 s and froze the tab.
+  `reduceRing()` in `gridMask.ts` first collapses the runs of vertices that stay beyond one side of the rectangle
+  (once per grid row, then per cell): 0.8 s, the same weights to 1e-13 (`gridMask.test.ts`).
 
 ### Help, the tour and feedback (U4, 2026-10-08)
 
@@ -190,16 +277,18 @@ with a line of their own (budget 15 KB); the script fails if html-to-image (its 
 name) shows up in the entry.
 
 There was no budget before the re-layout; these are the first, set with ~8 % headroom over the
-measured sizes. The DuckDB engine (wasm + worker, ~15 MB gzip, fetched on first query) is listed by
+measured sizes. App 0.3.0 (the place index, the manifest, the picker, the extra map source and the client): entry JS 591.1 KB
+(+8.6 KB), entry CSS 18.1 KB, the other chunks unchanged; no budget raised, and the client stays in the entry (it shares
+hyparquet with `loadPlaces()`). The DuckDB engine (wasm + worker, ~15 MB gzip, fetched on first query) is listed by
 the script, not budgeted. The data bytes per view are unchanged (FKNMS 30 days: one 159 kB griddap
 Parquet; Then vs Now first view: 6 range requests, 56 kB).
 
 ## The pipeline
 
-- **Pickers**: place (gazetteer, grouped by NMS/MRGID/PSGID), ERDDAP dataset, variable, date window
+- **Pickers**: place (the whole gazetteer, grouped by collection), ERDDAP dataset, variable, date window
   (clamped to the dataset's live time extent).
-- **Map** (`src/lib/MapView.svelte`, the whole stage): the gazetteer
-  places as vector tiles from `places.pmtiles`, outlined, with the selected one filled and a click
+- **Map** (`src/lib/MapView.svelte`, the whole stage): the 20 gazetteer
+  places as vector tiles from `places.pmtiles` (plus the selected place's own collection, "Data from the gazetteer"), outlined, with the selected one filled and a click
   anywhere in a place selecting it; after a run, the **last time step** of the slab as one square per
   masked grid cell, hover showing the value and the area weight. Fits the place bbox on selection,
   padded so the Controls pane and the Time strip do not cover it (`fitPadding()`).

@@ -175,6 +175,46 @@ function maskScan(ps: Part[], ax: Axis, ay: Axis): Set<number> {
   return m
 }
 
+// ── clipping a big ring to one cell ──────────────────────────────────────────
+// clipping a polygon to a cell costs O(vertices), and a boundary-heavy mask clips thousands of cells: a
+// 79,000-vertex monument took 54 s (and froze the tab) where FKNMS's 39,645 vertices in 13 parts take 0.2 s.
+// A vertex whose two edges both lie wholly beyond the SAME side of the rectangle cannot change the clipped
+// area (Cohen–Sutherland's trivial reject), so it is dropped first. Done once per grid row (band) and then
+// per cell, the work per cell is the few hundred vertices that are near it.
+type Rect = [number, number, number, number]
+const outCode = (x: number, y: number, r: Rect) => (x < r[0] ? 1 : x > r[2] ? 2 : 0) | (y < r[1] ? 4 : y > r[3] ? 8 : 0)
+
+/**
+ * The ring with every run of vertices that stays beyond ONE side of `r` collapsed to its two ends; null when
+ * nothing of it can reach `r`. A vertex is dropped when it and both of its neighbours (in the reduced ring so
+ * far) lie beyond the same side: the path through it and the shortcut past it are both inside that half-plane,
+ * so the polygon's overlap with `r` is the same. (Judging every vertex against its ORIGINAL neighbours would
+ * be wrong: a ring that surrounds the rectangle would lose every vertex.) The first vertex is always kept.
+ */
+export function reduceRing(ring: number[][], r: Rect): number[][] | null {
+  const n = ring.length - 1                      // closed ring: the last position repeats the first
+  if (n < 8) return ring
+  const out: number[][] = [ring[0]], oc: number[] = [outCode(ring[0][0], ring[0][1], r)]
+  for (let i = 1; i < n; i++) {
+    const c = outCode(ring[i][0], ring[i][1], r)
+    while (out.length >= 2 && (oc[oc.length - 2] & oc[oc.length - 1] & c)) { out.pop(); oc.pop() }
+    out.push(ring[i]); oc.push(c)
+  }
+  // the ring is a cycle: the tail can still collapse into the (kept) first vertex
+  while (out.length >= 2 && (oc[oc.length - 2] & oc[oc.length - 1] & oc[0])) { out.pop(); oc.pop() }
+  if (out.length < 3) return null
+  out.push(out[0])
+  return out
+}
+/** a part's rings reduced to `r`; null when its outer ring cannot reach `r` (a hole that cannot is dropped). */
+export function reduceRings(rings: number[][][], r: Rect): number[][][] | null {
+  const outer = reduceRing(rings[0], r)
+  if (!outer) return null
+  const out = [outer]
+  for (let k = 1; k < rings.length; k++) { const h = reduceRing(rings[k], r); if (h) out.push(h) }
+  return out
+}
+
 /** C) partial-cell area weights: clip each part to the cell rectangle and divide by the cell area. */
 function cellWeights(ps: Part[], inside: Set<number>, ax: Axis, ay: Axis): Map<number, number> {
   const w   = new Map<number, number>()
@@ -196,17 +236,27 @@ function cellWeights(ps: Part[], inside: Set<number>, ax: Axis, ay: Axis): Map<n
       for (let j = 0; j < ay.val.length; j++) if (!(ay.hi[j] < py0 || ay.lo[j] > py1)) all.add(key(i, j))
     }
   }
-  for (const k of all) {
+  // by grid row, so a part's rings are reduced to the row's band once and to each cell from that
+  const cells = [...all].sort((p, q) => (p % 1e7) - (q % 1e7) || p - q)
+  let bandJ = -1
+  let band: (number[][][] | null)[] = []
+  for (const k of cells) {
     const i = Math.floor(k / 1e7), j = k - i * 1e7
     const x0 = ax.lo[i], x1 = ax.hi[i], y0 = ay.lo[j], y1 = ay.hi[j]
     const cell = tPolygon([[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]])
     const cellArea = area(cell)
     if (!(cellArea > 0)) continue
+    if (j !== bandJ) {
+      bandJ = j
+      band = ps.map((p) => (p.rings[0].length > 8 ? reduceRings(p.rings, [-Infinity, y0, Infinity, y1]) : p.rings))
+    }
     let a = 0
-    for (const p of ps) {
+    for (const [pi, p] of ps.entries()) {
       const [px0, py0, px1, py1] = p.bbox
       if (x1 < px0 || x0 > px1 || y1 < py0 || y0 > py1) continue
-      a += area(bboxClip(p.feat, [x0, y0, x1, y1]) as Feature<any>)
+      const rings = band[pi] && p.rings[0].length > 8 ? reduceRings(band[pi]!, [x0, y0, x1, y1]) : band[pi]
+      if (!rings) continue
+      a += area(bboxClip(rings === p.rings ? p.feat : tPolygon(rings), [x0, y0, x1, y1]) as Feature<any>)
     }
     const f = a / cellArea
     if (f > 0) w.set(k, Math.min(f, 1))

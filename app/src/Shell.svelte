@@ -15,7 +15,8 @@
   import Tour from './lib/help/Tour.svelte'
   import { onLoad, pageBase, parseHelpQuery, withoutHelpQuery, WELCOME_SEEN_KEY, type HelpModal, type StartView } from './lib/help/start'
   import { OWNS_ARROWS, shortcutFor, SHORTCUTS } from './lib/help/keys'
-  import { datasetSources, fixedSources, type Source } from './lib/help/sources'
+  import { datasetSources, fixedSources, placeLayerSource, type Source } from './lib/help/sources'
+  import type { PlaceLayer } from './lib/help/cite'
   import { APP_REPO } from './lib/help/cite'
   import type { TourStop } from './lib/help/tour'
   import type { LensApi, LensUi } from './lib/help/lensApi'
@@ -143,7 +144,10 @@
     datasetsP.then((d) => { datasets = d }).catch(() => { datasetsP = null })
   })
   const today = new Date().toISOString().slice(0, 10)
-  const sourceRows = $derived<Source[]>([...datasetSources(datasets, today), ...fixedSources(today.slice(0, 4))])
+  // the gazetteer collection of the place on screen (Statistics), read when a Help modal opens
+  let placeLayer = $state.raw<PlaceLayer | null>(null)
+  $effect(() => { if (helpModalOpen && helpModal !== 'keys') placeLayer = api?.placeLayer?.() ?? null })
+  const sourceRows = $derived<Source[]>([...datasetSources(datasets, today), ...placeLayerSource(placeLayer), ...fixedSources(today.slice(0, 4))])
   const servers = $derived([...new Set(datasets.map((d) => { try { return new URL(d.baseUrl).host } catch { return d.baseUrl } }))])
   let aboutCite = $state('')
   $effect(() => { if (helpModalOpen && helpModal === 'about') aboutCite = api?.cite() ?? '' })

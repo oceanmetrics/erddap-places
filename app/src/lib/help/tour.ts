@@ -37,7 +37,7 @@ export const TOUR_STOPS: TourStop[] = [
     target: tabSel('place'),
     tab: 'place',
     title: '① Place',
-    text: 'Pick a sanctuary, a marine region or a protected area, or click one on the map.',
+    text: 'Pick any polygon place of the Ocean Metrics gazetteer (sanctuaries, monuments, reserves, protected areas, wind leases and more), search all 14,000 by name, or click one on the map. The 20 marked precomputed load at once; any other fetches its boundary when it runs.',
   },
   {
     id: 'data',

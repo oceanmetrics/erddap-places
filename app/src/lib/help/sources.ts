@@ -3,7 +3,7 @@
 // the places, the Then vs Now rasters, the basemaps and the software. Built from the STAC collections
 // the app already loads, so a dataset added to the catalog gets its row without touching this file.
 import { citation, datasetDoi, datasetLicence, producer } from '../sentence'
-import { gazetteerCitation, type CiteDataset } from './cite'
+import { gazetteerCitation, placeLayerCitation, type CiteDataset, type PlaceLayer } from './cite'
 
 export interface Source {
   name    : string
@@ -43,12 +43,27 @@ export function datasetSources(datasets: (CiteDataset & { status?: string; colle
   })
 }
 
+/**
+ * the row for the collection the place on screen comes from (a layer of the gazetteer's layers.json): its
+ * credit and citation, licence and a link to its STAC collection. None for the `places` collection, which
+ * the gazetteer row and the NOAA ONMS / MarineRegions / ProtectedSeas rows already describe.
+ */
+export function placeLayerSource(l: PlaceLayer | null | undefined): Source[] {
+  if (!l || l.slug === 'places') return []
+  return [{
+    name: l.title, href: `https://storage.oceanmetrics.io/gazetteer/${l.slug}/collection.json`,
+    role: `The place on screen is from this gazetteer collection${l.n ? ` (${l.n.toLocaleString('en-US')} places)` : ''}: its boundary is read from the collection's GeoParquet and drawn from its PMTiles.`,
+    citation: l.citation ? placeLayerCitation({ ...l, license: null }) : undefined,
+    licence: l.license || undefined, licenceHref: l.license_url || undefined,
+  }]
+}
+
 /** the rows that are not ERDDAP datasets */
 export function fixedSources(year: string): Source[] {
   return [
     {
       name: 'Ocean Metrics gazetteer', href: 'https://storage.oceanmetrics.io/gazetteer/catalog.json',
-      role: 'The places: NOAA national marine sanctuaries, MarineRegions.org areas (MRGID) and ProtectedSeas areas (PSGID), as GeoParquet and PMTiles with a STAC catalog.',
+      role: 'The places: 22 collections (NOAA sanctuaries, marine monuments and estuarine reserves, MarineRegions.org and ProtectedSeas areas, the MPA Inventory, BOEM leases and planning areas, and more), as GeoParquet and PMTiles with a STAC catalog, a layers.json manifest and a place index.',
       citation: gazetteerCitation(year), licence: 'CC-BY-4.0', licenceHref: 'https://creativecommons.org/licenses/by/4.0/',
     },
     {

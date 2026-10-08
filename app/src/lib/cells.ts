@@ -136,6 +136,20 @@ export function placeMapBounds(
   return Number.isFinite(w) ? [w, s, e, n] : [x0, y0, x1, y1]
 }
 
+/**
+ * The box to fit for a place of the gazetteer index. The index unwraps a place cut at the antimeridian
+ * (NMS:PMNM is 177.8..199.0, `centroid_lon` 188), so its bbox fits directly. A few rows still read -180..180
+ * (the geometry is split but the bbox is not unwrapped): those need the geometry, and give null until it is
+ * loaded (the caller fits when it arrives).
+ */
+export function indexBounds(
+  bbox: [number, number, number, number],
+  geometry?: unknown,
+): [number, number, number, number] | null {
+  if (bbox[2] - bbox[0] <= 180) return bbox
+  return geometry ? placeMapBounds({ bbox, geometry }) : null
+}
+
 // ── points (tabledap) ─────────────────────────────────────────────────────────
 export interface CellPoints {
   geojson: FeatureCollection<Point, CellProps>

@@ -51,7 +51,14 @@
     /** `pmtiles://…/places.pmtiles` is built from this (the gazetteer base that answered). */
     pmtilesUrl : string
     placeId    : string
-    onselect  ?: (placeId: string) => void
+    /** a place was clicked on the map: its id and the collection of the layer it belongs to */
+    onselect  ?: (placeId: string, collection: string) => void
+    /**
+     * the selected place's collection when it is not `places`: its PMTiles (bucket URL), source-layer (the
+     * slug) and credit. One extra source at a time; it replaces the selected fill and outline of the
+     * `places` source and makes the collection's features clickable.
+     */
+    extra     ?: { slug: string; url: string; attribution: string } | null
     /** [west, south, east, north]; east may exceed 180 for an antimeridian place. */
     bounds    ?: [number, number, number, number] | null
     /** the last time step's grid cells, from cellSquares() */
@@ -75,7 +82,7 @@
     weightText ?: (v: number) => string
   }
   let {
-    pmtilesUrl, placeId, onselect, bounds = null, squares = null, points = null,
+    pmtilesUrl, placeId, onselect, extra = null, bounds = null, squares = null, points = null,
     fillColor = '#1f77b4', valueLabel = 'value', valueText = (v: number) => String(v),
     dark = false, onmap, padding = 30, weightLabel = 'area weight',
     weightText = (v: number) => v.toFixed(3),
@@ -94,9 +101,21 @@
 
   let map = $state.raw<maplibregl.Map | undefined>(undefined)
   const SELECTED_OUTLINE = 'selected-outline'
+  // the cells and stations are inserted below the selected outline, so the outline stays on top after a
+  // run: the extra collection's outline has its own id, and they follow whichever is on the map
+  const EXTRA_FILL = 'extra-faint'
+  const outlineId = $derived(extra ? `${SELECTED_OUTLINE}-${extra.slug}` : SELECTED_OUTLINE)
   const src = $derived(`pmtiles://${pmtilesUrl}`)
   // a place id the tiles can be filtered by; '' matches nothing, which is what we want before load
   const selected = $derived(['==', ['get', 'place_id'], placeId] as any)
+  // a click on a place of the `places` source selects it, unless a feature of the extra collection is under
+  // the pointer too (the more specific layer wins)
+  function clickedHome(e: any) {
+    const id = e.features?.[0]?.properties?.place_id
+    if (!id) return
+    if (extra && map?.getLayer(EXTRA_FILL) && map.queryRenderedFeatures(e.point, { layers: [EXTRA_FILL] }).length) return
+    onselect?.(String(id), 'places')
+  }
 
   /**
    * The camera, driven **only** through `<MapLibre bind:bounds>`.
@@ -171,31 +190,60 @@
         sourceLayer={PLACES_SOURCE_LAYER}
         paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.04 }}
         hoverCursor="pointer"
-        onclick={(e) => { const id = e.features?.[0]?.properties?.place_id; if (id) onselect?.(String(id)) }} />
+        onclick={clickedHome} />
       <LineLayer
         sourceLayer={PLACES_SOURCE_LAYER}
         paint={{ 'line-color': '#2266cc', 'line-width': 0.8, 'line-opacity': 0.75 }} />
-      <!-- and the selected place, filled -->
-      <FillLayer
-        sourceLayer={PLACES_SOURCE_LAYER}
-        filter={selected}
-        interactive={false}
-        paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.18, 'fill-outline-color': '#14448c' }} />
-      <!-- and its outline, a real line; the cells and stations below are inserted beneath it
-           (beforeId), so it stays visible after a run -->
-      <LineLayer
-        id={SELECTED_OUTLINE}
-        sourceLayer={PLACES_SOURCE_LAYER}
-        filter={selected}
-        interactive={false}
-        layout={{ 'line-join': 'round' }}
-        paint={{ 'line-color': '#14448c', 'line-width': 2.5 }} />
+      {#if !extra}
+        <!-- and the selected place, filled -->
+        <FillLayer
+          sourceLayer={PLACES_SOURCE_LAYER}
+          filter={selected}
+          interactive={false}
+          paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.18, 'fill-outline-color': '#14448c' }} />
+        <!-- and its outline, a real line; the cells and stations below are inserted beneath it
+             (beforeId), so it stays visible after a run -->
+        <LineLayer
+          id={SELECTED_OUTLINE}
+          sourceLayer={PLACES_SOURCE_LAYER}
+          filter={selected}
+          interactive={false}
+          layout={{ 'line-join': 'round' }}
+          paint={{ 'line-color': '#14448c', 'line-width': 2.5 }} />
+      {/if}
     </VectorTileSource>
+
+    {#if extra}
+      <!-- the selected place's own collection: one more source, swapped when the collection changes. Its
+           features are faint and clickable (they select), the selected one is filled and outlined. -->
+      {#key extra.slug}
+        <VectorTileSource id={`coll-${extra.slug}`} url={`pmtiles://${extra.url}`} minzoom={0} attribution={extra.attribution}>
+          <FillLayer
+            id={EXTRA_FILL}
+            sourceLayer={extra.slug}
+            paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.05 }}
+            hoverCursor="pointer"
+            onclick={(e) => { const id = e.features?.[0]?.properties?.place_id; if (id && extra) onselect?.(String(id), extra.slug) }} />
+          <FillLayer
+            sourceLayer={extra.slug}
+            filter={selected}
+            interactive={false}
+            paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.18, 'fill-outline-color': '#14448c' }} />
+          <LineLayer
+            id={outlineId}
+            sourceLayer={extra.slug}
+            filter={selected}
+            interactive={false}
+            layout={{ 'line-join': 'round' }}
+            paint={{ 'line-color': '#14448c', 'line-width': 2.5 }} />
+        </VectorTileSource>
+      {/key}
+    {/if}
 
     {#if squares}
       <GeoJSON id="cells" data={squares}>
         <FillLayer
-          beforeId={SELECTED_OUTLINE}
+          beforeId={outlineId}
           paint={{ 'fill-color': fillColor, 'fill-opacity': 0.8, 'fill-outline-color': 'rgba(0,0,0,0.12)' }}
           hoverCursor="crosshair">
           {@render cellPopup()}
@@ -207,7 +255,7 @@
       <!-- tabledap: one circle per sample station, same colour ramp and same popup -->
       <GeoJSON id="stations" data={points}>
         <CircleLayer
-          beforeId={SELECTED_OUTLINE}
+          beforeId={outlineId}
           paint={{ 'circle-color': fillColor, 'circle-opacity': 0.9, 'circle-radius': 5,
                    'circle-stroke-width': 1, 'circle-stroke-color': '#33333388' }}
           hoverCursor="crosshair">

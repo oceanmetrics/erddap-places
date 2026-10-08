@@ -8,7 +8,7 @@ import { cardPosition, TABS, tourKey, tourStep, TOUR_STOPS } from './tour'
 import { OWNS_ARROWS, shortcutFor, SHORTCUTS } from './keys'
 import { doors, onLoad, pageBase, parseHelpQuery, QUESTIONS, recentMd, withoutHelpQuery } from './start'
 import { appCitation, citeText, gazetteerCitation } from './cite'
-import { datasetSources, fixedSources } from './sources'
+import { datasetSources, fixedSources, placeLayerSource } from './sources'
 import { issueTitle, issueUrl, ISSUE_BASE, MAX_ISSUE_URL_LENGTH, reportBody, type FeedbackReport } from '../feedback/issue'
 import { arrowHead, insetFractions, rectBox, toImage } from '../feedback/annotate'
 import { decodeHash } from '../permalink'
@@ -229,6 +229,17 @@ describe('Cite this data', () => {
     expect(t).toContain("Licence: the producer's terms (https://marine.copernicus.eu/user-corner/service-commitments-and-licence). https://doi.org/10.48670/moi-00015")
     expect(t).toContain('View: https://oceanmetrics.io/erddap-places/')
   })
+  it('adds the citation and licence of the place\'s gazetteer collection, except for the `places` collection', () => {
+    const wind = { slug: 'boem_wind_leases', title: 'BOEM offshore wind lease outlines', n: 52, license: 'CC-PDDC',
+                   license_url: 'https://www.usa.gov/publicdomain/label/1.0/',
+                   citation: 'Bureau of Ocean Energy Management (BOEM). Public domain. Processed by Ocean Metrics. BOEM offshore wind lease outlines, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_wind_leases/' }
+    const t = citeText({ datasets: [CRW], placeLayer: wind, accessed: '2026-10-08', url: 'u', appVersion: '0.1.0' }).split('\n\n')
+    expect(t).toHaveLength(4)                                   // dataset, collection, gazetteer, app
+    expect(t[1]).toBe(`${wind.citation} Licence: CC-PDDC (https://www.usa.gov/publicdomain/label/1.0/).`)
+    expect(t[2]).toBe(gazetteerCitation('2026'))
+    expect(citeText({ datasets: [CRW], placeLayer: { ...wind, slug: 'places' }, accessed: '2026-10-08', url: 'u', appVersion: '0.1.0' }).split('\n\n')).toHaveLength(3)
+    expect(citeText({ datasets: [CRW], placeLayer: null, accessed: '2026-10-08', url: 'u', appVersion: '0.1.0' }).split('\n\n')).toHaveLength(3)
+  })
   it('puts a non-ERDDAP citation (Then vs Now) before the places', () => {
     const t = citeText({ datasets: [], extra: ['CoralTemp rasters.'], accessed: '2026-10-08', url: 'u', appVersion: '0.1.0' })
     expect(t.split('\n\n')).toEqual(['CoralTemp rasters.', gazetteerCitation('2026'), appCitation('2026', '0.1.0', 'u')])
@@ -236,6 +247,18 @@ describe('Cite this data', () => {
 })
 
 describe('Data sources and attribution', () => {
+  it('gives the place\'s collection its own row (title, citation, licence), and none for `places`', () => {
+    const l = { slug: 'mpa_inventory', title: 'NOAA Marine Protected Areas Inventory', n: 981, license: 'CC-PDDC', license_url: 'https://www.usa.gov/publicdomain/label/1.0/', citation: 'NOAA MPA Center. Processed by Ocean Metrics.' }
+    const [row] = placeLayerSource(l)
+    expect(row.name).toBe('NOAA Marine Protected Areas Inventory')
+    expect(row.href).toBe('https://storage.oceanmetrics.io/gazetteer/mpa_inventory/collection.json')
+    expect(row.role).toContain('981 places')
+    expect(row.citation).toBe('NOAA MPA Center. Processed by Ocean Metrics.')
+    expect(row.licence).toBe('CC-PDDC')
+    expect(row.licenceHref).toBe('https://www.usa.gov/publicdomain/label/1.0/')
+    expect(placeLayerSource({ ...l, slug: 'places' })).toEqual([])
+    expect(placeLayerSource(null)).toEqual([])
+  })
   it('gives each ERDDAP dataset its provider, licence, DOI and server', () => {
     const [crw, cm] = datasetSources([CRW, { ...CMEMS, status: 'pending' }], '2026-10-08')
     expect(crw).toMatchObject({ name: CRW.title, provider: 'NOAA Coral Reef Watch', licence: 'CC0-1.0',

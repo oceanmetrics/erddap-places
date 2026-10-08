@@ -38,7 +38,7 @@ export interface Layer {
 export interface ClientConfig {
   /** root of the published gazetteer (trailing slash optional). */
   base?     : string
-  /** where layers.json lives; default `${base}index/layers.json`. */
+  /** where layers.json lives; default `${base}index/layers.json`, falling back to `${base}layers.json` on a 404/403. */
   layersUrl?: string
   /** where the place index lives; default `${base}index/places_index.parquet`. */
   indexUrl? : string
@@ -48,18 +48,19 @@ export interface ClientConfig {
   fetch?    : typeof fetch
 }
 
-/** a row of places_index.parquet. */
+/** a row of places_index.parquet. place_id is unique within a collection, not across collections. */
 export interface IndexPlace {
   place_id  : string
   name      : string
   authority : string
   place_type: string
-  /** the collection (= PMTiles slug and source-layer) the row belongs to; place_id is not unique across collections */
+  /** Point, LineString, Polygon, MultiPolygon, ... (null if the index row has none). */
+  geom_type : string | null
+  /** slug of the collection holding the place: its PMTiles/GeoParquet live at `${base}${collection}/`. */
   collection: string
-  /** MultiPolygon | MultiLineString | MultiPoint | Point | LineString */
-  geom_type : string
+  /** [west, south, east, north]; a place cut at the antimeridian is unwrapped, so east may exceed 180 (177..199). */
   bbox      : BBox
-  /** [lon, lat] */
+  /** [lon, lat]; for a place cut at the antimeridian lon is the centroid of the unwrapped parts and may exceed 180 (e.g. 188), like the bbox. */
   centroid  : [number, number] | null
   area_km2  : number | null
   license   : string | null
@@ -73,6 +74,8 @@ export interface SearchOptions {
   bbox?     : BBox
   type?     : string | string[]
   authority?: string | string[]
+  /** keep only these geometry types (case insensitive), e.g. 'MultiPolygon' (local patch) */
+  geomType? : string | string[]
   limit?    : number
 }
 
@@ -82,7 +85,7 @@ export type PlaceFeature = Feature<Geometry, Record<string, unknown>> & { id: st
 export interface GetPlaceOptions {
   /** unwrap antimeridian-split parts into contiguous longitudes beyond 180 (see `unwrapAntimeridian`). */
   unwrap?: boolean
-  /** collection slug when known, which skips the lookup of the collection. */
+  /** collection slug (an index hit's `collection`): reads only that collection, no authority-guess walk. A place_id can occur in several collections. */
   slug?  : string
 }
 
@@ -106,3 +109,6 @@ export interface AddLayerOptions {
   /** insert below this existing map layer id. */
   beforeId?: string
 }
+
+/** what `creditsFor` accepts: a place id, a layer slug, a search hit, or a pinned `{ collection, place_id }`. */
+export type CreditRef = string | { place_id: string; collection?: string }

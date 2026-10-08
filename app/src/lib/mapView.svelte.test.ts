@@ -84,6 +84,40 @@ describe('MapView settles instead of looping', () => {
     await m.close()
   })
 
+  it('swaps the selected place\'s own collection (one extra source) without looping, and takes the selected outline with it', async () => {
+    const fake = await import('./__fixtures__/fakeMaplibre')
+    fake.resetLastMap()
+    const wind = { slug: 'boem_wind_leases', url: 'https://example.invalid/gazetteer/boem_wind_leases/places.pmtiles', attribution: 'BOEM' }
+    const mpa  = { slug: 'mpa_inventory', url: 'https://example.invalid/gazetteer/mpa_inventory/places.pmtiles', attribution: 'NOAA MPA Center' }
+    // mounted with the reactive object itself (mountMap spreads its props, which would freeze them)
+    const props = $state({ pmtilesUrl: PMTILES, bounds: [-71, 40, -70, 41] as any, extra: wind as any, placeId: 'BOEM:OCS-A 0506' })
+    const { mount, unmount, flushSync } = await import('svelte')
+    const MapView = (await import('./MapView.svelte')).default
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const app = mount(MapView, { target, props })
+    flushSync()
+    await new Promise((r) => setTimeout(r, 50))
+    const ids = () => (fake.lastMap as any).style.layers.map((l: any) => l.id)
+    expect(ids()).toContain('selected-outline-boem_wind_leases')
+    expect(ids()).not.toContain('selected-outline')            // the home source's selected layers give way
+    expect(ids()).toContain('extra-faint')
+    props.extra = mpa                                          // another collection: the source is swapped
+    props.placeId = 'MPAINV:AK25'
+    props.bounds = [-150, 60, -149, 61]
+    flushSync()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(ids()).toContain('selected-outline-mpa_inventory')
+    expect(ids()).not.toContain('selected-outline-boem_wind_leases')
+    props.extra = null                                         // back to a place of `places`
+    flushSync()
+    await new Promise((r) => setTimeout(r, 50))
+    expect(ids()).toContain('selected-outline')
+    expect(ids()).not.toContain('extra-faint')
+    expect(errors.map((e: any) => String(e?.message ?? e)).join('\n')).not.toMatch(/effect_update_depth_exceeded/)
+    await unmount(app)
+  })
+
   it('draws grid squares and tabledap points without looping', async () => {
     const squares = {
       type: 'FeatureCollection',

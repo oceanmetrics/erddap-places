@@ -17,7 +17,8 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   (`node_modules/@marinebon/ui/AGENTS.md`): semantic tokens only, one coral button (Download CSV in
   Share), pipeline order dataset → place → method → delivery, check both themes and 390 px.
 - `src/Shell.svelte`: header, footer, Help, and the lens, swapped in place (no reload).
-- Statistics (`App.svelte`, default), hash `#place=…&dataset=…&variable=…&from=…&to=…` (+ `stat=`).
+- Statistics (`App.svelte`, default), hash `#place=…&dataset=…&variable=…&from=…&to=…` (+ `stat=`, and `coll=` for a
+  place_id that exists in two gazetteer collections).
 - Then vs Now (`src/lib/thenNow/ThenNow.svelte`, lazy chunk), hash
   `#lens=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0`
   (+ `pal=viridis`, `data=<root>`). The old `mode=then-now` still opens it and is rewritten on load
@@ -50,6 +51,32 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
   (`providers`, `license`, a `license` link, a `cite-as` / `sci:doi` / doi.org `about` link); fix the
   collection, not `sources.ts`.
   Mapping from the Shiny app and design notes: `docs/then-now.md`.
+
+## Gazetteer data contract (index + manifest + per-collection geometry)
+
+All under `https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/` (the bucket host: the
+storage host's 302 costs a redirect per range request). Code: `src/lib/gazetteer.ts`, the vendored client in
+`src/lib/places/` (its header lists the local patches: re-apply them when you re-copy it), the picker in
+`src/lib/PlacePicker.svelte` + `placePicker.ts`.
+
+- the manifest (`index/layers.json`; falls back to `layers.json`): 22 layers; slug == collection == PMTiles source-layer. `pmtiles` names the storage host:
+  always go through `loadLayers()`, which rewrites it to `<bucket>/<slug>/places.pmtiles`. Titles, paint,
+  `attribution_html`, `license`, `license_url` and `citation` come from here, never from the app.
+- `index/places_index.parquet` (14,734 rows, 1.1 MB, one GET): `place_id`, `name`, `authority`, `place_type`,
+  `geom_type`, `collection`, `bbox`, `centroid_*`, `area_km2` (only the 20 `places` rows have it). **`place_id` is
+  not unique across collections** (three BOEM ids are in two): key by (collection, `place_id`), `placeKey()`, and
+  resolve an id with `resolvePlace()` (the first collection in manifest order unless `coll` names one). Ids
+  contain spaces and several colons; nothing may split or assume a shape. Places cut at ±180 are indexed UNWRAPPED (PMNM 177.8..199.0,
+  `centroid_lon` may exceed 180): fit the bbox as it is. A few rows still read -180..180: `indexBounds()` waits for
+  their geometry. Only `MultiPolygon`/`Polygon` rows can be masked.
+- `<collection>/places.parquet`: WKB geometry split at ±180. `placeGeometry()` reads ONE place; its cost is the
+  collection's row-group layout (the 1.0.1 collections have tiny row groups: an MPA is ~1 MB, a sanctuary ~0.1 MB;
+  `places/places.parquet` is one 4.2 MB group, hence the whole-file fast path for the 20). Keep it out of `$state` (cache: a plain `Map`), `stale()` after the await, and never `unwrap` (the
+  lobes expect the parts split at ±180). The 20 `places` ids use `loadPlaces()` instead.
+- Statistics and Then vs Now rasters exist only for the 20 `places` ids: ask `hasPrecomputed()` only for the
+  `places` collection. A new collection's rows need no code, only the manifest and the index.
+- The URL: `place=<id>` (URL-encoded on write, decoded on read) and `coll=<collection>` only for an ambiguous id.
+- The Place picker is not the kit's `Picker`: that one filters the items it is given and cannot sit on 14,734 rows.
 
 ## Precomputed stats first
 

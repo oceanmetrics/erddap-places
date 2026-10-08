@@ -1,6 +1,7 @@
 // what the Shell (Help, the tour, the shortcuts, feedback) may ask of the lens on screen: each lens
 // registers one of these when it mounts. The page chrome never reaches into a lens's state otherwise.
 import type { TabId } from './tour'
+import type { PlaceLayer } from './cite'
 
 /**
  * `side` is the right-edge pane (Then vs Now: the exceedance) or, in Statistics, the Table tab of the
@@ -23,4 +24,6 @@ export interface LensApi {
   maps(): any[]
   /** the "Cite this data" text of the view (About) */
   cite(): string
+  /** the manifest entry of the collection the place on screen comes from (Data sources) */
+  placeLayer?(): PlaceLayer | null
 }

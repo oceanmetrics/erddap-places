@@ -7,6 +7,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, loadPlaces, placeLobes, placesPmtilesUrl, type Place } from './gazetteer'
 import { PMTiles } from 'pmtiles'
+import { configureGazetteer, loadIndex, loadLayers, placeGeometry } from './gazetteer'
 
 const DIR   = path.dirname(fileURLToPath(import.meta.url))
 const LOCAL = path.resolve(DIR, '../../../catalog/gazetteer/places/places.parquet')
@@ -66,4 +67,26 @@ describe('published gazetteer', () => {
     const meta = await new PMTiles(placesPmtilesUrl()).getMetadata() as { attribution?: string }
     expect(meta.attribution).toBe(PLACES_ATTRIBUTION)
   }, 60_000)
+
+  it('reads the live manifest and index: 22 layers on the bucket host, more than 14,000 places', async () => {
+    if (!(await online())) return
+    configureGazetteer()                                  // the bucket, no fakes (an earlier test may have configured one)
+    const layers = await loadLayers()
+    expect(layers).toHaveLength(22)
+    expect(layers.every((l) => l.pmtiles === `${GAZETTEER_FALLBACK}${l.slug}/places.pmtiles`)).toBe(true)
+    const rows = await loadIndex()
+    expect(rows.length).toBeGreaterThan(14_000)
+    expect(new Set(rows.map((r) => r.collection)).size).toBe(22)
+    expect(rows.every((r) => r.attribution === null)).toBe(true)
+    expect(rows.filter((r) => r.collection === 'places')).toHaveLength(20)
+    // the index unwraps places cut at the antimeridian (xmax may exceed 180); NMS:PMNM is ~177.8..199
+    expect(rows.find((r) => r.place_id === 'NMS:PMNM')!.bbox[2]).toBeGreaterThan(180)
+    // collections republished with small row groups: one MPA of the 69 MB mpa_inventory is a few MB at most, not 30
+    const mpa = rows.find((r) => r.place_id === 'MPAINV:CA136')!
+    let bytes = 0
+    const p = await placeGeometry(mpa, { onProgress: (b) => { bytes = b } })
+    expect(p.geometry.type).toMatch(/Polygon/)
+    expect(bytes).toBeGreaterThan(0)
+    expect(bytes).toBeLessThan(3_000_000)
+  }, 120_000)
 })

@@ -74,6 +74,20 @@ describe('extras and switching lens', () => {
     expect(hashParam(h, 'stat')).toBe('p90')
     expect(withExtras(h, { stat: null, show: '' })).toBe('#place=NMS:FKNMS')
   })
+  it('keeps a gazetteer id with a space or extra colons, and coll=, through extras, migration and a lens switch', () => {
+    const base = '#place=BOEM:OCS-P+0562&coll=boem_wind_leases&dataset=erddap/dhw_5km&variable=CRW_SST'
+    const h = withExtras(base, { stat: 'p90', show: 'table', hide: '' })
+    expect(h).toBe(`${base}&stat=p90&show=table`)
+    expect(hashParam(h, 'place')).toBe('BOEM:OCS-P 0562')
+    expect(hashParam(h, 'coll')).toBe('boem_wind_leases')
+    expect(decodeHash(h)).toMatchObject({ place: 'BOEM:OCS-P 0562', coll: 'boem_wind_leases' })
+    expect(migrateHash('#mode=stats&place=BOEM:OCS-A+0506')).toBe('#place=BOEM:OCS-A+0506')
+    expect(hashParam('#place=ONMS:a:b:c&stat=sd', 'place')).toBe('ONMS:a:b:c')
+    // Then vs Now has rasters for sanctuaries only: a gazetteer place falls back, and Statistics carries the id whole
+    expect(lensHash('then-now', { place: 'BOEM:OCS-A 0506' })).toBe('#lens=then-now')
+    expect(lensHash('stats', { place: 'BOEM:OCS-A 0506', variable: 'CRW_SST' }))
+      .toBe('#place=BOEM:OCS-A+0506&dataset=erddap/dhw_5km&variable=CRW_SST')
+  })
   it('carries a sanctuary into Then vs Now, and anything else falls back to its default place', () => {
     expect(lensHash('then-now', { place: 'NMS:CINMS' })).toBe('#lens=then-now&place=NMS:CINMS')
     expect(lensHash('then-now', { place: 'MRGID:8521' })).toBe('#lens=then-now')

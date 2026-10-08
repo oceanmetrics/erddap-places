@@ -35,6 +35,8 @@ const dataset = {
 vi.mock('./lib/gazetteer', async (orig) => ({
   ...(await orig<any>()),
   loadPlaces      : vi.fn(async () => [place]),
+  loadIndex       : vi.fn(async () => []),
+  loadLayers      : vi.fn(async () => []),
   gazetteerBase   : () => 'https://example.invalid/gazetteer/',
   placesPmtilesUrl: () => 'https://example.invalid/gazetteer/places/places.pmtiles',
 }))

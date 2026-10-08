@@ -17,14 +17,17 @@ export function toCsv(rows: Record<string, unknown>[], columns?: string[]): stri
   return [head, ...rows.map((r) => cols.map((c) => csvField(r[c])).join(','))].join('\n') + '\n'
 }
 
+// anything but letters, digits, dot, underscore and hyphen becomes one hyphen: the gazetteer's ids carry
+// colons and spaces (`BOEM:OCS-A 0506` -> `BOEM-OCS-A-0506`)
 const safe = (s: string) => String(s ?? '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '')
 
 /**
  * `erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv`; a `suffix` goes before
  * the extension (`…_2026-06-26_plot.png`, the Time strip's plot, so it never collides with the map PNG).
+ * A place id that exists in two collections carries the collection after it, so the two never collide.
  */
 export function resultFileName(s: Partial<RunState>, ext: string, suffix = ''): string {
-  const parts = ['erddap-places', s.place, s.dataset, s.variable, s.from, s.to, suffix].filter(Boolean).map((x) => safe(String(x)))
+  const parts = ['erddap-places', s.place, s.coll, s.dataset, s.variable, s.from, s.to, suffix].filter(Boolean).map((x) => safe(String(x)))
   return `${parts.join('_')}.${ext.replace(/^\./, '')}`
 }
 

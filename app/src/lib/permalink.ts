@@ -4,15 +4,19 @@
 // hash is a plain `key=value&…` list. place ids carry a colon (`NMS:HIHWNMS`) and dataset ids a
 // slash (`erddap/dhw_5km`); both are left literal in the written hash (they are legal in a fragment
 // and make the link readable) while everything else is percent-encoded, and reading accepts either.
+// the gazetteer's ids are not all that tidy: `BOEM:OCS-A 0506` has a space (written `+`, read as a
+// space; `%20` reads the same), `ONMS:florida-keys-national-marine-sanctuary:northern-section` has two
+// colons, and one id may exist in two collections (`coll=` says which; it is written only then).
 
 export interface RunState {
   place   : string   // place_id, e.g. NMS:HIHWNMS
+  coll   ?: string   // the gazetteer collection; only when the place_id occurs in more than one
   dataset : string   // STAC collection id, e.g. erddap/dhw_5km
   variable: string   // e.g. CRW_SST
   from    : string   // yyyy-mm-dd
   to      : string   // yyyy-mm-dd
 }
-export const RUN_KEYS = ['place', 'dataset', 'variable', 'from', 'to'] as const
+export const RUN_KEYS = ['place', 'coll', 'dataset', 'variable', 'from', 'to'] as const
 
 /** `#place=NMS:HIHWNMS&dataset=erddap/dhw_5km&variable=CRW_SST&from=…&to=…` (empty fields dropped). */
 export function encodeHash(state: Partial<RunState>): string {

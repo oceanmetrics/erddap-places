@@ -9,6 +9,18 @@ export const GAZETTEER_URL = 'https://storage.oceanmetrics.io/gazetteer/'
 /** what a dataset needs to be cited (a catalog Dataset has all of it) */
 export interface CiteDataset { collection: any; title: string; baseUrl: string; datasetId: string; protocol?: string }
 
+/**
+ * the collection a place comes from, as the gazetteer's layers.json describes it (a `Layer` has all of
+ * it). The `places` collection is the gazetteer itself and is cited by `gazetteerCitation()`.
+ */
+export interface PlaceLayer { slug: string; title: string; citation: string; license?: string | null; license_url?: string | null; n?: number | null }
+
+/** the citation of a place's collection: its own credit line and citation, then its licence */
+export function placeLayerCitation(l: PlaceLayer): string {
+  const lic = l.license ? ` Licence: ${l.license}${l.license_url ? ` (${l.license_url})` : ''}.` : ''
+  return `${l.citation.trim()}${lic}`
+}
+
 /** the gazetteer: who drew the boundaries, who assembled them, where they are published */
 export function gazetteerCitation(year: string, version?: string | null): string {
   return `Ocean Metrics (${year}). Ocean Metrics gazetteer of marine places${version ? `, places v${version}` : ''}: ` +
@@ -37,6 +49,8 @@ export interface CiteInput {
   url: string
   appVersion: string
   gazetteerVersion?: string | null
+  /** the gazetteer collection of the place on screen, when it is not the `places` collection */
+  placeLayer?: PlaceLayer | null
 }
 
 /** the "Cite this data" block: data first (each dataset once), then the places, then the app */
@@ -45,5 +59,6 @@ export function citeText(c: CiteInput): string {
   const seen = new Set<string>()
   const data = c.datasets.filter((d) => { const k = `${d.baseUrl}|${d.datasetId}`; if (seen.has(k)) return false; seen.add(k); return true })
     .map((d) => citation(d, c.accessed))
-  return [...data, ...(c.extra ?? []), gazetteerCitation(year, c.gazetteerVersion), appCitation(year, c.appVersion, c.url)].join('\n\n')
+  const layer = c.placeLayer && c.placeLayer.slug !== 'places' && c.placeLayer.citation ? [placeLayerCitation(c.placeLayer)] : []
+  return [...data, ...(c.extra ?? []), ...layer, gazetteerCitation(year, c.gazetteerVersion), appCitation(year, c.appVersion, c.url)].join('\n\n')
 }

@@ -1,0 +1,827 @@
+{
+  "schema": 1,
+  "generated": "2026-10-08T17:26:18Z",
+  "base": "https://storage.oceanmetrics.io/gazetteer/",
+  "base_direct": "https://oceanmetrics.io-public.s3.amazonaws.com/gazetteer/",
+  "layers": [
+    {
+      "slug": "boem_ocs_planning",
+      "title": "BOEM OCS oil and gas planning areas",
+      "collection": "boem_ocs_planning",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/boem_ocs_planning/places.pmtiles",
+      "source_layer": "boem_ocs_planning",
+      "geom_type": "MultiPolygon",
+      "n": 27,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "BOEM",
+      "place_type": "planning_area",
+      "bbox": [
+        -180.0,
+        23.817927551,
+        180.0,
+        82.4773764510001
+      ],
+      "attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.boem.gov/oil-gas-energy\">Bureau of Ocean Energy Management (BOEM)</a>, Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. BOEM OCS oil and gas planning areas, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_ocs_planning/"
+    },
+    {
+      "slug": "boem_pacific_og_leases",
+      "title": "BOEM Pacific active oil and gas leases",
+      "collection": "boem_pacific_og_leases",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/boem_pacific_og_leases/places.pmtiles",
+      "source_layer": "boem_pacific_og_leases",
+      "geom_type": "MultiPolygon",
+      "n": 34,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "BOEM",
+      "place_type": "lease",
+      "bbox": [
+        -124.81159845979433,
+        33.5022019,
+        -118.069592,
+        44.588995
+      ],
+      "attribution": "Bureau of Ocean Energy Management (BOEM) and Bureau of Safety and Environmental Enforcement (BSEE), Pacific Region. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.boem.gov/oil-gas-energy/mapping-and-data/pacific-cadastral-data\">Bureau of Ocean Energy Management (BOEM)</a> and <a href=\"https://www.bsee.gov\">Bureau of Safety and Environmental Enforcement (BSEE)</a>, Pacific Region. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "Bureau of Ocean Energy Management (BOEM) and Bureau of Safety and Environmental Enforcement (BSEE), Pacific Region. Public domain. Processed by Ocean Metrics. BOEM Pacific active oil and gas leases, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_pacific_og_leases/"
+    },
+    {
+      "slug": "boem_program_11_draft",
+      "title": "BOEM 11th National OCS Program, Draft Proposed Program areas",
+      "collection": "boem_program_11_draft",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/boem_program_11_draft/places.pmtiles",
+      "source_layer": "boem_program_11_draft",
+      "geom_type": "MultiPolygon",
+      "n": 20,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "BOEM",
+      "place_type": "planning_area",
+      "bbox": [
+        -180.0,
+        24.2456,
+        180.0,
+        82.477380102
+      ],
+      "attribution": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.boem.gov/oil-gas-energy\">Bureau of Ocean Energy Management (BOEM)</a>, Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "Bureau of Ocean Energy Management (BOEM), Office of Strategic Resources (OSR), Geospatial Services Division (GSD), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. BOEM 11th National OCS Program, Draft Proposed Program areas, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_program_11_draft/"
+    },
+    {
+      "slug": "boem_wind_leases",
+      "title": "BOEM offshore wind lease outlines",
+      "collection": "boem_wind_leases",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/boem_wind_leases/places.pmtiles",
+      "source_layer": "boem_wind_leases",
+      "geom_type": "MultiPolygon",
+      "n": 52,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "BOEM",
+      "place_type": "lease",
+      "bbox": [
+        -124.811561,
+        29.028114,
+        -68.572706807,
+        43.341308
+      ],
+      "attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.boem.gov/renewable-energy\">Bureau of Ocean Energy Management (BOEM)</a>, Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. BOEM offshore wind lease outlines, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_wind_leases/"
+    },
+    {
+      "slug": "boem_wind_planning_rescinded",
+      "title": "BOEM offshore wind planning areas (rescinded 2025-07-30)",
+      "collection": "boem_wind_planning_rescinded",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/boem_wind_planning_rescinded/places.pmtiles",
+      "source_layer": "boem_wind_planning_rescinded",
+      "geom_type": "MultiPolygon",
+      "n": 3325,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "BOEM",
+      "place_type": "planning_area",
+      "bbox": [
+        -158.663621,
+        20.776513,
+        -72.002210756,
+        43.950633
+      ],
+      "attribution": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.boem.gov/renewable-energy\">Bureau of Ocean Energy Management (BOEM)</a>, Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "Bureau of Ocean Energy Management (BOEM), Office of Renewable Energy Programs (OREP), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. BOEM offshore wind planning areas (rescinded 2025-07-30), v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/boem_wind_planning_rescinded/"
+    },
+    {
+      "slug": "calcofi_lines",
+      "title": "CalCOFI transect lines",
+      "collection": "calcofi_lines",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/calcofi_lines/places.pmtiles",
+      "source_layer": "calcofi_lines",
+      "geom_type": "LineString",
+      "n": 11,
+      "updated": "2026-10-08T17:03:19Z",
+      "version": "1.0.1",
+      "paint": {
+        "line": {
+          "line-color": "#0b6e99",
+          "line-width": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            1,
+            10,
+            2.5
+          ]
+        }
+      },
+      "authority": "CALCOFI",
+      "place_type": "transect",
+      "bbox": [
+        -126.48559,
+        29.84637,
+        -117.30538,
+        37.84743
+      ],
+      "attribution": "California Cooperative Oceanic Fisheries Investigations (CalCOFI), calcofi.org. CC BY 4.0. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://calcofi.org/\">California Cooperative Oceanic Fisheries Investigations (CalCOFI)</a>, calcofi.org. CC BY 4.0. Processed by Ocean Metrics.",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "citation": "California Cooperative Oceanic Fisheries Investigations (CalCOFI), calcofi.org. CC BY 4.0. Processed by Ocean Metrics. CalCOFI transect lines, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/calcofi_lines/"
+    },
+    {
+      "slug": "calcofi_stations",
+      "title": "CalCOFI stations",
+      "collection": "calcofi_stations",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/calcofi_stations/places.pmtiles",
+      "source_layer": "calcofi_stations",
+      "geom_type": "Point",
+      "n": 113,
+      "updated": "2026-10-08T17:24:36Z",
+      "version": "1.0.1",
+      "paint": {
+        "circle": {
+          "circle-color": "#0b6e99",
+          "circle-radius": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            2,
+            8,
+            5,
+            12,
+            7
+          ],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1,
+          "circle-opacity": 0.9
+        }
+      },
+      "authority": "CALCOFI",
+      "place_type": "station",
+      "bbox": [
+        -126.48559,
+        29.84637,
+        -117.27357,
+        37.84743
+      ],
+      "attribution": "California Cooperative Oceanic Fisheries Investigations (CalCOFI), calcofi.org. CC BY 4.0. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://calcofi.org/\">California Cooperative Oceanic Fisheries Investigations (CalCOFI)</a>, calcofi.org. CC BY 4.0. Processed by Ocean Metrics.",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "citation": "California Cooperative Oceanic Fisheries Investigations (CalCOFI), calcofi.org. CC BY 4.0. Processed by Ocean Metrics. CalCOFI stations, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/calcofi_stations/"
+    },
+    {
+      "slug": "fws_critical_habitat_proposed",
+      "title": "USFWS proposed critical habitat",
+      "collection": "fws_critical_habitat_proposed",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/fws_critical_habitat_proposed/places.pmtiles",
+      "source_layer": "fws_critical_habitat_proposed",
+      "geom_type": "MultiPolygon",
+      "n": 70,
+      "updated": "2026-10-08T17:11:12Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "FWS",
+      "place_type": "habitat",
+      "bbox": [
+        -178.344790040125,
+        -14.5486182438921,
+        145.843715108702,
+        45.412504201926
+      ],
+      "attribution": "U.S. Fish and Wildlife Service (USFWS), via MarineCadastre.gov. Public domain; not the legal source for critical habitat boundaries. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.fws.gov/program/endangered-species\">U.S. Fish and Wildlife Service</a> (USFWS), via MarineCadastre.gov. Public domain; not the legal source for critical habitat boundaries. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "U.S. Fish and Wildlife Service (USFWS), via MarineCadastre.gov. Public domain; not the legal source for critical habitat boundaries. Processed by Ocean Metrics. USFWS proposed critical habitat, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/fws_critical_habitat_proposed/"
+    },
+    {
+      "slug": "gebco_undersea",
+      "title": "GEBCO Gazetteer of Undersea Feature Names",
+      "collection": "gebco_undersea",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/gebco_undersea/places.pmtiles",
+      "source_layer": "gebco_undersea",
+      "geom_type": "Mixed",
+      "n": 5412,
+      "updated": "2026-10-08T17:08:22Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#0b6e99",
+          "fill-opacity": 0.25
+        },
+        "line": {
+          "line-color": "#0b6e99",
+          "line-width": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            1,
+            10,
+            2.5
+          ]
+        },
+        "circle": {
+          "circle-color": "#0b6e99",
+          "circle-radius": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            2,
+            8,
+            4,
+            12,
+            6
+          ],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1,
+          "circle-opacity": 0.9
+        }
+      },
+      "authority": "GEBCO",
+      "place_type": "undersea_feature",
+      "bbox": [
+        -180.0,
+        -79.0,
+        180.0,
+        89.5757
+      ],
+      "attribution": "IHO-IOC GEBCO Gazetteer of Undersea Feature Names, www.gebco.net. Served by the IHO Data Centre for Digital Bathymetry (IHO DCDB) and NOAA National Centers for Environmental Information (NCEI). Processed by Ocean Metrics.",
+      "attribution_html": "IHO-IOC GEBCO Gazetteer of Undersea Feature Names, www.gebco.net. Served by the IHO Data Centre for Digital Bathymetry (IHO DCDB) and NOAA National Centers for Environmental Information (NCEI). Processed by Ocean Metrics.",
+      "license": "other",
+      "license_url": "https://www.gebco.net/data-products/undersea-feature-names",
+      "citation": "IHO-IOC GEBCO Gazetteer of Undersea Feature Names, www.gebco.net. Served by the IHO Data Centre for Digital Bathymetry (IHO DCDB) and NOAA National Centers for Environmental Information (NCEI). Processed by Ocean Metrics. GEBCO Gazetteer of Undersea Feature Names, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/gebco_undersea/"
+    },
+    {
+      "slug": "mpa_inventory",
+      "title": "NOAA Marine Protected Areas Inventory",
+      "collection": "mpa_inventory",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/mpa_inventory/places.pmtiles",
+      "source_layer": "mpa_inventory",
+      "geom_type": "MultiPolygon",
+      "n": 981,
+      "updated": "2026-10-08T17:17:35Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "MPAINV",
+      "place_type": "mpa",
+      "bbox": [
+        -180.0,
+        -15.386142388115,
+        180.0,
+        70.1697801788938
+      ],
+      "attribution": "NOAA National Ocean Service, Office of National Marine Sanctuaries, Marine Protected Areas Center, NOAA Marine Protected Areas Inventory (2024 release). Public domain; not to be used for navigation. Processed by Ocean Metrics.",
+      "attribution_html": "NOAA National Ocean Service, Office of National Marine Sanctuaries, Marine Protected Areas Center, NOAA Marine Protected Areas Inventory (2024 release). Public domain; not to be used for navigation. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "NOAA National Ocean Service, Office of National Marine Sanctuaries, Marine Protected Areas Center, NOAA Marine Protected Areas Inventory (2024 release). Public domain; not to be used for navigation. Processed by Ocean Metrics. NOAA Marine Protected Areas Inventory, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/mpa_inventory/"
+    },
+    {
+      "slug": "noaa_aoa_socal",
+      "title": "NOAA Southern California Aquaculture Opportunity Areas",
+      "collection": "noaa_aoa_socal",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_aoa_socal/places.pmtiles",
+      "source_layer": "noaa_aoa_socal",
+      "geom_type": "MultiPolygon",
+      "n": 10,
+      "updated": "2026-10-08T14:58:54Z",
+      "version": "1.0.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "AOA",
+      "place_type": "aoa",
+      "bbox": [
+        -119.596764,
+        33.959949726664256,
+        -118.55830066070192,
+        34.288238131953925
+      ],
+      "attribution": "NOAA Fisheries, West Coast Region, Southern California Aquaculture Opportunity Areas (2025). Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "NOAA Fisheries, West Coast Region, Southern California Aquaculture Opportunity Areas (2025). Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.usa.gov/publicdomain/label/1.0/",
+      "citation": "NOAA Fisheries, West Coast Region, Southern California Aquaculture Opportunity Areas (2025). Public domain. Processed by Ocean Metrics. NOAA Southern California Aquaculture Opportunity Areas, v1.0.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_aoa_socal/"
+    },
+    {
+      "slug": "noaa_hapc",
+      "title": "NOAA Habitat Areas of Particular Concern",
+      "collection": "noaa_hapc",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_hapc/places.pmtiles",
+      "source_layer": "noaa_hapc",
+      "geom_type": "MultiPolygon",
+      "n": 237,
+      "updated": "2026-10-08T17:19:45Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "NMFS",
+      "place_type": "habitat",
+      "bbox": [
+        -180.0,
+        17.6300329680001,
+        180.0,
+        59.833930513
+      ],
+      "attribution": "NOAA Fisheries regional offices, science centers and Fishery Management Councils (Habitat Protection Division), via MarineCadastre.gov. Public domain; no warranty. Processed by Ocean Metrics.",
+      "attribution_html": "NOAA Fisheries regional offices, science centers and Fishery Management Councils (Habitat Protection Division), via MarineCadastre.gov. Public domain; no warranty. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "NOAA Fisheries regional offices, science centers and Fishery Management Councils (Habitat Protection Division), via MarineCadastre.gov. Public domain; no warranty. Processed by Ocean Metrics. NOAA Habitat Areas of Particular Concern, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_hapc/"
+    },
+    {
+      "slug": "noaa_marine_monuments",
+      "title": "Marine National Monuments",
+      "collection": "noaa_marine_monuments",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_marine_monuments/places.pmtiles",
+      "source_layer": "noaa_marine_monuments",
+      "geom_type": "MultiPolygon",
+      "n": 32,
+      "updated": "2026-10-08T17:03:52Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "MC",
+      "place_type": "protected_area",
+      "bbox": [
+        -180.0,
+        -15.38610415500685,
+        180.0,
+        40.600008428332835
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. Marine National Monuments, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_marine_monuments/"
+    },
+    {
+      "slug": "noaa_maritime_limits",
+      "title": "U.S. maritime limits and boundaries (lines)",
+      "collection": "noaa_maritime_limits",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_maritime_limits/places.pmtiles",
+      "source_layer": "noaa_maritime_limits",
+      "geom_type": "MultiLineString",
+      "n": 246,
+      "updated": "2026-10-08T17:04:46Z",
+      "version": "1.0.1",
+      "paint": {
+        "line": {
+          "line-color": "#0b6e99",
+          "line-width": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            1,
+            10,
+            2.5
+          ]
+        }
+      },
+      "authority": "NOAA-OCS",
+      "place_type": "maritime_limit",
+      "bbox": [
+        -180.0,
+        -17.555000001999986,
+        180.0,
+        74.70884000400002
+      ],
+      "attribution": "Department of Commerce (DOC), National Oceanic and Atmospheric Administration (NOAA), National Ocean Service (NOS), Office of Coast Survey (OCS). Public domain; not for legal use. Processed by Ocean Metrics.",
+      "attribution_html": "Department of Commerce (DOC), National Oceanic and Atmospheric Administration (NOAA), National Ocean Service (NOS), Office of Coast Survey (OCS). Public domain; not for legal use. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "Department of Commerce (DOC), National Oceanic and Atmospheric Administration (NOAA), National Ocean Service (NOS), Office of Coast Survey (OCS). Public domain; not for legal use. Processed by Ocean Metrics. U.S. maritime limits and boundaries (lines), v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_maritime_limits/"
+    },
+    {
+      "slug": "noaa_nerrs",
+      "title": "NOAA National Estuarine Research Reserves",
+      "collection": "noaa_nerrs",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_nerrs/places.pmtiles",
+      "source_layer": "noaa_nerrs",
+      "geom_type": "MultiPolygon",
+      "n": 30,
+      "updated": "2026-10-08T17:03:45Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "NERRS",
+      "place_type": "protected_area",
+      "bbox": [
+        -157.8233616799978,
+        17.911560996924997,
+        -66.2023393592931,
+        59.82182008987674
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. NOAA National Estuarine Research Reserves, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_nerrs/"
+    },
+    {
+      "slug": "noaa_sanctuaries",
+      "title": "NOAA National Marine Sanctuaries",
+      "collection": "noaa_sanctuaries",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_sanctuaries/places.pmtiles",
+      "source_layer": "noaa_sanctuaries",
+      "geom_type": "MultiPolygon",
+      "n": 47,
+      "updated": "2026-10-08T17:03:26Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "ONMS",
+      "place_type": "protected_area",
+      "bbox": [
+        -180.0,
+        -15.386142388115019,
+        180.0,
+        48.50589527436556
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office of National Marine Sanctuaries (ONMS), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office of National Marine Sanctuaries (ONMS), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office of National Marine Sanctuaries (ONMS), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. NOAA National Marine Sanctuaries, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_sanctuaries/"
+    },
+    {
+      "slug": "noaa_state_lateral_boundaries",
+      "title": "Offshore state lateral boundaries (lines)",
+      "collection": "noaa_state_lateral_boundaries",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_state_lateral_boundaries/places.pmtiles",
+      "source_layer": "noaa_state_lateral_boundaries",
+      "geom_type": "MultiLineString",
+      "n": 19,
+      "updated": "2026-10-08T17:04:36Z",
+      "version": "1.0.1",
+      "paint": {
+        "line": {
+          "line-color": "#0b6e99",
+          "line-width": [
+            "interpolate",
+            [
+              "linear"
+            ],
+            [
+              "zoom"
+            ],
+            3,
+            1,
+            10,
+            2.5
+          ]
+        }
+      },
+      "authority": "MC",
+      "place_type": "jurisdiction",
+      "bbox": [
+        -124.32653367775085,
+        29.53540559361699,
+        -70.56082677369399,
+        46.29239772004751
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. Offshore state lateral boundaries (lines), v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_state_lateral_boundaries/"
+    },
+    {
+      "slug": "noaa_state_submerged_lands",
+      "title": "U.S. state submerged lands",
+      "collection": "noaa_state_submerged_lands",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_state_submerged_lands/places.pmtiles",
+      "source_layer": "noaa_state_submerged_lands",
+      "geom_type": "MultiPolygon",
+      "n": 483,
+      "updated": "2026-10-08T17:07:36Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "MC",
+      "place_type": "jurisdiction",
+      "bbox": [
+        -178.00001567917076,
+        18.859753230081566,
+        -66.88541567825695,
+        71.43923081682229
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. U.S. state submerged lands, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_state_submerged_lands/"
+    },
+    {
+      "slug": "noaa_submarine_cables",
+      "title": "Submarine cable areas",
+      "collection": "noaa_submarine_cables",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_submarine_cables/places.pmtiles",
+      "source_layer": "noaa_submarine_cables",
+      "geom_type": "MultiPolygon",
+      "n": 2816,
+      "updated": "2026-10-08T17:05:14Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "MC",
+      "place_type": "infrastructure",
+      "bbox": [
+        -180.0,
+        11.83868183597496,
+        180.0,
+        71.79573645742727
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. Submarine cable areas, v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_submarine_cables/"
+    },
+    {
+      "slug": "noaa_vessel_routing_measures",
+      "title": "Vessel routing measures (TSS, fairways, precautionary areas)",
+      "collection": "noaa_vessel_routing_measures",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/noaa_vessel_routing_measures/places.pmtiles",
+      "source_layer": "noaa_vessel_routing_measures",
+      "geom_type": "MultiPolygon",
+      "n": 327,
+      "updated": "2026-10-08T17:05:46Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "MC",
+      "place_type": "navigation_measure",
+      "bbox": [
+        -180.0,
+        22.22073298726175,
+        179.9985899487311,
+        66.56644438302796
+      ],
+      "attribution": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "National Oceanic and Atmospheric Administration (NOAA), Office for Coastal Management (OCM), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. Vessel routing measures (TSS, fairways, precautionary areas), v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/noaa_vessel_routing_measures/"
+    },
+    {
+      "slug": "places",
+      "title": "Places",
+      "collection": "places",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/places/places.pmtiles",
+      "source_layer": "places",
+      "geom_type": "MultiPolygon",
+      "n": 20,
+      "updated": "2026-10-08T13:10:24Z",
+      "version": "1.2.0",
+      "paint": {
+        "fill": {
+          "fill-color": "#3388ff",
+          "fill-opacity": 0.6,
+          "fill-outline-color": "#2266cc"
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": null,
+      "place_type": null,
+      "bbox": [
+        -180.0,
+        -28.424704,
+        180.0,
+        48.50589
+      ],
+      "attribution": "NOAA Office of National Marine Sanctuaries, MarineRegions.org (Flanders Marine Institute), ProtectedSeas. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://sanctuaries.noaa.gov\">NOAA Office of National Marine Sanctuaries</a>, <a href=\"https://www.marineregions.org\">MarineRegions.org (Flanders Marine Institute)</a>, <a href=\"https://protectedseas.net\">ProtectedSeas</a>. Processed by Ocean Metrics.",
+      "license": "CC-BY-4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "citation": "NOAA Office of National Marine Sanctuaries, MarineRegions.org (Flanders Marine Institute), ProtectedSeas. Processed by Ocean Metrics. Places, v1.2.0. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/places/"
+    },
+    {
+      "slug": "usace_danger_zones",
+      "title": "Danger zones and restricted areas (USACE)",
+      "collection": "usace_danger_zones",
+      "pmtiles": "https://storage.oceanmetrics.io/gazetteer/usace_danger_zones/places.pmtiles",
+      "source_layer": "usace_danger_zones",
+      "geom_type": "MultiPolygon",
+      "n": 422,
+      "updated": "2026-10-08T17:04:51Z",
+      "version": "1.0.1",
+      "paint": {
+        "fill": {
+          "fill-color": "#e08a1e",
+          "fill-opacity": 0.45
+        },
+        "line": {
+          "line-color": "#a85f00",
+          "line-width": 1
+        }
+      },
+      "authority": "USACE",
+      "place_type": "restricted_area",
+      "bbox": [
+        -176.62913799717168,
+        5.365109038483919,
+        171.08499719126266,
+        65.62551575077943
+      ],
+      "attribution": "U.S. Army Corps of Engineers (USACE), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "attribution_html": "<a href=\"https://www.usace.army.mil\">U.S. Army Corps of Engineers (USACE)</a>, via MarineCadastre.gov. Public domain. Processed by Ocean Metrics.",
+      "license": "CC-PDDC",
+      "license_url": "https://www.copyright.gov/title17/92chap1.html#105",
+      "citation": "U.S. Army Corps of Engineers (USACE), via MarineCadastre.gov. Public domain. Processed by Ocean Metrics. Danger zones and restricted areas (USACE), v1.0.1. Ocean Metrics gazetteer, 2026. https://storage.oceanmetrics.io/gazetteer/usace_danger_zones/"
+    }
+  ]
+}

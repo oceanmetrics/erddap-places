@@ -21,6 +21,28 @@ describe('permalink', () => {
     expect(h).not.toContain(' ')
     expect(decodeHash(h)).toEqual(odd)
   })
+  it('round-trips the gazetteer ids: a space, extra colons, punctuation, and coll= only when set', () => {
+    const ids = ['BOEM:OCS-A 0506', 'ONMS:florida-keys-national-marine-sanctuary:northern-section', 'MC:cables:1',
+                 'USACE:AK:334-1275-a-1', 'GEBCO:1', "WPA:Gray's Reef + co & more #1 100%", 'a/b']
+    for (const place of ids) {
+      const h = encodeHash({ ...RUN, place })
+      expect(h).not.toContain(' ')
+      expect(decodeHash(h).place).toBe(place)
+      expect(decodeHash(h)).toEqual({ ...RUN, place })
+    }
+    // the written form: colons stay readable, a space is a plus, nothing else leaks
+    expect(encodeHash({ place: 'BOEM:OCS-A 0506' })).toBe('#place=BOEM:OCS-A+0506')
+    expect(encodeHash({ place: 'ONMS:a:b' })).toBe('#place=ONMS:a:b')
+    // %20, + and a literal space (a hand-typed link) all read as a space
+    expect(decodeHash('#place=BOEM:OCS-A%200506').place).toBe('BOEM:OCS-A 0506')
+    expect(decodeHash('#place=BOEM:OCS-A+0506').place).toBe('BOEM:OCS-A 0506')
+    expect(decodeHash('#place=BOEM%3AOCS-A%200506').place).toBe('BOEM:OCS-A 0506')
+    // coll= is written only when given (the app gives it only for an id that exists in two collections)
+    expect(encodeHash({ place: 'BOEM:OCS-P 0562' })).toBe('#place=BOEM:OCS-P+0562')
+    expect(encodeHash({ place: 'BOEM:OCS-P 0562', coll: 'boem_wind_leases' })).toBe('#place=BOEM:OCS-P+0562&coll=boem_wind_leases')
+    expect(decodeHash('#place=BOEM:OCS-P+0562&coll=boem_wind_leases')).toEqual({ place: 'BOEM:OCS-P 0562', coll: 'boem_wind_leases' })
+    expect(decodeHash(encodeHash(RUN)).coll).toBeUndefined()
+  })
   it('reads a hash out of a whole URL, and ignores anything else in it', () => {
     expect(decodeHash('https://oceanmetrics.io/erddap-places/#place=NMS:CINMS&zoom=4'))
       .toEqual({ place: 'NMS:CINMS' })
@@ -52,6 +74,16 @@ describe('export files', () => {
     expect(resultFileName(RUN, 'png', 'plot'))
       .toBe('erddap-places_NMS-HIHWNMS_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26_plot.png')
     expect(resultFileName(RUN, 'png')).not.toBe(resultFileName(RUN, 'png', 'plot'))
+  })
+  it('makes the gazetteer ids file-safe: colons and spaces become hyphens, a second collection is named', () => {
+    expect(resultFileName({ ...RUN, place: 'BOEM:OCS-A 0506' }, 'csv'))
+      .toBe('erddap-places_BOEM-OCS-A-0506_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv')
+    expect(resultFileName({ ...RUN, place: 'ONMS:florida-keys-national-marine-sanctuary:northern-section' }, 'png'))
+      .toBe('erddap-places_ONMS-florida-keys-national-marine-sanctuary-northern-section_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.png')
+    expect(resultFileName({ ...RUN, place: 'BOEM:OCS-P 0562', coll: 'boem_wind_leases' }, 'csv'))
+      .toBe('erddap-places_BOEM-OCS-P-0562_boem_wind_leases_erddap-dhw_5km_CRW_SST_2026-05-28_2026-06-26.csv')
+    expect(resultFileName({ ...RUN, place: 'BOEM:OCS-P 0562', coll: 'boem_pacific_og_leases' }, 'csv'))
+      .not.toBe(resultFileName({ ...RUN, place: 'BOEM:OCS-P 0562', coll: 'boem_wind_leases' }, 'csv'))
   })
   it('quotes CSV fields that need it and renders dates as ISO days', () => {
     expect(csvField('Papahānaumokuākea, NWHI')).toBe('"Papahānaumokuākea, NWHI"')

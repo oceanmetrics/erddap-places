@@ -10,13 +10,16 @@
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
-  import { loadPlaces, placeLobes, placesPmtilesUrl, plainPlace, type Place } from './lib/gazetteer'
+  import { buildIndex, cachedPlace, collectionAttribution, collForHash, collectionParquet, loadIndex, loadLayers, loadPlaces, PLACES_COLLECTION, placeAsRow,
+           placeGeometry, placeKey, placeLobes, placesPmtilesUrl, plainPlace, polygonStatus, resolvePlace, type GazIndex, type Place } from './lib/gazetteer'
+  import { search as gazSearch, type IndexPlace, type Layer } from './lib/places'
+  import PlacePicker from './lib/PlacePicker.svelte'
   import { loadDatasets, lobeLonSpan, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
   import MapView from './lib/MapView.svelte'
   import PlotBox from './lib/PlotBox.svelte'
-  import { cellPoints, cellSquares, placeMapBounds, type ValueCell } from './lib/cells'
+  import { cellPoints, cellSquares, indexBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
   import { hasPrecomputed, inWindow, loadPrecomputed, planRun, precomputedAsOf, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type RunPlan } from './lib/precomputed'
   import { decodeHash, encodeHash, type RunState } from './lib/permalink'
@@ -54,7 +57,11 @@
   // $state.raw, not $state: deep reactive proxies make every vertex read go through a proxy trap,
   // which turned the FKNMS mask (39,645 vertices) into 67 s of blocked main thread. these are only
   // ever replaced wholesale, so raw state loses nothing.
-  let places    = $state.raw<Place[]>([])
+  let places    = $state.raw<Place[]>([])        // the 20 precomputed places, with geometry (places.parquet)
+  let layers    = $state.raw<Layer[]>([])        // the manifest: 22 collections (layers.json)
+  let gaz       = $state.raw<GazIndex | null>(null)   // every place of every collection (places_index.parquet), no geometry
+  let gazError  = $state('')
+  let loadedPlace = $state.raw<Place | null>(null)    // the polygon the last run loaded: only an antimeridian place needs it for the map fit
   let datasets  = $state.raw<Dataset[]>([])
   // a shared link reproduces the run: #place=…&dataset=…&variable=…&from=…&to=… (+ stat, show, hide),
   // read once, here, before any effect can default the window from the dataset extent
@@ -62,6 +69,8 @@
   const RAW     = typeof location === 'undefined' ? '' : location.hash
   let hashWindow = Boolean(HASH.from && HASH.to)
   let placeId   = $state(HASH.place ?? 'NMS:FKNMS')
+  // the collection of the place: place_id is not unique across collections (written to the hash only when it is ambiguous)
+  let coll      = $state(HASH.coll ?? '')
   let dsId      = $state(HASH.dataset ?? 'erddap/dhw_5km')
   let varName   = $state(HASH.variable ?? 'CRW_SST')
   let endDate   = $state(HASH.to ?? iso(new Date(Date.now() - LAG_DAYS * 864e5)))
@@ -120,7 +129,20 @@
   let exporting = $state('')
   let map: any  = null
 
-  const place   = $derived(places.find((p) => p.place_id === placeId) ?? null)
+  // the places the app can name: the whole index once it is in, the 20 `places` rows before that
+  const quickById = $derived(new Map(places.map((p) => [p.place_id, [placeAsRow(p)]])))
+  const byId      = $derived(gaz?.byId ?? quickById)
+  const resolved  = $derived(resolvePlace(byId, placeId, coll))
+  const selected  = $derived<IndexPlace | null>(resolved.row)
+  const selKey    = $derived(selected ? placeKey(selected) : '')
+  const layerOf   = (slug: string | undefined) => layers.find((l) => l.slug === slug) ?? null
+  const selLayer  = $derived(layerOf(selected?.collection))
+  const polygons  = $derived(gaz?.polygons ?? places.map(placeAsRow))
+  /** pick a place (from the picker, or a click on the map) */
+  function selectPlace(id: string, collection: string) { placeId = id; coll = collection }
+  // what the results on screen are of: the place, its collection and its manifest layer
+  const shownRow   = $derived(shownRun ? resolvePlace(byId, shownRun.place, shownRun.coll).row : null)
+  const shownLayer = $derived(layerOf(shownRow?.collection))
   const dataset = $derived(datasets.find((d) => d.id === dsId) ?? null)
   const variable = $derived(dataset?.variables.find((v) => v.name === varName) ?? dataset?.variables[0] ?? null)
   // the results on screen belong to the variable that produced them, never to the current picker:
@@ -150,13 +172,9 @@
   const fmt     = (v: unknown, d = 2) => (typeof v === 'number' && Number.isFinite(v) ? v.toFixed(d) : '')
 
   // ── pickers (the Controls tabs and the sentence chips show the same ones) ───
-  const GAZ_GROUP: Record<string, string> = { NMS: 'Sanctuaries', MRGID: 'Marine regions', PSGID: 'Protected areas' }
-  const GAZ_ORDER = ['NMS', 'MRGID', 'PSGID']
-  const gazRank = (g: string) => { const i = GAZ_ORDER.indexOf(g); return i < 0 ? GAZ_ORDER.length : i }
-  const placeItems = $derived<PickerItem[]>([...places].sort((a, b) => gazRank(a.gazetteer) - gazRank(b.gazetteer) || a.name.localeCompare(b.name)).map((p) => ({
-    id: p.place_id, label: shortPlace(p.name), group: GAZ_GROUP[p.gazetteer] ?? p.gazetteer,
-    keywords: `${p.place_id} ${p.name}`, color: 'var(--facet-place)',
-  })))
+  // the Place picker lists the whole gazetteer index (PlacePicker.svelte, rules in placePicker.ts); the
+  // client's ranked search runs over every polygon place
+  const searchPolygons = (q: string) => gazSearch(q, { geomType: ['MultiPolygon', 'Polygon'], limit: Number.MAX_SAFE_INTEGER })
   const cadenceGroup = (d: Dataset) => d.protocol === 'tabledap' ? 'Samples (tabledap)'
     : d.timeStep === 'P1D' ? 'Daily grids' : d.timeStep === 'P1M' ? 'Monthly grids' : 'Other grids'
   const datasetItems = $derived<PickerItem[]>(datasets.map((d) => ({
@@ -172,7 +190,7 @@
   const shownDs   = $derived(shownRun ? datasets.find((d) => d.id === shownRun!.dataset) ?? null : null)
   const varLabel  = $derived(variable ? variableWords(variable.description, variable.name) : 'Variable')
   const blurb     = $derived(dataset ? datasetBlurb(dataset.collection, dataset.timeStep, extent?.stepLabel, dataset.protocol) : '')
-  const placeLabel = $derived(place ? shortPlace(place.name) : placeId)
+  const placeLabel = $derived(selected ? shortPlace(selected.name) : placeId)
   const methodLabel = $derived(pickedTabular ? 'monthly mean' : variable?.categorical ? 'area-weighted class fractions' : statLabel(stat))
   const windowLabel = $derived(pickedTabular ? fmtMonths(startDate, endDate) : fmtRange(startDate, endDate))
   const countWord = $derived(shownProtocol === 'tabledap' ? 'station' : 'cell')
@@ -182,7 +200,24 @@
 
   // ── map ─────────────────────────────────────────────────────────────────────
   // the place's bounds; only an antimeridian place (PMNM) costs a geometry walk (see cells.ts)
-  const mapBounds = $derived(place ? placeMapBounds(place) : null)
+  // (the index has every place's bbox, so a pick fits the map before its polygon is read; a place that
+  // spans ±180 has a world-wide bbox and waits for its geometry)
+  let lastBounds: [number, number, number, number] | null = null
+  const mapBounds = $derived.by(() => {
+    const s = selected
+    if (!s) return null
+    // the index unwraps a place cut at ±180 (PMNM 177.8..199.0), so its bbox fits as it is; the few rows that
+    // still read -180..180 wait for their geometry
+    const g = s.collection === PLACES_COLLECTION ? places.find((p) => p.place_id === s.place_id)
+      : loadedPlace && loadedPlace.collection === s.collection && loadedPlace.place_id === s.place_id ? loadedPlace : null
+    const b = indexBounds(s.bbox, g?.geometry)
+    // the same box keeps the same array, so the index arriving does not refit the map
+    if (b && lastBounds && b.every((x, i) => x === lastBounds![i])) return lastBounds
+    return (lastBounds = b)
+  })
+  // the selected place's own collection, when it is not `places`: one more tile source on the map
+  const extra = $derived(selected && selected.collection !== PLACES_COLLECTION && selLayer
+    ? { slug: selLayer.slug, url: selLayer.pmtiles, attribution: collectionAttribution(selLayer) } : null)
   // a sequential ramp for a measurement, the chart's own class colours for a categorical grid
   const layer     = $derived(squares ?? points)
   const pointRun  = $derived(shownProtocol === 'tabledap')   // the results on screen are tabledap
@@ -232,7 +267,7 @@
     if (!shownRun) return ''
     const ds = shownDs
     return [
-      `# erddap-places — ${place?.name ?? shownRun.place} (${shownRun.place})`,
+      `# erddap-places — ${shownRow?.name ?? shownRun.place} (${shownRun.place}${shownRow ? `, ${shownRow.collection}` : ''})`,
       `# dataset ${shownRun.dataset} (${ds?.baseUrl ?? '?'}, ERDDAP ${ds?.version ?? '?'}), ` +
         `variable ${shownRun.variable}, ${shownRun.from} to ${shownRun.to}`,
       `# permalink: ${link}`,
@@ -255,7 +290,7 @@
     ].join('\n')
   })
   // Cite this data: the dataset on screen, the gazetteer, this app with the view's link
-  const cite = $derived(shownDs ? citeText({ datasets: [shownDs], accessed: iso(new Date()), url: link, appVersion: __APP_VERSION__ }) : '')
+  const cite = $derived(shownDs ? citeText({ datasets: [shownDs], accessed: iso(new Date()), url: link, appVersion: __APP_VERSION__, placeLayer: shownLayer }) : '')
 
   async function copy(text: string, what: string) {
     copied = (await copyText(text)) ? `copied the ${what}` : `could not copy the ${what}`
@@ -309,15 +344,36 @@
     untrack(async () => {
       try {
         void precomputedIndex()          // which stats files are published: cached for the runs
+        // the index and the manifest (1.1 MB + 37 kB) load alongside the 20 places and the datasets, not after them
+        const gazP = Promise.all([loadIndex(), loadLayers()])
+        gazP.catch(() => {})
+        // the 20 precomputed places (4 MB, with geometry) are the fast path: a run on one of them starts at
+        // once. every other place waits for the index (1.1 MB) and reads its polygon when it runs
         const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
         places = ps; datasets = ds
         if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
         pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
-        status = `gazetteer: ${places.length} places, ${datasets.length} ERDDAP datasets`
-        if (!places.some((p) => p.place_id === placeId)) { busy = false; error = `no place ${placeId} in the gazetteer` }
+        status = `gazetteer: ${places.length} precomputed places, ${datasets.length} ERDDAP datasets; reading the index…`
+        void useGazetteer(gazP)
       } catch (e) { fail(e); busy = false }
     })
   })
+  /** the manifest and the index: every place of every collection (no geometry). a failure leaves the 20 places usable. */
+  async function useGazetteer(loading: Promise<[IndexPlace[], Layer[]]>) {
+    try {
+      const [rows, ls] = await loading
+      // the 20 places are always selectable, whatever the index holds
+      const have = new Set(rows.filter((r) => r.collection === PLACES_COLLECTION).map((r) => r.place_id))
+      const all = [...rows, ...places.filter((p) => !have.has(p.place_id)).map(placeAsRow)]
+      layers = ls; gaz = buildIndex(all, ls)
+      status = `gazetteer: ${gaz.polygons.length.toLocaleString('en-US')} polygon places of ${all.length.toLocaleString('en-US')} in ${ls.length} collections, ${datasets.length} ERDDAP datasets`
+      if (!resolvePlace(gaz.byId, placeId, coll).row) { busy = false; error = `no place ${placeId} in the gazetteer` }
+    } catch (e) {
+      gazError = e instanceof Error ? e.message : String(e)
+      if (!places.some((p) => p.place_id === placeId)) { fail(e); busy = false }
+      else status = `gazetteer index unavailable (${gazError}); the ${places.length} precomputed places still work`
+    }
+  }
 
   function fail(e: unknown) {
     error  = e instanceof Error ? e.message : String(e)
@@ -339,8 +395,8 @@
   let lastKey = ''
   const keyOf = (p: string, d: string, v: string, a: string, b: string) => [p, d, v, a, b].join('|')
   $effect(() => {
-    const key = keyOf(placeId, dsId, varName, startDate, endDate)
-    const ready = !!place && !!dataset && !!variable && variable.name === varName && extentFor === dsId
+    const key = keyOf(selKey, dsId, varName, startDate, endDate)
+    const ready = !!selected && !!dataset && !!variable && variable.name === varName && extentFor === dsId
     if (!ready || key === lastKey) return
     const t = setTimeout(() => { lastKey = key; untrack(() => run()) }, 250)
     return () => clearTimeout(t)
@@ -375,13 +431,15 @@
 
   // ── pipeline ────────────────────────────────────────────────────────────────
   async function run() {
-    if (!place || !dataset || !variable) return
-    const ds = dataset, v = variable, p = place
+    if (!selected || !dataset || !variable) return
+    const ds = dataset, v = variable, ref = selected
+    // `coll=` goes in the permalink only when this place_id also exists in another collection
+    const collKey = collForHash(byId, ref)
     const superseding = runs.active
     const h: RunHandle = runs.start()      // aborts whatever was in flight
     // the same target again (a brushed window): the strip's series stays on screen while the window rows
     // and the map slice are redone, so the chart does not blink; any other pick starts from nothing
-    const tkey = [p.place_id, ds.id, v.name].join('|')
+    const tkey = [placeKey(ref), ds.id, v.name].join('|')
     const keep = !!series && tkey === seriesKey
     busy = true; error = ''; urls = []; note = ''
     squares = null; points = null; stepDate = ''; maskInfo = null; copied = ''; exporting = ''
@@ -402,7 +460,7 @@
       let end = win.end, start = win.start
       if (daysBetween(start, end) + 1 > cap) start = iso(new Date(Date.parse(end) - (cap - 1) * 864e5))
       // the clamped window is what ran: the run-on-change effect must not see it as a new pick
-      lastKey = keyOf(p.place_id, ds.id, v.name, start, end)
+      lastKey = keyOf(placeKey(ref), ds.id, v.name, start, end)
       startDate = start; endDate = end
       const days = daysBetween(start, end) + 1
       const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
@@ -415,13 +473,14 @@
       // gazetteer; a host that does not answer in 4 s is skipped).
       const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
       if (h.stale()) return
-      const has = hasPrecomputed(listed, ds.datasetId, v.name, p.place_id)
+      // the weekly statistics exist only for the 20 places of the `places` collection
+      const has = ref.collection === PLACES_COLLECTION && hasPrecomputed(listed, ds.datasetId, v.name, ref.place_id)
       let plan: RunPlan = { strip: 'live', map: 'window', slice: null }
       let preUrl = ''
       if (usePrecomputed({ protocol: ds.protocol, has })) {
         try {
           status = 'reading the precomputed statistics…'
-          preUrl = precomputedUrl(ds.datasetId, v.name, p.place_id)
+          preUrl = precomputedUrl(ds.datasetId, v.name, ref.place_id)
           if (preMem?.url !== preUrl) {
             const t = performance.now()
             const [pre, asOf] = await Promise.all([
@@ -439,7 +498,7 @@
             shownSource = { kind: 'precomputed', through: pre.coverage!.end, asOf, mapDate: null, failed: false }
             urls = [{ url: preUrl, kb: Math.round(pre.bytes / 1024), ms: preMs },
                     { url: provenanceUrl(preUrl), kb: 0, ms: 0, label: 'provenance: when the file was generated, and from what' }]
-            shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
+            shownRun = { place: ref.place_id, coll: collKey, dataset: ds.id, variable: v.name, from: start, to: end }
             sql = `-- the statistics are not recomputed here: they are the rows of the precomputed file above for ${start} to ${end}\n` +
                   `-- (the whole series, ${pre.coverage!.start} to ${pre.coverage!.end}, is what the Time strip draws).\n` +
                   `-- the same SQL ran at build time: sql/${statsTemplate(v, ds.protocol)}.sql`
@@ -454,6 +513,22 @@
       }
       // the one step the map needs when the statistics are precomputed
       const sliceAt = plan.map === 'slice' ? timeInstant(plan.slice!, ext, noonZ) : null
+
+      // the polygon: already in memory for the 20 places, otherwise a row-group filtered range read of the
+      // collection's places.parquet (how many bytes depends on how the collection was written; see
+      // placeGeometry). the status counts the bytes as they arrive
+      const cached = ref.collection === PLACES_COLLECTION || !!cachedPlace(ref)
+      let polyBytes = 0
+      const tGeom = performance.now()
+      if (!cached) status = polygonStatus(ref.name, ref.collection, 0, 0)
+      const p: Place = await placeGeometry(ref, {
+        signal: h.signal,
+        onProgress: (bytes, total) => { polyBytes = bytes; if (!h.stale()) status = polygonStatus(ref.name, ref.collection, bytes, total) },
+      })
+      if (h.stale()) return
+      loadedPlace = p
+      if (!cached) urls = [...urls, { url: collectionParquet(ref.collection), kb: Math.round(polyBytes / 1024), ms: Math.round(performance.now() - tGeom),
+                                      label: `polygon of ${ref.name}: range reads of the row groups that can hold ${ref.place_id}` }]
 
       // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))
@@ -574,7 +649,7 @@
       totalMs = performance.now() - t0
       if (shownSource) shownSource = { ...shownSource, mapDate: stepDate || plan.slice }
       // what the exports, the reproduce panel and the permalink describe
-      shownRun = { place: p.place_id, dataset: ds.id, variable: v.name, from: start, to: end }
+      shownRun = { place: ref.place_id, coll: collKey, dataset: ds.id, variable: v.name, from: start, to: end }
       maskInfo = { cells: cells.length, lobes: lobes.length,
                    weight: cells.reduce((a, c) => a + c.weight, 0),
                    partial: cells.filter((c) => c.weight < 0.999).length }
@@ -701,12 +776,13 @@
     sentence: () => titleText,
     maps    : () => (map ? [map] : []),
     cite    : () => cite,
+    placeLayer: () => shownLayer ?? selLayer,
   })
 </script>
 
 {#snippet placePicker(close?: () => void)}
-  <Picker items={placeItems} value={placeId} label="places" placeholder="Search places…" maxHeight={close ? '16rem' : '11rem'}
-          onselect={(it) => { placeId = it.id; close?.() }} />
+  <PlacePicker {polygons} {layers} value={selKey} search={searchPolygons} placeholder="Search places…" maxHeight={close ? '16rem' : '10rem'}
+               onselect={(row) => { selectPlace(row.place_id, row.collection); close?.() }} />
 {/snippet}
 {#snippet datasetPicker(close?: () => void)}
   <div class="pane-col">
@@ -827,7 +903,8 @@
     <MapView
       pmtilesUrl={pmtiles}
       {placeId}
-      onselect={(id) => { placeId = id }}
+      {extra}
+      onselect={selectPlace}
       bounds={mapBounds}
       squares={squares?.geojson ?? null}
       points={points?.geojson ?? null}
@@ -851,7 +928,8 @@
         {#if id === 'place'}
           <div class="pane-col">
             {@render placePicker()}
-            {#if place}<p class="pane-note">{place.name} · {place.place_id}{place.area_km2 ? ` · ${Math.round(place.area_km2).toLocaleString('en-US')} km²` : ''}. Or click a place on the map.</p>{/if}
+            {#if selected}<p class="pane-note">{selected.name} · {selected.place_id}{selLayer ? ` · ${selLayer.slug === PLACES_COLLECTION ? 'precomputed places' : selLayer.title}` : ''}{selected.area_km2 ? ` · ${Math.round(selected.area_km2).toLocaleString('en-US')} km²` : ''}. Or click a place on the map.</p>{/if}
+            <p class="pane-note">{layers.length ? `${(gaz?.polygons.length ?? 0).toLocaleString('en-US')} places in ${layers.length} collections of the gazetteer. ` : ''}Polygon places only; lines and points are not maskable.{gazError ? ` The index did not load (${gazError}), so only the ${places.length} precomputed places are listed.` : ''}</p>
           </div>
         {:else if id === 'data'}
           {@render datasetPicker()}
