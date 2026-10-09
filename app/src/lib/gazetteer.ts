@@ -16,14 +16,28 @@ export const GAZETTEER_FALLBACK = 'https://s3.us-east-1.amazonaws.com/oceanmetri
 export const PLACES_SOURCE_LAYER = 'places'
 
 /**
- * credit for the places source, shown in the map's attribution control. the same string is the
- * `attribution` field of the published PMTiles metadata (places 1.2.0); `gazetteer.test.ts` reads
+ * credit for the places source; the map shows only the parts for the places on screen (placesAttribution).
+ * the same string is the `attribution` field of the published PMTiles metadata (places 1.2.0); `gazetteer.test.ts` reads
  * that metadata live and fails if the two drift.
  */
 export const PLACES_ATTRIBUTION =
   '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a> | ' +
   '<a href="https://www.marineregions.org" target="_blank">MarineRegions.org</a> (CC-BY-4.0) | ' +
   '<a href="https://protectedseas.net" target="_blank">ProtectedSeas</a>'
+
+/** each gazetteer of the places source (the `place_id` prefix) and its part of PLACES_ATTRIBUTION, in that order. */
+export const PLACES_CREDITS: [prefix: string, credit: string][] =
+  PLACES_ATTRIBUTION.split(' | ').map((c, i) => [['NMS', 'MRGID', 'PSGID'][i], c])
+
+/**
+ * the map's credit for the places source: only the gazetteers of the places on screen (their `place_id`s),
+ * in PLACES_ATTRIBUTION's order; '' when none is.
+ */
+export function placesAttribution(placeIds: Iterable<string>): string {
+  const on = new Set<string>()
+  for (const id of placeIds) on.add(String(id).split(':')[0])
+  return PLACES_CREDITS.filter(([p]) => on.has(p)).map(([, c]) => c).join(' | ')
+}
 
 let activeBase: string | null = null
 /** the base URL that last answered (after `gazetteerFetch`), for display. */

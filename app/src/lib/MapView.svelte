@@ -3,12 +3,15 @@
   // tile URLs are `/tile/{z}/{y}/{x}` — row before column, unlike XYZ's {z}/{x}/{y}.
   export const OCEAN_TILES =
     'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}'
+  // the map credits each basemap in one short line, its full list in the hover title (and in Help → Data
+  // sources), so the line leaves room for the place credits
   export const OCEAN_ATTRIBUTION =
-    'Tiles &copy; Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others'
+    '<span title="Tiles &copy; Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others">&copy; Esri — GEBCO, NOAA, …</span>'
   // the dark theme's basemap: Esri's keyless Dark Gray Canvas base, same tile scheme
   export const DARK_TILES =
     'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
-  export const DARK_ATTRIBUTION = 'Tiles &copy; Esri — Esri, HERE, Garmin, FAO, NOAA, USGS'
+  export const DARK_ATTRIBUTION =
+    '<span title="Tiles &copy; Esri — Esri, HERE, Garmin, FAO, NOAA, USGS">&copy; Esri — HERE, Garmin, …</span>'
 
   /** both basemaps as raster sources + layers; the theme decides which one is visible. */
   export function basemapStyle(dark: boolean): Pick<import('maplibre-gl').StyleSpecification, 'sources' | 'layers'> {
@@ -45,7 +48,7 @@
   import { Protocol } from 'pmtiles'
   import type { FeatureCollection } from 'geojson'
   import type { CellProps } from './cells'
-  import { PLACES_SOURCE_LAYER, PLACES_ATTRIBUTION } from './gazetteer'
+  import { PLACES_SOURCE_LAYER, placesAttribution } from './gazetteer'
 
   interface Props {
     /** `pmtiles://…/places.pmtiles` is built from this (the gazetteer base that answered). */
@@ -104,6 +107,7 @@
   // the cells and stations are inserted below the selected outline, so the outline stays on top after a
   // run: the extra collection's outline has its own id, and they follow whichever is on the map
   const EXTRA_FILL = 'extra-faint'
+  const PLACES_FILL = 'places-faint'
   const outlineId = $derived(extra ? `${SELECTED_OUTLINE}-${extra.slug}` : SELECTED_OUTLINE)
   const src = $derived(`pmtiles://${pmtilesUrl}`)
   // a place id the tiles can be filtered by; '' matches nothing, which is what we want before load
@@ -148,6 +152,30 @@
    * then finds the map still showing the world and fits it for real. This is an event handler, not
    * an effect, and it runs once, so nothing reads what it writes.
    */
+  /**
+   * The attribution: the basemap and the extra collection credit themselves (as sources), but the places
+   * source holds three gazetteers, so it carries no credit of its own. The control's custom line names only
+   * the gazetteers of the places on screen, checked whenever the map settles. A control's custom line is
+   * fixed when it is added, so a new credit swaps the control, keeping it folded if it was.
+   */
+  let attrib: maplibregl.AttributionControl | null = null
+  let placesCredit = ''
+  function creditPlaces() {
+    if (!map) return
+    const ids = map.getLayer(PLACES_FILL)
+      ? map.queryRenderedFeatures({ layers: [PLACES_FILL] }).map((f) => String(f.properties?.place_id ?? ''))
+      : []
+    const credit = placesAttribution(ids)
+    if (attrib && credit === placesCredit) return
+    const old = map.getContainer().querySelector('.maplibregl-ctrl-attrib')
+    const folded = !!old && old.classList.contains('maplibregl-compact') && !old.classList.contains('maplibregl-compact-show')
+    if (attrib) map.removeControl(attrib)
+    placesCredit = credit
+    attrib = new maplibregl.AttributionControl({ compact: true, customAttribution: credit || undefined })
+    map.addControl(attrib, 'bottom-right')
+    if (folded) map.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show')
+  }
+
   let refitted = false
   // the theme switches the basemap in place: no setStyle, so the place and cell layers stay put
   $effect(() => { const d = dark, m = map; if (m) setBasemap(m, d) })
@@ -157,6 +185,8 @@
       // fullscreen takes the whole lens (sentence bar, legend, panes, Time strip), not just the canvas
       const lens = map.getContainer().closest('.lens') as HTMLElement | null
       map.addControl(new maplibregl.FullscreenControl(lens ? { container: lens } : {}), 'top-right')
+      creditPlaces()
+      map.on('idle', creditPlaces)
     }
     if (refitted) return
     refitted = true
@@ -180,13 +210,15 @@
 
 <div class="map">
   <MapLibre {style} bind:map bind:bounds={view} {fitBoundsOptions} {onload} class="ml"
-            attributionControl={{ compact: true }}>
+            attributionControl={false}>
     <!-- one row of map buttons at the top right; the title and the legend live in the sentence -->
     <NavigationControl position="top-right" />
     <ScaleControl position="bottom-left" />
-    <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12} attribution={PLACES_ATTRIBUTION}>
-      <!-- every place, outlined; clicking anywhere in one selects it in the picker -->
+    <VectorTileSource id="places" url={src} minzoom={0} maxzoom={12}>
+      <!-- every place, outlined; clicking anywhere in one selects it in the picker. the attribution
+           credits the gazetteers of the places this layer has on screen (creditPlaces) -->
       <FillLayer
+        id={PLACES_FILL}
         sourceLayer={PLACES_SOURCE_LAYER}
         paint={{ 'fill-color': '#3388ff', 'fill-opacity': 0.04 }}
         hoverCursor="pointer"

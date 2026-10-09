@@ -13,7 +13,7 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
 
 ## One page, two lenses (MBON UI kit)
 
-- The UI is `@marinebon/ui` (pinned `github:marinebon/ui#v0.3.0`); follow its AGENTS.md
+- The UI is `@marinebon/ui` (pinned `github:marinebon/ui#v0.3.1`); follow its AGENTS.md
   (`node_modules/@marinebon/ui/AGENTS.md`): semantic tokens only, one coral button (Download CSV in
   Share), pipeline order dataset → place → method → delivery, check both themes and 390 px.
 - `src/Shell.svelte`: header, footer, Help, and the lens, swapped in place (no reload).

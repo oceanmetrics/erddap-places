@@ -145,4 +145,15 @@ describe('the basemap', () => {
       'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}')
     expect(OCEAN_ATTRIBUTION).toMatch(/Esri/)
   })
+
+  // issue #6: the basemap's line is short, its full list stays in the hover title
+  it('credits each basemap in a short line, the full list in its title', async () => {
+    const { OCEAN_ATTRIBUTION, DARK_ATTRIBUTION } = await import('./MapView.svelte')
+    const text = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.textContent ?? '' }
+    const title = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.firstElementChild?.getAttribute('title') ?? '' }
+    expect(text(OCEAN_ATTRIBUTION)).toBe('© Esri — GEBCO, NOAA, …')
+    expect(title(OCEAN_ATTRIBUTION)).toBe('Tiles © Esri — GEBCO, NOAA, National Geographic, Garmin, HERE, and others')
+    expect(text(DARK_ATTRIBUTION)).toBe('© Esri — HERE, Garmin, …')
+    expect(title(DARK_ATTRIBUTION)).toBe('Tiles © Esri — Esri, HERE, Garmin, FAO, NOAA, USGS')
+  })
 })

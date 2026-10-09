@@ -9,7 +9,7 @@ import { fileFetch } from './__fixtures__/fileFetch'
 import {
   GAZETTEER_FALLBACK, PLACES_COLLECTION, buildIndex, bucketPmtiles, cachedPlace, collForHash, collectionAttribution, collectionParquet,
   configureGazetteer, fmtBytes, isPolygonal, loadIndex, loadLayers, placeGeometry, placeKey, placeLobes, polygonStatus, resolvePlace,
-  rewriteLayers, PLACES_ATTRIBUTION,
+  rewriteLayers, PLACES_ATTRIBUTION, placesAttribution,
 } from './gazetteer'
 import { indexBounds } from './cells'
 import { INDEX_COLUMNS, search, type IndexPlace, type Layer } from './places'
@@ -64,6 +64,20 @@ describe('the layers manifest', () => {
     expect(collectionAttribution({ slug: 'other', attribution_html: PLACES_ATTRIBUTION })).toBe('')
     expect(collectionAttribution({ slug: 'other', attribution_html: '  ' })).toBe('')
     expect(collectionAttribution(null)).toBe('')
+  })
+
+  // issue #6: the map credited all three gazetteers with only Florida Keys NMS on screen
+  it('credits only the gazetteers of the places on screen, in the published order', () => {
+    const [nms, mrgid, psgid] = PLACES_ATTRIBUTION.split(' | ')
+    expect(nms).toMatch(/NOAA ONMS/)
+    expect(mrgid).toMatch(/MarineRegions/)
+    expect(psgid).toMatch(/ProtectedSeas/)
+    expect(placesAttribution(['NMS:FKNMS', 'NMS:FKNMS'])).toBe(nms)
+    expect(placesAttribution(['PSGID:1234', 'NMS:CINMS'])).toBe(`${nms} | ${psgid}`)
+    expect(placesAttribution(['MRGID:8456'])).toBe(mrgid)
+    expect(placesAttribution(['PSGID:1', 'MRGID:2', 'NMS:3'])).toBe(PLACES_ATTRIBUTION)
+    expect(placesAttribution([])).toBe('')
+    expect(placesAttribution(['', 'BOEM:OCS-A 0506'])).toBe('')     // not a gazetteer of the places source
   })
 })
 

@@ -27,7 +27,7 @@ computes daily `CRW_SST` from PacIOOS `dhw_5km`.
 
 ## The page (MBON re-layout, 2026-10-08)
 
-One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.3.0,
+One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.3.1,
 installed from the git tag), laid out like calcofi.io/explore: the map is the page and everything
 else floats over it. `src/Shell.svelte` holds the frame and swaps the **lens** in place;
 `src/App.svelte` is the Statistics lens, `src/lib/thenNow/ThenNow.svelte` the Then vs Now lens (a lazy
@@ -100,6 +100,15 @@ in the status line), the map draws its outline from that collection's PMTiles, a
 Data sources row and *Cite this data* carry the collection's own credit, citation and licence. The 20
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
+
+**app 0.3.3** (2026-10-09, issue #6): the Controls pane ends 12 px above the Time strip, like its gap
+below the sentence bar. Kit 0.3.1 measures the strip's top (an overlay `TimeStrip` reports what it covers
+to the Panes of its container), which replaces the app's `max-height` override that guessed it from
+`--map-bottom` and let the pane touch the strip. The map credits only what is on screen: the places
+source carries no credit of its own, and the attribution control names the gazetteers (NOAA ONMS,
+MarineRegions.org, ProtectedSeas) of the places drawn in the view (`placesAttribution()`, refreshed when
+the map settles). The Esri basemap credit is one short line ("© Esri — GEBCO, NOAA, …"), with the full
+list in its hover title and in Help → Data sources.
 
 **app 0.3.2** (2026-10-09): the real cause of Ben's "Sent" with nothing behind it. Chrome autofill
 filled the hidden honeypot input, named `website`, together with the email, and the script dropped the
@@ -434,9 +443,11 @@ Offline then-now: `npm run dev`, then `http://localhost:5179/#lens=then-now&plac
 - **Map** (`src/lib/MapView.svelte`, `svelte-maplibre` + `pmtiles`): **MapLibre GL is pinned to
   major version 5** (`svelte-maplibre` 1.3.x, which peers on 4/5) — MapLibre 6 ships its worker as a
   module worker that Vite's dep optimizer breaks. The basemap is Esri's keyless *World Ocean Base*
-  raster tiles, attributed in the map's own attribution control. The places come straight from the
-  published `places/places.pmtiles` through the `pmtiles://` protocol, source layer **`places`**
-  (`PLACES_SOURCE_LAYER` in `src/lib/gazetteer.ts`; its fields are `place_id`, `name`, `gazetteer`,
+  raster tiles, attributed in the map's own attribution control in one short line (the full list is its
+  hover title). The places source has no credit of its own: the control names only the gazetteers of the
+  places drawn in the view (`placesAttribution()` over `queryRenderedFeatures`, on every `idle`). The
+  places come straight from the published `places/places.pmtiles` through the `pmtiles://` protocol,
+  source layer **`places`** (`PLACES_SOURCE_LAYER` in `src/lib/gazetteer.ts`; its fields are `place_id`, `name`, `gazetteer`,
   `area_km2`), so selecting or drawing a place costs no geometry work in JS at all. **The PMTiles
   URL is the bucket's, not the storage host's** (`placesPmtilesUrl()`): `storage.oceanmetrics.io`
   answers with a 302 that has no `Access-Control-Allow-Origin`, and browsers reject a cross-origin

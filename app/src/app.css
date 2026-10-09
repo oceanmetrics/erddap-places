@@ -88,12 +88,6 @@ body { overflow: hidden; }
 @media (min-width: 1500px) { .source-note .src-long { display: inline; } .source-note .src-short { display: none; } }
 .chart-key span { white-space: nowrap; }
 
-/* a floating pane stops above the Time strip: the strip's header now holds the Plot / Table tabs and the
-   ⬇ and Expand buttons, which a tall Controls pane used to cover (--map-bottom is the strip's height) */
-@media (min-width: 641px) {
-  .stage > .mbon-pane:not(.edge-pane) { max-height: calc(100% - var(--map-bottom, 0px) - 20px) !important; }
-}
-
 /* the strip's header must keep its tabs legible on a phone: the title gives way (ellipsis), the tabs never
    shrink, and "clear selection" (a tap on the plot does the same) goes */
 .mbon-timestrip .bar .t { flex: 0 1 auto; min-width: 2.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
