@@ -149,14 +149,17 @@ export function chunkDaysFor(cellsPerStep: number, stepDays = 1): number {
 // ── the mask, per lobe ────────────────────────────────────────────────────────
 export interface LobeMask { lobe: Lobe; cells: MaskCell[]; lon: number[]; lat: number[]; nAxis: number }
 
+/** the axis requests of a headless run wait longer than the browser's (2 min per try, 3 tries). */
+export const AXIS_RETRY = { timeoutMs: 120_000, attempts: 3, backoffMs: 10_000 }
+
 /** axis vectors from the server + gridMask, exactly as App.svelte does it. */
 export async function maskLobe(ds: Dataset, lobe: Lobe): Promise<LobeMask> {
   const shifted = ds.lonRange[1] > 180                       // dataset longitudes run 0..360
   const toPoly  = (x: number) => (shifted && x > 180 ? x - 360 : x)
   const [lo, hi] = lobeLonSpan(lobe.bbox, ds.lonRange)
   const [lon, lat] = [
-    await fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false),
-    await fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending),
+    await fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false, undefined, AXIS_RETRY),
+    await fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending, undefined, AXIS_RETRY),
   ]
   const m = gridMask(lobe.geojson, lon.map(toPoly), lat)
   const cells = m.cells.map((c) => (shifted ? { ...c, lon: toDatasetLon(c.lon, ds.lonRange) } : c))
@@ -226,6 +229,11 @@ function selectList(categorical: boolean): string {
 }
 
 // ── one (dataset, variable, place) ────────────────────────────────────────────
+export interface LobeAxes { bbox: [number, number, number, number]; lon: number[]; lat: number[] }
+/** the provenance's `axes`: what each lobe's mask was computed from. */
+export const provenanceAxes = (masks: LobeMask[]): LobeAxes[] =>
+  masks.map((m) => ({ bbox: [...m.lobe.bbox] as LobeAxes['bbox'], lon: m.lon, lat: m.lat }))
+
 export interface Provenance {
   place_id     : string
   dataset_id   : string
@@ -237,6 +245,12 @@ export interface Provenance {
   end_datetime  : string
   lobes        : number
   mask_cells   : number
+  /**
+   * per lobe, in placeLobes() order: its bbox and the server's longitude / latitude axis values over it
+   * (what fetchAxis() returned). The app masks the grid from these instead of asking ERDDAP for them
+   * again, so a precomputed place's map needs only its one time step (app `lobeAxes()`).
+   */
+  axes        ?: LobeAxes[]
   griddap_urls : string[]
   rows         : number
   bytes        : number
@@ -305,7 +319,7 @@ export async function computeOne(
     place_id: place.place_id, dataset_id: ds.datasetId, variable: v.name, categorical: v.categorical,
     start_date: win.start, end_date: win.end,
     start_datetime: timeInstant(win.start, ext, noonZ), end_datetime: timeInstant(win.end, ext, noonZ),
-    lobes: lobes.length, mask_cells: cells.length, griddap_urls: urls,
+    lobes: lobes.length, mask_cells: cells.length, axes: provenanceAxes(masks), griddap_urls: urls,
     rows: n, bytes, generated: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     erddap_base: ds.baseUrl, erddap_version: ds.version, sql: body,
   }

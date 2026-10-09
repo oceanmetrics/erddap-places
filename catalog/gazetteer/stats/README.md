@@ -108,7 +108,10 @@ Categorical variables (`sql/stats_categorical.sql`):
 ## Provenance
 
 Every parquet has a sibling `*.provenance.json` with the exact griddap request URLs, the number of
-lobes and masked cells, the rendered SQL and the generation timestamp. The same URL list is on the
+lobes and masked cells, the rendered SQL and the generation timestamp. `axes` (from 2026-10-09) lists,
+per lobe in `placeLobes()` order, the lobe's `bbox` and the server's `lon` / `lat` axis values over it:
+what the mask was computed from, so a client can rebuild the mask (and the app its map request) without
+asking ERDDAP for the axes. `end_datetime` is the last time step used, an instant the server holds. The same URL list is on the
 Item as `erddap-places:griddap_urls`.
 
 ## Regenerating

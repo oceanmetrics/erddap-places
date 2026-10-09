@@ -101,6 +101,16 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.5** (2026-10-09): a slow or failing ERDDAP no longer holds up a precomputed place. PacIOOS
+answered an info request in 20 s and then dropped the map's slice, so the strip waited on ERDDAP while
+its S3 file was ready, and the map failed with the browser's bare "Failed to fetch". Now (1) a precomputed
+target shows its strip without waiting for ERDDAP's time extent (runs may start 2.5 s after a dataset
+pick; the extent is waited for only by the live path and by the map), (2) every ERDDAP request has a
+per-attempt timeout and one retry (`fetchRetry()`), and a final failure names the host and what happened
+("pae-paha.pacioos.hawaii.edu did not answer (no response within 15 s, 2 tries)"), with a *retry map*
+button beside "map: unavailable", and (3) the precompute publishes each lobe's grid axes in the
+provenance JSON, so a precomputed place's map makes one ERDDAP request (the slice) instead of three.
+
 **app 0.3.4** (2026-10-09): kit 0.4.0. The Controls run the full height of the stage, with the Time strip
 beside them (`Controls fill`). The Place list (the app's `PlacePicker`, `fill`), the dataset Picker and
 the Then vs Now sanctuary Picker take the pane's height instead of 10–11 rem, so the Place tab no longer
@@ -357,8 +367,24 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
     6 Oct 2026 · map: live 8 Oct 2026" (compact "precomputed 6 Oct · map 8 Oct" below 1500 px,
     `sourceLabel()`), and the footer says what loaded: "364 rows (precomputed 7 Oct 2026) + 1 slice · 23 kB ·
     2.0 s". Reproduce lists the Parquet URL, its provenance JSON and the one-slice URL. The sentence's
-    cell count is the local mask, as always. If the slice fails the series stays and the note says
-    "map: unavailable".
+    cell count is the local mask, as always. If the slice fails the series stays, the note says
+    "map: unavailable" beside a *retry map* button (the same run again: the series stays, only the map
+    is asked for), and the toast names the host (`mapFailMessage()`).
+  - **ERDDAP off the strip's path**: the extent (`info/<id>/index.json`) is memoised and shared, and a
+    precomputed target waits for it at most 4 s (`EXTENT_WAIT_MS`) before drawing the strip; the run
+    gate opens 2.5 s after a dataset pick without it (`EXTENT_GATE_MS`, `gateFor`). The map then waits
+    for the extent (bounded by `fetchRetry`); without one the slice is never past the file's last day
+    and its instant is the provenance's `end_datetime` (`planRun()`). The live path still waits for
+    the extent before its first request.
+  - **Axes from the provenance**: the provenance JSON carries each lobe's bbox and the longitude /
+    latitude axis values the precompute masked with (`axes`, from precompute 0.3.5 on). `lobeAxes()`
+    uses them when the lobe count and bboxes match the app's own `placeLobes()`, so the map's one
+    ERDDAP request is the slice; otherwise (an older provenance, a changed polygon) it asks ERDDAP for
+    the axes as before. Reproduce lists the provenance as the axes' source.
+  - **Timeouts** (`src/lib/fetchRetry.ts`): every ERDDAP fetch (extent, axes, slab) has a per-attempt
+    timeout and one retry on a network error, a timeout or a 5xx; a 4xx is the server's answer and is
+    not retried. Extent and axes 15 s, the map slice 20 s, a whole live window 120 s. A timeout is
+    never reported as an abort (`isAbort()` would swallow it); the caller's own abort passes through.
   - **strip `live`, map `window`**: a window that starts before the file or after its end, an empty file
     (`NMS:MNMS`), a missing file, a tabledap target, or a slow host (6 s) takes the full live path
     (the whole window slab, `stats_daily.sql` / `stats_categorical.sql` and `last_step.sql` in
@@ -367,8 +393,8 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
     table on screen), not the whole file; the file names carry the window. *PNG of plot* draws what the
     strip draws, the whole series.
   Tests: `precomputed.test.ts` on the closed-form fixtures in `src/lib/__fixtures__/stats/`
-  (`make_stats_fixture.sh`: names, listing, `planRun()` cases, `inWindow()`, labels) and
-  `erddap.test.ts` (`griddapSliceUrl()`).
+  (`make_stats_fixture.sh`: names, listing, `planRun()` cases, `inWindow()`, labels, `parseProvenance()`,
+  `lobeAxes()`), `fetchRetry.test.ts` and `erddap.test.ts` (`griddapSliceUrl()`).
 - **Permalink**: written on every successful run (the run on screen, plus `stat`, `show`, `hide`)
   and read on load, so a shared link reproduces the view.
 

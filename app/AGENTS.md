@@ -93,7 +93,13 @@ storage host's 302 costs a redirect per range request). Code: `src/lib/gazetteer
 - **Map slice**: on that path the only live request is one time step, `[(t):1:(t)]` with `t` the
   window's last day clamped to the dataset's last step (`griddapSliceUrl()`), through the same lobe
   loop (axis vectors, `erddap:lat_descending`, longitude clamp, `ds.format` rung) and `last_step.sql`
-  only; the window statistics SQL is not run. Any other case (window starts before the file, no file,
+  only; the window statistics SQL is not run. The axis vectors come from the provenance JSON's `axes`
+  when `lobeAxes()` matches them to the lobes (else from ERDDAP). The strip never waits on ERDDAP:
+  a precomputed target waits for the extent at most `EXTENT_WAIT_MS`, and without it the slice stops
+  at the file's last day (`planRun()`) at the provenance's `end_datetime`.
+- Every ERDDAP request goes through `fetchRetry()` (per-attempt timeout, one retry, an
+  `ErddapUnreachable` naming the host). Never call a bare `fetch()` on an ERDDAP URL, and never let a
+  timeout surface as an abort. Any other case (window starts before the file, no file,
   empty file, tabledap) is the full live path and must clear `series` / `shownSource`.
 - The shaped rows must keep the live run's columns (`stats_daily.sql` / `stats_categorical.sql`
   output: `fraction`, `percent_cells`, `date` as epoch ms). Change the template and the shaping

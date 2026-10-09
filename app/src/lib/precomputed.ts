@@ -100,11 +100,13 @@ export interface RunPlan {
  *     come from it, and the map needs one live slice;
  *   - a window that starts before the file, a missing / empty file, a tabledap target: the live path as
  *     before (the whole window slab, statistics and map from DuckDB).
+ * The slice is never past `extentEnd` (the dataset's last step). Without it (ERDDAP's info did not answer,
+ * or not yet), it is never past the file's last day, a step the server is known to hold.
  */
 export function planRun(t: { protocol: string; has: boolean; coverage: Coverage | null }, win: Window, extentEnd?: string | null): RunPlan {
   if (!usePrecomputed(t) || !windowCovered(t.coverage, win)) return { strip: 'live', map: 'window', slice: null }
-  const end = extentEnd && extentEnd.slice(0, 10) < win.end ? extentEnd.slice(0, 10) : win.end
-  return { strip: 'precomputed', map: 'slice', slice: end }
+  const last = extentEnd ? extentEnd.slice(0, 10) : t.coverage!.end
+  return { strip: 'precomputed', map: 'slice', slice: last < win.end ? last : win.end }
 }
 
 // ── rows ──────────────────────────────────────────────────────────────────────
@@ -175,17 +177,54 @@ export async function loadPrecomputed(url: string, kind: StatsKind, win?: Window
   return readPrecomputed(await res.arrayBuffer(), kind, win)
 }
 
+export interface LobeAxes { bbox: [number, number, number, number]; lon: number[]; lat: number[] }
+export interface Provenance {
+  /** when the file was generated (yyyy-mm-dd), the label of the series */
+  asOf  : string | null
+  /** the last time step the precompute used (an instant the server holds): the map's fallback when ERDDAP's extent does not answer */
+  end   : string | null
+  /** per lobe, the axis values the mask was computed from (absent before app 0.3.5's precompute) */
+  axes  : LobeAxes[] | null
+}
+
+const isNums = (a: unknown): a is number[] => Array.isArray(a) && a.length > 0 && a.every((x) => typeof x === 'number' && Number.isFinite(x))
+
+/** a provenance JSON (precompute `Provenance`) -> what the app uses of it; anything malformed is null. */
+export function parseProvenance(j: any): Provenance {
+  const axes = Array.isArray(j?.axes) && j.axes.length && j.axes.every((a: any) => isNums(a?.lon) && isNums(a?.lat) && isNums(a?.bbox) && a.bbox.length === 4)
+    ? j.axes.map((a: any): LobeAxes => ({ bbox: [...a.bbox] as LobeAxes['bbox'], lon: a.lon, lat: a.lat }))
+    : null
+  return {
+    asOf: typeof j?.generated === 'string' ? j.generated.slice(0, 10) : null,
+    end : typeof j?.end_datetime === 'string' ? j.end_datetime : null,
+    axes,
+  }
+}
+
 /**
- * When the file was generated, from its provenance JSON (`generated`, an ISO instant): the date to
- * label it with. null on any failure; never throws.
+ * The published axes for these lobes, in the same order, or null when they do not describe them (a
+ * different lobe count, or a bbox that moved because the place's polygon changed): the caller then asks
+ * ERDDAP for the axes as before. The lobes are placeLobes() of the same places.parquet the precompute
+ * read, so they match bit for bit; the tolerance only absorbs a JSON round trip.
  */
-export async function precomputedAsOf(url: string, opts: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<string | null> {
+export function lobeAxes(axes: LobeAxes[] | null | undefined, lobes: ReadonlyArray<{ bbox: readonly number[] }>): LobeAxes[] | null {
+  if (!axes || axes.length !== lobes.length) return null
+  const same = (a: readonly number[], b: readonly number[]) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < 1e-9)
+  return axes.every((a, i) => same(a.bbox, lobes[i].bbox)) ? axes : null
+}
+
+/** the file's provenance JSON (`generated`, `end_datetime`, `axes`); all null on any failure; never throws. */
+export async function loadProvenance(url: string, opts: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<Provenance> {
   const { signal, timeoutMs = 6000 } = opts
   try {
     const sig = signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs)
-    const j = await (await fetchStats(provenanceUrl(url), { signal: sig })).json()
-    return typeof j?.generated === 'string' ? j.generated.slice(0, 10) : null
-  } catch { return null }
+    return parseProvenance(await (await fetchStats(provenanceUrl(url), { signal: sig })).json())
+  } catch { return { asOf: null, end: null, axes: null } }
+}
+
+/** When the file was generated, from its provenance JSON: the date to label it with. null on any failure; never throws. */
+export async function precomputedAsOf(url: string, opts: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<string | null> {
+  return (await loadProvenance(url, opts)).asOf
 }
 
 /**

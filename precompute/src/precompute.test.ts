@@ -1,7 +1,9 @@
 // the pure rules of the precompute: the request window, the chunking, the file/id naming, the
 // rendered SQL and the item geometry. everything here runs offline against tiny fixtures.
 import { describe, expect, it } from 'vitest'
-import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, statsHref, window, EXTENT_ATTEMPTS } from './stats'
+import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, provenanceAxes, statsHref, window, EXTENT_ATTEMPTS } from './stats'
+import { lobeAxes, parseProvenance } from '../../app/src/lib/precomputed'
+import { placeLobes, plainPlace } from '../../app/src/lib/gazetteer'
 import { buildCollection, buildItem, datasetProviders, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
 import { TARGETS, placesFor } from './targets'
@@ -196,6 +198,22 @@ const prov = (place: Place, variable: string, categorical: boolean): Provenance 
   lobes: 1, mask_cells: 6, griddap_urls: ['https://example.org/erddap/griddap/dhw_5km.parquet?x'],
   rows: 365, bytes: 1234, generated: '2026-09-15T00:00:00Z', erddap_base: 'https://example.org/erddap',
   sql: 'SELECT 1',
+})
+
+describe('provenance axes: what the app masks the map from', () => {
+  // the contract between stats.ts and the app: the axes written per lobe, through a JSON round trip,
+  // are read back by parseProvenance() and matched to the app's own placeLobes() of the same place
+  it('one entry per lobe, in placeLobes() order, and the app accepts them for the same place', () => {
+    const lobes = placeLobes(plainPlace(PMNM))
+    const masks = lobes.map((lobe, i) => ({ lobe, cells: [], lon: [i + 0.025, i + 0.075], lat: [25.975, 25.925], nAxis: 4 }))
+    const axes  = provenanceAxes(masks)
+    expect(axes).toHaveLength(2)
+    expect(axes.map((a) => a.bbox)).toEqual(lobes.map((l) => l.bbox))
+    const back = parseProvenance(JSON.parse(JSON.stringify({ ...prov(PMNM, 'CRW_SST', false), axes })))
+    expect(back.end).toBe('2026-09-14T12:00:00Z')
+    expect(lobeAxes(back.axes, placeLobes(plainPlace(PMNM)))).toEqual(axes)
+    expect(lobeAxes(back.axes, placeLobes(plainPlace(SMALL)))).toBeNull()        // another place's lobes
+  })
 })
 
 describe('item geometry', () => {

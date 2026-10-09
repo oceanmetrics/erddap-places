@@ -7,6 +7,7 @@
 //
 // the parsing and clamping here are pure functions (see extent.test.ts); only fetchTimeExtent()
 // touches the network.
+import { fetchRetry, type RetryOpts } from './fetchRetry'
 
 export interface TimeExtent {
   start     : string          // ISO instant of the first time step, e.g. 2002-08-29T12:00:00Z
@@ -149,16 +150,20 @@ export function timeInstant(date: string, ext: TimeExtent | null, noon: (d: stri
 const cache = new Map<string, Promise<TimeExtent | null>>()
 const stripSlash = (s: string) => s.replace(/\/+$/, '')
 
-/** `<base>/info/<datasetID>/index.json` -> the live extent, memoised per base+dataset. */
-export function fetchTimeExtent(base: string, datasetId: string, axis = 'time', signal?: AbortSignal): Promise<TimeExtent | null> {
+/**
+ * `<base>/info/<datasetID>/index.json` -> the live extent, memoised per base+dataset. The fetch is
+ * shared by every caller, so no caller's signal is passed to it (a superseded run must not cancel it
+ * for the next one); fetchRetry bounds it instead (15 s per attempt, one retry). null on failure,
+ * and a failure is forgotten, so the next call asks again.
+ */
+export function fetchTimeExtent(base: string, datasetId: string, axis = 'time', retry: Omit<RetryOpts, 'signal'> = {}): Promise<TimeExtent | null> {
   const url = `${stripSlash(base)}/info/${datasetId}/index.json`
   const hit = cache.get(url)
   if (hit) return hit
-  const p = (async () => {
-    const res = await fetch(url, { signal })
+  const p = fetchRetry(url, { timeoutMs: 15_000, ...retry }, async (res) => {
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
     return parseInfoExtent(await res.json(), axis)
-  })().catch((e) => { cache.delete(url); console.warn('extent:', e); return null })
+  }).catch((e) => { cache.delete(url); console.warn('extent:', e); return null })
   cache.set(url, p)
   return p
 }

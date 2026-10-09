@@ -21,7 +21,8 @@
   import PlotBox from './lib/PlotBox.svelte'
   import { cellPoints, cellSquares, indexBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
-  import { hasPrecomputed, inWindow, loadPrecomputed, planRun, precomputedAsOf, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type RunPlan } from './lib/precomputed'
+  import { hasPrecomputed, inWindow, loadPrecomputed, loadProvenance, lobeAxes, planRun, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type Provenance, type RunPlan } from './lib/precomputed'
+  import { mapFailMessage } from './lib/fetchRetry'
   import { decodeHash, encodeHash, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
   import { chrome, theme } from './lib/chrome.svelte'
@@ -42,6 +43,10 @@
   const MAX_DAYS     = 90
   const DEFAULT_DAYS = 30
   const LAG_DAYS     = 2      // most near-real-time grids are a couple of days behind
+  const EXTENT_GATE_MS = 2500 // runs start without the extent after this long (precomputed strip first)
+  const EXTENT_WAIT_MS = 4000 // how long the precomputed path waits for a pending extent before the strip
+  const SLICE_RETRY  = { timeoutMs: 20_000, attempts: 2 }   // the one-step map slice: small, so a stall is a failure
+  const WINDOW_RETRY = { timeoutMs: 120_000, attempts: 2 }  // a whole live window can take 15–30 s and more
   const MIN_STEPS    = 8      // a coarse product (8-day Seascapes) still gets this many time steps
   const WIN          = { days: DEFAULT_DAYS, minSteps: MIN_STEPS, maxDays: MAX_DAYS }
   // point data is sparse: a CalCOFI cruise is quarterly, so a tabledap run defaults to five years
@@ -106,6 +111,9 @@
   // the dataset's live time extent, from ERDDAP's info table (the STAC extent end is null/stale)
   let extent    = $state<TimeExtent | null>(null)
   let extentFor = $state('')   // the dataset id `extent` belongs to
+  // the dataset id whose runs may start without the extent: a slow ERDDAP info request must not hold up
+  // the precomputed strip (EXTENT_GATE_MS); run() still waits for it where a request needs it
+  let gateFor   = $state('')
   let maskMs    = $state(0)    // time spent masking the grid, reported under Share
   // only the newest run may touch the UI: a run started while another is in flight supersedes it
   const runs    = new Runs()
@@ -114,7 +122,7 @@
   // (null = everything live); `mapDate` is the live slice's day (null while it loads), `failed` = it did not load
   let shownSource = $state.raw<{ kind: 'precomputed'; through: string; asOf: string | null; mapDate: string | null; failed: boolean } | null>(null)
   // the last precomputed file read (the brush re-runs without a second download)
-  let preMem: { url: string; pre: Precomputed; asOf: string | null; ms: number } | null = null
+  let preMem: { url: string; pre: Precomputed; prov: Provenance; ms: number } | null = null
   // the map layer: the last time step of the slab, one square per masked cell (raw, never deep state)
   let squares   = $state.raw<ReturnType<typeof cellSquares> | null>(null)
   let points    = $state.raw<ReturnType<typeof cellPoints> | null>(null)
@@ -389,14 +397,21 @@
     const reset = !hashWindow; hashWindow = false
     loadExtent(d, reset)
   })
-  // run on change: once the pickers are valid and the dataset's extent is in, any new
+  // the gate: after EXTENT_GATE_MS without an answer from ERDDAP's info, runs may start anyway
+  $effect(() => {
+    const id = dsId
+    if (!id || extentFor === id || gateFor === id) return
+    const t = setTimeout(() => { gateFor = id }, EXTENT_GATE_MS)
+    return () => clearTimeout(t)
+  })
+  // run on change: once the pickers are valid and the dataset's extent is in (or the gate is open), any new
   // place × dataset × variable × window runs after a short pause (typing a date does not stack runs;
   // a run in flight is superseded and aborted, as before)
   let lastKey = ''
   const keyOf = (p: string, d: string, v: string, a: string, b: string) => [p, d, v, a, b].join('|')
   $effect(() => {
     const key = keyOf(selKey, dsId, varName, startDate, endDate)
-    const ready = !!selected && !!dataset && !!variable && variable.name === varName && extentFor === dsId
+    const ready = !!selected && !!dataset && !!variable && variable.name === varName && (extentFor === dsId || gateFor === dsId)
     if (!ready || key === lastKey) return
     const t = setTimeout(() => { lastKey = key; untrack(() => run()) }, 250)
     return () => clearTimeout(t)
@@ -417,8 +432,8 @@
   })
 
   /** the live extent for a dataset (memoised in extent.ts); resets the window when asked. */
-  async function loadExtent(ds: Dataset, reset = false, signal?: AbortSignal): Promise<TimeExtent | null> {
-    let ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId, 'time', signal)
+  async function loadExtent(ds: Dataset, reset = false): Promise<TimeExtent | null> {
+    let ext = await fetchTimeExtent(ds.baseUrl, ds.datasetId, 'time')
     // some tabledap datasets publish neither `time` actual_range nor time_coverage_* (CalCOFI does
     // not): fall back to the extent the STAC collection records
     if (!ext && ds.timeExtent?.[0] && ds.timeExtent?.[1])
@@ -451,8 +466,19 @@
       if (!(nDays > 0)) throw new Error('the end date must be on or after the start date')
       // the window must sit inside what the server actually holds: an out-of-range start snaps back
       // to the last steps of the dataset instead of 404ing on `"Start" is greater than the axis maximum`
+      // the extent (ERDDAP's info table) is shared and memoised. The live path needs it before any
+      // request; a precomputed target waits for it only briefly, so a slow ERDDAP holds up the map at
+      // most, never the strip. The listing is the cached stats/collection.json, so an unpublished
+      // combination costs no request (prefetched with the gazetteer; a host that does not answer in 4 s is skipped).
+      const extP: Promise<TimeExtent | null> = extentFor === ds.id ? Promise.resolve(extent) : loadExtent(ds)
+      const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
+      if (h.stale()) return
+      // the weekly statistics exist only for the 20 places of the `places` collection
+      const has = ref.collection === PLACES_COLLECTION && hasPrecomputed(listed, ds.datasetId, v.name, ref.place_id)
       status = 'reading the dataset time extent…'
-      const ext = extentFor === ds.id ? extent : await loadExtent(ds, false, h.signal)
+      let ext = usePrecomputed({ protocol: ds.protocol, has })
+        ? await Promise.race([extP, new Promise<null>((r) => setTimeout(r, EXTENT_WAIT_MS, null))])
+        : await extP
       if (h.stale()) return
       const opts = winOpts(ds), cap = opts.maxDays
       const win = clampWindow({ start: startDate, end: endDate }, ext, opts)
@@ -468,13 +494,7 @@
       // precomputed first: the weekly stats for this (dataset, variable, place), if published, are the Time
       // strip's whole series at once, and the window rows come out of them; only the latest time step is
       // then fetched live, for the map (planRun). A window that starts before the file, an empty or missing
-      // file, a slow host or any failure takes the full live path below. The listing is the cached
-      // stats/collection.json, so an unpublished combination costs no request (prefetched with the
-      // gazetteer; a host that does not answer in 4 s is skipped).
-      const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
-      if (h.stale()) return
-      // the weekly statistics exist only for the 20 places of the `places` collection
-      const has = ref.collection === PLACES_COLLECTION && hasPrecomputed(listed, ds.datasetId, v.name, ref.place_id)
+      // file, a slow host or any failure takes the full live path below.
       let plan: RunPlan = { strip: 'live', map: 'window', slice: null }
       let preUrl = ''
       if (usePrecomputed({ protocol: ds.protocol, has })) {
@@ -483,14 +503,14 @@
           preUrl = precomputedUrl(ds.datasetId, v.name, ref.place_id)
           if (preMem?.url !== preUrl) {
             const t = performance.now()
-            const [pre, asOf] = await Promise.all([
+            const [pre, prov] = await Promise.all([
               loadPrecomputed(preUrl, v.categorical ? 'categorical' : 'continuous', undefined, { signal: h.signal }),
-              precomputedAsOf(preUrl, { signal: h.signal }),
+              loadProvenance(preUrl, { signal: h.signal }),
             ])
-            preMem = { url: preUrl, pre, asOf, ms: Math.round(performance.now() - t) }
+            preMem = { url: preUrl, pre, prov, ms: Math.round(performance.now() - t) }
           }
           if (h.stale()) return
-          const { pre, asOf, ms: preMs } = preMem!
+          const { pre, prov: { asOf }, ms: preMs } = preMem!
           plan = planRun({ protocol: ds.protocol, has, coverage: pre.coverage }, { start, end }, ext?.end)
           if (plan.strip === 'precomputed') {
             series = pre.rows; seriesSpan = pre.coverage; seriesKey = tkey; fileRows = pre.rows.length
@@ -510,9 +530,24 @@
       if (plan.strip === 'live') {
         // the full live path: nothing from a previous precomputed view may stay on screen
         rows = []; series = null; seriesSpan = null; seriesKey = ''; fileRows = 0; shownVar = null; shownSource = null; shownRun = null
+        // a precomputed target that turned out not to be usable (window before the file, a failed read)
+        // did not wait for the extent: the live path needs it before its first request
+        if (!ext) { status = 'reading the dataset time extent…'; ext = await extP; if (h.stale()) return }
+      } else if (!ext) {
+        // the strip is on screen; the map's step still has to exist on the server. Wait for the extent
+        // (fetchRetry bounds it), and without it use the last step the precompute read (provenance)
+        status = 'precomputed statistics shown; asking ERDDAP for the dataset\'s last time step…'
+        ext = await extP
+        if (h.stale()) return
+        const prov = preMem!.prov
+        plan = planRun({ protocol: ds.protocol, has, coverage: preMem!.pre.coverage }, { start, end }, ext?.end ?? prov.end)
       }
-      // the one step the map needs when the statistics are precomputed
-      const sliceAt = plan.map === 'slice' ? timeInstant(plan.slice!, ext, noonZ) : null
+      // the one step the map needs when the statistics are precomputed; with no extent, the provenance's
+      // last instant stands in for it (timeInstant() uses an endpoint verbatim: MUR sits at 09:00Z)
+      const provExt: TimeExtent | null = preMem?.url === preUrl && preMem.prov.end ? { start: preMem.prov.end, end: preMem.prov.end } : null
+      const sliceAt = plan.map === 'slice' ? timeInstant(plan.slice!, ext ?? provExt, noonZ) : null
+      // a precomputed place's axes come with its provenance: the map then needs only the slice from ERDDAP
+      const pubAxes = plan.map === 'slice' && preMem?.url === preUrl ? preMem.prov.axes : null
 
       // the polygon: already in memory for the 20 places, otherwise a row-group filtered range read of the
       // collection's places.parquet (how many bytes depends on how the collection was written; see
@@ -532,6 +567,7 @@
 
       // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))
+      const axes    = lobeAxes(pubAxes, lobes)
       maskMs = 0
       const cells: MaskCell[] = []
       const files: string[] = []
@@ -557,7 +593,7 @@
             }),
           })
           status = `lobe ${i + 1}/${lobes.length}: fetching ${v.name} samples, ${start} to ${end}, as .${ds.format}…`
-          const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
+          const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal, WINDOW_RETRY)
           if (h.stale()) return
           const file = isParquet(ds.format) ? `slab_${i}.parquet` : `slab_${i}`
           if (isParquet(ds.format)) await engine.registerBuffer(file, slab.buffer!)
@@ -568,11 +604,13 @@
           continue
         }
         const [lo, hi] = lobeLonSpan(lobe.bbox, ds.lonRange)
-        status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
-        const [lonSrv, lat] = await Promise.all([
-          fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false, h.signal),
-          fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending, h.signal),
-        ])
+        if (!axes) status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
+        const [lonSrv, lat] = axes
+          ? [axes[i].lon, axes[i].lat]
+          : await Promise.all([
+              fetchAxis(ds.baseUrl, ds.datasetId, 'longitude', lo, hi, false, h.signal),
+              fetchAxis(ds.baseUrl, ds.datasetId, 'latitude',  lobe.bbox[1], lobe.bbox[3], ds.latDescending, h.signal),
+            ])
         if (h.stale()) return
         status = `lobe ${i + 1}/${lobes.length}: masking the grid…`
         const m = gridMask(lobe.geojson, lonSrv.map(toPoly), lat)
@@ -592,7 +630,7 @@
         status = sliceAt
           ? `lobe ${i + 1}/${lobes.length}: fetching the latest ${ext?.stepLabel ?? 'daily'} step (${plan.slice}) of ${v.name} as .${ds.format}…`
           : `lobe ${i + 1}/${lobes.length}: fetching ${days} days (${steps} ${ext?.stepLabel ?? 'daily'} step${steps > 1 ? 's' : ''}) of ${v.name} as .${ds.format} (this can take 15–30 s)…`
-        const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal)
+        const slab = await fetchSlab(url, ds.format, `erddapCb${i}`, h.signal, sliceAt ? SLICE_RETRY : WINDOW_RETRY)
         if (h.stale()) return
         const file = isParquet(ds.format) ? `slab_${i}.parquet` : `slab_${i}`
         if (isParquet(ds.format)) await engine.registerBuffer(file, slab.buffer!)
@@ -601,6 +639,8 @@
         files.push(file)
         urls = [...urls, { url, kb: Math.round((slab.bytes ?? 0) / 1024), ms: Math.round(slab.ms) }]
       }
+      if (axes) urls = [...urls, { url: provenanceUrl(preUrl), kb: 0, ms: 0,
+                                   label: `the grid axes of the ${plural(lobes.length, 'lobe')} came with the provenance (no ERDDAP axis request)` }]
 
       const slab = isParquet(ds.format)
         ? `read_parquet([${files.map((f) => `'${f}'`).join(', ')}])`   // the lobes, unioned
@@ -670,8 +710,9 @@
                `(mask ${(maskMs / 1000).toFixed(2)} s)`
     } catch (e) {
       if (!h.stale() && !isAbort(e)) {
-        if (shownSource) shownSource = { ...shownSource, failed: true }     // the precomputed rows stay, labelled
-        fail(e)
+        // the precomputed rows stay, labelled; the toast says it was only the map, and which host failed
+        if (shownSource) { shownSource = { ...shownSource, failed: true }; fail(mapFailMessage(e)) }
+        else fail(e)
       }
     } finally {
       runs.finish(h)
@@ -949,6 +990,8 @@
         {#if shownSource}
           <span class="source-note" role="status"
                 title={`the whole series is the weekly precompute${shownSource.asOf ? ` of ${fmtDay(shownSource.asOf)}` : ''}; the table, the downloads and the shaded window are its rows inside the window; the map is the latest ERDDAP time step`}><span class="src-long">{sourceLabel(shownSource, fmtDay)}</span><span class="src-short">{sourceLabel(shownSource, fmtDay, true)}</span></span>
+          <!-- the same target again: the strip's series stays, only the map's live step is asked for -->
+          {#if shownSource.failed && !busy}<Button variant="quiet" size="sm" onclick={() => { error = ''; run() }}>retry map</Button>{/if}
         {/if}
         {#if timeTab === 'plot' && rows.length && !categorical && !pointRun}
           <span class="chart-key" aria-label="chart key">

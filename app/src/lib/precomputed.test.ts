@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import {
   hasPrecomputed, inWindow, itemId, planRun, parseStatsCollection, precomputedIndex, precomputedPath, precomputedUrl, provenanceUrl,
   readPrecomputed, resetPrecomputedIndex, shapeRows, sourceLabel, usePrecomputed, windowCovered, loadPrecomputed,
+  parseProvenance, lobeAxes, type LobeAxes,
 } from './precomputed'
 import { GAZETTEER_BASE, GAZETTEER_FALLBACK } from './gazetteer'
 import { fmtDay } from './sentence'
@@ -98,6 +99,31 @@ describe('the run decision', () => {
   })
 })
 
+describe('provenance: the label, the fallback last step and the axes', () => {
+  const axes: LobeAxes[] = [{ bbox: [-83.1, 24.3, -80.1, 25.7], lon: [-83.125, -83.075], lat: [25.675, 25.625] },
+                { bbox: [179.2, -1, 180, 1], lon: [179.225], lat: [0.975, 0.925] }]
+  const j = { generated: '2026-10-06T21:23:38Z', end_datetime: '2026-10-05T12:00:00Z', axes, sql: '…' }
+  it('reads generated, end_datetime and the per-lobe axes', () => {
+    expect(parseProvenance(j)).toEqual({ asOf: '2026-10-06', end: '2026-10-05T12:00:00Z', axes })
+  })
+  it('a provenance from before the axes, or malformed axes, gives null axes (the app asks ERDDAP)', () => {
+    expect(parseProvenance({ generated: '2026-09-15T00:00:00Z' })).toEqual({ asOf: '2026-09-15', end: null, axes: null })
+    expect(parseProvenance({ ...j, axes: [{ bbox: [0, 0, 1, 1], lon: [], lat: [1] }] }).axes).toBeNull()
+    expect(parseProvenance({ ...j, axes: [{ bbox: [0, 0, 1], lon: [1], lat: [1] }] }).axes).toBeNull()
+    expect(parseProvenance({ ...j, axes: [{ bbox: [0, 0, 1, 1], lon: ['1'], lat: [1] }] }).axes).toBeNull()
+    expect(parseProvenance(null)).toEqual({ asOf: null, end: null, axes: null })
+  })
+  it('lobeAxes: used only when they describe these lobes, in order', () => {
+    const lobes = axes.map((a) => ({ bbox: [...a.bbox] }))
+    expect(lobeAxes(axes, lobes)).toBe(axes)
+    expect(lobeAxes(axes, [{ bbox: [-83.1 + 1e-12, 24.3, -80.1, 25.7] }, lobes[1]])).toBe(axes)   // a JSON round trip
+    expect(lobeAxes(axes, lobes.slice(0, 1))).toBeNull()                                        // another lobe count
+    expect(lobeAxes(axes, [lobes[1], lobes[0]])).toBeNull()                                     // another order
+    expect(lobeAxes(axes, [{ bbox: [-83.2, 24.3, -80.1, 25.7] }, lobes[1]])).toBeNull()         // the polygon moved
+    expect(lobeAxes(null, lobes)).toBeNull()
+  })
+})
+
 describe('planRun: what a run loads', () => {
   const coverage = { start: '2025-10-07', end: '2026-10-06' }
   const grid = { protocol: 'griddap', has: true, coverage }
@@ -108,7 +134,10 @@ describe('planRun: what a run loads', () => {
   it('the slice is the window end, but never past the dataset\'s last step', () => {
     expect(planRun(grid, { start: '2026-09-09', end: '2026-10-08' }, '2026-10-07T12:00:00Z').slice).toBe('2026-10-07')   // the file lags the server
     expect(planRun(grid, { start: '2026-01-01', end: '2026-01-30' }, '2026-10-07T12:00:00Z').slice).toBe('2026-01-30')   // a brushed past window
-    expect(planRun(grid, { start: '2026-09-09', end: '2026-10-08' }).slice).toBe('2026-10-08')                           // extent unknown
+    // extent unknown (ERDDAP's info did not answer): never past the file's last day, a step the server
+    // holds; the window end could be past the dataset's end and 404 ("greater than the axis maximum")
+    expect(planRun(grid, { start: '2026-09-09', end: '2026-10-08' }).slice).toBe('2026-10-06')
+    expect(planRun(grid, { start: '2026-01-01', end: '2026-01-30' }).slice).toBe('2026-01-30')
   })
   it('a window that starts before the file takes the full live path (whole window slab)', () => {
     expect(planRun(grid, { start: '2025-09-01', end: '2025-10-30' }, '2026-10-06T12:00:00Z'))

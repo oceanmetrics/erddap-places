@@ -6,6 +6,8 @@
 // axis's own direction (latitude descends on the CRW grid, so [(22.4):1:(18.8)]). a 4-D grid
 // (time, depth, latitude, longitude) gets one more constraint, a single depth level, after time.
 
+import { fetchRetry, type RetryOpts } from './fetchRetry'
+
 export type Format = 'parquet' | 'parquetWMeta' | 'csvp' | 'jsonp'
 /** the two Parquet rungs are handled identically once the bytes are in hand. */
 export const isParquet = (f: Format) => f === 'parquet' || f === 'parquetWMeta'
@@ -141,14 +143,19 @@ export function tabledapPlaceConstraints(o: {
 }
 
 // ── axis vectors ──────────────────────────────────────────────────────────────
-/** `dataset.json?latitude[(min):1:(max)]` -> the axis values, in the server's own order. */
-export async function fetchAxis(base: string, datasetId: string, axis: string, min: number, max: number, descending = false, signal?: AbortSignal): Promise<number[]> {
+/**
+ * `dataset.json?latitude[(min):1:(max)]` -> the axis values, in the server's own order. A small
+ * request: 15 s per attempt and one retry by default (`retry` overrides them; the precompute waits longer).
+ */
+export async function fetchAxis(base: string, datasetId: string, axis: string, min: number, max: number, descending = false,
+                                signal?: AbortSignal, retry: Omit<RetryOpts, 'signal'> = {}): Promise<number[]> {
   const c   = descending ? constraint(max, min) : constraint(min, max)
   const url = `${stripSlash(base)}/griddap/${datasetId}.json?${axis}${c}`
-  const res = await fetch(url, { signal })
-  if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
-  const j: { table: { columnNames: string[]; rows: number[][] } } = await res.json()
-  return j.table.rows.map((r) => Number(r[0]))
+  return fetchRetry(url, { timeoutMs: 15_000, ...retry, signal }, async (res) => {
+    if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
+    const j: { table: { columnNames: string[]; rows: number[][] } } = await res.json()
+    return j.table.rows.map((r) => Number(r[0]))
+  })
 }
 
 // ── format rung ───────────────────────────────────────────────────────────────
@@ -227,23 +234,29 @@ export function parseCsvp(text: string): Record<string, unknown>[] {
   })
 }
 
-/** fetch one slab in the given format. Parquet comes back as bytes for `registerFileBuffer`. */
-export async function fetchSlab(url: string, format: Format = 'parquet', callback = 'erddapCb', signal?: AbortSignal): Promise<Slab> {
+/**
+ * fetch one slab in the given format. Parquet comes back as bytes for `registerFileBuffer`. `retry`
+ * sets the per-attempt timeout and the tries (fetchRetry: 20 s and one retry unless the caller says
+ * otherwise: a whole live window can take longer than the one-step map slice).
+ */
+export async function fetchSlab(url: string, format: Format = 'parquet', callback = 'erddapCb', signal?: AbortSignal,
+                                retry: Omit<RetryOpts, 'signal'> = {}): Promise<Slab> {
   const t0 = (globalThis.performance ?? Date).now()
   if (format === 'jsonp') {
-    const data = await fetchJsonp(url, callback, 120_000, signal)
+    const data = await fetchJsonp(url, callback, retry.timeoutMs ?? 120_000, signal)
     return { url, format, ms: (globalThis.performance ?? Date).now() - t0, rows: tableToRows(data) }
   }
-  const res = await fetch(url, { signal })
-  if (!res.ok) {
-    const msg = (await res.text().catch(() => '')).slice(0, 400)
-    throw new Error(`${res.status} ${res.statusText} from ERDDAP: ${msg}`)
-  }
-  if (format === 'csvp') {
-    const text = await res.text()
-    return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: text.length, text, rows: parseCsvp(text) }
-  }
-  // parquet and parquetWMeta alike: raw bytes for registerFileBuffer
-  const buffer = new Uint8Array(await res.arrayBuffer())
-  return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: buffer.byteLength, buffer }
+  return fetchRetry(url, { ...retry, signal }, async (res): Promise<Slab> => {
+    if (!res.ok) {
+      const msg = (await res.text().catch(() => '')).slice(0, 400)
+      throw new Error(`${res.status} ${res.statusText} from ERDDAP: ${msg}`)
+    }
+    if (format === 'csvp') {
+      const text = await res.text()
+      return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: text.length, text, rows: parseCsvp(text) }
+    }
+    // parquet and parquetWMeta alike: raw bytes for registerFileBuffer
+    const buffer = new Uint8Array(await res.arrayBuffer())
+    return { url, format, ms: (globalThis.performance ?? Date).now() - t0, bytes: buffer.byteLength, buffer }
+  })
 }

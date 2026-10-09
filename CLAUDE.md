@@ -106,6 +106,9 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
 - Pinned versions: `@duckdb/duckdb-wasm` 1.29.0, MapLibre GL major 5 (6 breaks the Vite worker),
   `html-to-image` 1.11.13. Keep `html-to-image` lazy: only `feedback/capture.ts` imports it, and only
   through `import()` from the Shell.
+- Every ERDDAP fetch goes through `fetchRetry()` (`src/lib/fetchRetry.ts`): a per-attempt timeout,
+  one retry, and an error naming the host. A precomputed place's strip never waits on ERDDAP, and its
+  map takes its grid axes from the provenance JSON (PacIOOS stalled and dropped requests, 2026-10-09).
 - ERDDAP constraints: percent-encode each `[`/`]` and nothing else. A descending latitude axis
   (`erddap:lat_descending`) must be requested hi → lo. Clamp longitude to `erddap:lon_range`.
 - DuckDB-WASM has no ICU, so `TIMESTAMPTZ::DATE` fails. Use `make_timestamp(epoch_ms(time) * 1000)::DATE`.
