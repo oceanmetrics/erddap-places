@@ -113,8 +113,8 @@ describe('postFeedback', () => {
     expect((await postFeedback('https://x', {}, reply(true, { endpoint: 'something else' }))).ok).toBe(false)
     expect((await postFeedback('https://x', {}, reply(true, null))).ok).toBe(false)
   })
-  it('the honeypot receipt (ok:true, skipped) counts as sent, so a bot learns nothing', async () =>
-    expect(await postFeedback('https://x', {}, reply(true, { ok: true, skipped: 'honeypot' }))).toEqual({ ok: true, issueUrl: undefined }))
+  it('the honeypot receipt (ok:true, skipped) is a failure for the person in the dialog: browser autofill fills the trap', async () =>
+    expect(await postFeedback('https://x', {}, reply(true, { ok: true, skipped: 'honeypot' }))).toEqual({ ok: false, error: 'the feedback server dropped it as spam (a hidden field was filled, usually by browser autofill)' }))
   it('a rejected fetch resolves false, never throws', async () =>
     expect((await postFeedback('https://x', {}, vi.fn().mockRejectedValue(new Error('down')))).ok).toBe(false))
 })

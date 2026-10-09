@@ -30,11 +30,14 @@ export async function postFeedback(url: string, payload: unknown, doFetch: Fetch
       body   : JSON.stringify(payload),
     })
     if (!res.ok) return { ok: false, error: 'the feedback server answered with an error' }
-    type Reply = { ok?: boolean; error?: string; issue_url?: string }
+    type Reply = { ok?: boolean; error?: string; issue_url?: string; skipped?: string }
     const read = async (): Promise<Reply | null> => { try { return res.json ? (await res.json()) as Reply : null } catch { return null } }
     const body = await read()
     if (!body || typeof body !== 'object' || typeof body.ok !== 'boolean') return { ok: false, error: 'the feedback server answered with a page instead of a receipt' }
     if (body.ok === false) return { ok: false, error: body.error ?? 'the feedback server refused it' }
+    // the script drops a filled honeypot with ok:true so a bot learns nothing; a person in front of this
+    // dialog got there through browser autofill, and must not be told "Sent"
+    if (body.skipped) return { ok: false, error: 'the feedback server dropped it as spam (a hidden field was filled, usually by browser autofill)' }
     return { ok: true, issueUrl: body.issue_url || undefined }
   } catch {
     return { ok: false, error: 'the feedback server could not be reached' }

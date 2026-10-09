@@ -118,7 +118,10 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   Sheet row, mail to the recipients, a GitHub issue; `scripts/feedback/Code.gs`, runbook
   `docs/feedback.md`). Send is the one primary button, always shown. Only the script's JSON receipt
   (`{ok:true,…}`) is "Sent": a 200 with any other body (Google's HTML error or sign-in page) is a
-  failure, because the first deployment said "Sent" on such pages while nothing arrived. Without the
+  failure, because the first deployment said "Sent" on such pages while nothing arrived. The honeypot
+  input is never named `website`/`url`/`company` (Chrome autofill fills those with the email, and the
+  script then drops the send); its DOM name is nonsense, the payload key stays `website`, and a
+  `skipped` receipt is a failure. Without the
   variable Send is disabled, and when the POST fails, a one-line notice under it carries the inline link "open a GitHub
   issue" (a prefilled issue URL under 7,500 characters; the screenshot goes to the clipboard). There is no
   Copy report or Download PNG. The email field is optional: it goes to the Sheet and the mail only,

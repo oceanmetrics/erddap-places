@@ -32,6 +32,10 @@
 
   let note = $state("");
   let email = $state("");
+  // The honeypot input must NOT be named `website` (or url, company, …): Chrome autofill classifies
+  // such a field as part of the address profile and fills it together with the email, and the script
+  // then drops the submission as a bot with a receipt the dialog showed as "Sent" (Ben, 2026-10-09).
+  // The payload key stays `website` (the script's contract); only the DOM name is nonsense.
   let website = $state(""); // the honeypot: a person never sees it
   let includeUrl = $state(true); // every view is a permalink, so on by default; still a choice
   let keep = $state(true);
@@ -192,7 +196,7 @@
         aria-describedby="fb-email-hint" placeholder="you@example.org" />
       <span id="fb-email-hint" class="hint">{emailOk ? "optional, so we can reply; not published" : "that does not look like an email address"}</span>
     </label>
-    <input class="trap" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" bind:value={website} />
+    <input class="trap" type="text" name="xq_note_check" tabindex="-1" autocomplete="off" data-lpignore="true" data-1p-ignore aria-hidden="true" bind:value={website} />
 
     {#if image}
       <div class="tools" role="toolbar" aria-label="mark up the screenshot">

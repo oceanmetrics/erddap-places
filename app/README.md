@@ -101,6 +101,13 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.2** (2026-10-09): the real cause of Ben's "Sent" with nothing behind it. Chrome autofill
+filled the hidden honeypot input, named `website`, together with the email, and the script dropped the
+submission as a bot with an `ok:true, skipped` receipt the dialog read as sent. The input is now named
+`xq_note_check` (a name no autofill classifies; `data-lpignore`/`data-1p-ignore` for password managers),
+the payload key stays `website`, and a `skipped` receipt is a failure with the reason "dropped it as spam
+(a hidden field was filled, usually by browser autofill)" and the issue fallback.
+
 **app 0.3.1** (2026-10-09): the feedback dialog says "Sent" only on the Apps Script's JSON receipt;
 any other 200 (Google's HTML error or sign-in page) is a failure with the *open a GitHub issue* fallback.
 The map in the picture is copied after a synchronous `redraw()` instead of in a render event, which a

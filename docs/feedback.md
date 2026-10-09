@@ -91,6 +91,14 @@ do not redeploy the site.
 
 ## When "Sent" shows but nothing arrives
 
+**The 2026-10-09 case: browser autofill filled the honeypot.** The hidden trap input was named
+`website`. Chrome classifies such a field as part of the address profile and fills it when it fills the
+email, so the script answered `{"ok":true,"skipped":"honeypot"}` (no row, no mail, no issue, by design for
+a bot) and the dialog showed "Sent. Thank you." without an issue link. Since app 0.3.2 / obis-hex 0.7.4
+the input is named `xq_note_check` (the payload key is still `website`), and a `skipped` receipt is shown
+as a failure with the issue fallback. Rule: a honeypot's DOM name must never be one autofill recognises
+(website, url, company, phone, …).
+
 The script answers every request with JSON (`{"ok":true,…}` or `{"ok":false,"error":…}`). Google
 itself answers HTTP 200 with an **HTML page** when the deployment is not public ("who has access" is not
 *Anyone*), when it still needs authorisation, when the `/exec` URL is a stale deployment, or on its
