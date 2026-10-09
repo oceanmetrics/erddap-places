@@ -39,7 +39,8 @@ export interface FeedbackPayloadInput {
   sentence  ?: string
   /** a `data:image/…` URL; left out when absent or over {@link MAX_IMAGE_DATA_URL_LENGTH} */
   image     ?: string
-  /** the honeypot's value: empty from a person; the script drops a non-empty one */
+  /** the script's honeypot key; the dialog has no trap input (0.3.4: browser autofill filled every one),
+   * so it is always empty from the app; the script drops a non-empty one */
   website   ?: string
 }
 

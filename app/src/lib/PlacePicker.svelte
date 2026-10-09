@@ -18,9 +18,11 @@
     onselect  : (row: IndexPlace) => void
     placeholder?: string
     maxHeight ?: string
+    /** in the fill Controls the list takes the pane's height, as the kit's Picker `fill` (@marinebon/ui 0.4.0) */
+    fill      ?: boolean
     label     ?: string
   }
-  let { polygons, layers, value, search, onselect, placeholder = 'Search places…', maxHeight = '11rem', label = 'places' }: Props = $props()
+  let { polygons, layers, value, search, onselect, placeholder = 'Search places…', maxHeight = '11rem', fill = false, label = 'places' }: Props = $props()
 
   const uid = `pp${Math.random().toString(36).slice(2, 7)}`
   let query    = $state('')
@@ -83,7 +85,7 @@
   const n = (x: number) => x.toLocaleString('en-US')
 </script>
 
-<div class="pp">
+<div class="pp" class:fill>
   <div class="bar">
     <input type="search" class="q" role="combobox" aria-label="Search {label}" aria-expanded="true"
            aria-controls="{uid}-list" aria-autocomplete="list"
@@ -145,6 +147,9 @@
 
 <style>
   .pp { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  /* in a fill pane (not a phone sheet) the list takes the height left to it, like the kit's Picker fill */
+  :global(.mbon-pane.fill) .pp.fill { flex: 1; min-height: 0; }
+  :global(.mbon-pane.fill) .pp.fill .list { flex: 1; min-height: 8rem; max-height: none !important; }
   .bar { display: flex; gap: var(--space-2); align-items: center; }
   .q {
     flex: 1; min-width: 0; padding: 0.5em 0.75em; font: var(--type-small); color: var(--text-strong);

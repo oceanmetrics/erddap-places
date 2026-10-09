@@ -511,7 +511,7 @@
 </script>
 
 {#snippet placePicker(close?: () => void)}
-  <Picker items={placeItems} value={s.place} label="sanctuaries" placeholder="Search sanctuaries…" maxHeight={close ? '16rem' : '11rem'}
+  <Picker items={placeItems} value={s.place} label="sanctuaries" placeholder="Search sanctuaries…" maxHeight={close ? '16rem' : '11rem'} fill={!close}
           onselect={(it) => { s.place = it.id; close?.() }} />
 {/snippet}
 {#snippet thenPanel()}
@@ -642,12 +642,12 @@
       <div class="toast"><Notice kind="error" ondismiss={() => { error = '' }}>{error}</Notice></div>
     {/if}
 
-    <Controls id="tn-controls" title="controls" width={390} bind:active={tab} bind:collapsed={controlsFolded}
+    <Controls id="tn-controls" title="controls" width={390} fill bind:active={tab} bind:collapsed={controlsFolded}
       tabs={[{ id: 'place', label: 'Place' }, { id: 'data', label: 'Dataset & variable' }, { id: 'method', label: 'Method' }, { id: 'share', label: 'Share' }]}>
       {#snippet tabLabel(t)}<span class="tab-label">{t.label}</span>{/snippet}
       {#snippet panel(id)}
         {#if id === 'place'}
-          <div class="pane-col">
+          <div class="pane-col mbon-fill">
             {@render placePicker()}
             <p class="pane-note">The national marine sanctuaries with Then vs Now rasters{available.size ? ` (${available.size})` : ''}.</p>
           </div>

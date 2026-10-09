@@ -27,7 +27,7 @@ computes daily `CRW_SST` from PacIOOS `dhw_5km`.
 
 ## The page (MBON re-layout, 2026-10-08)
 
-One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.3.1,
+One page, built with the MBON UI kit [`@marinebon/ui`](https://github.com/marinebon/ui) (v0.4.0,
 installed from the git tag), laid out like calcofi.io/explore: the map is the page and everything
 else floats over it. `src/Shell.svelte` holds the frame and swaps the **lens** in place;
 `src/App.svelte` is the Statistics lens, `src/lib/thenNow/ThenNow.svelte` the Then vs Now lens (a lazy
@@ -100,6 +100,14 @@ in the status line), the map draws its outline from that collection's PMTiles, a
 Data sources row and *Cite this data* carry the collection's own credit, citation and licence. The 20
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
+
+**app 0.3.4** (2026-10-09): kit 0.4.0. The Controls run the full height of the stage, with the Time strip
+beside them (`Controls fill`). The Place list (the app's `PlacePicker`, `fill`), the dataset Picker and
+the Then vs Now sanctuary Picker take the pane's height instead of 10–11 rem, so the Place tab no longer
+leaves dead space under a four-row list. obis-hex uses the same kit layout. The feedback dialog has no
+honeypot input: Chrome autofill still filled the renamed `xq_note_check` trap (0.3.2) along with the email,
+and the script dropped a person's feedback as spam. A bot posts to the script directly, so the trap caught
+nobody; the payload sends `website: ""`.
 
 **app 0.3.3** (2026-10-09, issue #6): the Controls pane ends 12 px above the Time strip, like its gap
 below the sentence bar. Kit 0.3.1 measures the strip's top (an overlay `TimeStrip` reports what it covers

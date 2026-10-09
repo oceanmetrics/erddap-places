@@ -30,7 +30,8 @@ The dialog (`app/src/lib/feedback/FeedbackDialog.svelte`) POSTs `payload.ts`'s `
   other apps). It becomes the GitHub issue label.
 - `email` is optional and present only when the person typed one. `url` is present only when
   "include a link to this view" is ticked (on by default here; every view is a permalink).
-- `website` is a honeypot; the script drops a submission that fills it.
+- `website` is a honeypot; the script drops a submission that fills it. The apps always send it empty
+  and have no trap input (see below).
 
 The script then:
 
@@ -96,8 +97,11 @@ do not redeploy the site.
 email, so the script answered `{"ok":true,"skipped":"honeypot"}` (no row, no mail, no issue, by design for
 a bot) and the dialog showed "Sent. Thank you." without an issue link. Since app 0.3.2 / obis-hex 0.7.4
 the input is named `xq_note_check` (the payload key is still `website`), and a `skipped` receipt is shown
-as a failure with the issue fallback. Rule: a honeypot's DOM name must never be one autofill recognises
-(website, url, company, phone, …).
+as a failure with the issue fallback. That was not enough: Chrome still filled `xq_note_check`
+(`autocomplete="off"` does not stop address autofill), and Ben's feedback was dropped again. Since app
+0.3.4 / obis-hex 0.7.5 the dialogs have **no trap input**, and the payload always sends `website: ""`.
+A bot posts to the `/exec` URL directly (it is in the bundle), never through the dialog, so the trap
+caught nobody. Rule: no hidden form fields in the feedback dialogs.
 
 The script answers every request with JSON (`{"ok":true,…}` or `{"ok":false,"error":…}`). Google
 itself answers HTTP 200 with an **HTML page** when the deployment is not public ("who has access" is not

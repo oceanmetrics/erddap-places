@@ -781,12 +781,12 @@
 </script>
 
 {#snippet placePicker(close?: () => void)}
-  <PlacePicker {polygons} {layers} value={selKey} search={searchPolygons} placeholder="Search places…" maxHeight={close ? '16rem' : '10rem'}
+  <PlacePicker {polygons} {layers} value={selKey} search={searchPolygons} placeholder="Search places…" maxHeight={close ? '16rem' : '10rem'} fill={!close}
                onselect={(row) => { selectPlace(row.place_id, row.collection); close?.() }} />
 {/snippet}
 {#snippet datasetPicker(close?: () => void)}
-  <div class="pane-col">
-    <Picker items={datasetItems} value={dsId} label="datasets" placeholder="Search datasets…" maxHeight={close ? '13rem' : '11rem'}
+  <div class="pane-col" class:mbon-fill={!close}>
+    <Picker items={datasetItems} value={dsId} label="datasets" placeholder="Search datasets…" maxHeight={close ? '13rem' : '11rem'} fill={!close}
             onselect={(it) => { dsId = it.id }} />
     {#if dataset}
       <Select label="Variable" value={varName} options={variableOptions} onchange={(v) => { varName = v; close?.() }} />
@@ -921,12 +921,12 @@
       <div class="toast"><Notice kind="error" ondismiss={() => { error = '' }}>{error}</Notice></div>
     {/if}
 
-    <Controls id="ep-controls" title="controls" width={390} bind:active={tab} bind:collapsed={controlsFolded}
+    <Controls id="ep-controls" title="controls" width={390} fill bind:active={tab} bind:collapsed={controlsFolded}
       tabs={[{ id: 'place', label: 'Place' }, { id: 'data', label: 'Dataset & variable' }, { id: 'method', label: 'Method' }, { id: 'share', label: 'Share' }]}>
       {#snippet tabLabel(t)}<span class="tab-label">{t.label}</span>{/snippet}
       {#snippet panel(id)}
         {#if id === 'place'}
-          <div class="pane-col">
+          <div class="pane-col mbon-fill">
             {@render placePicker()}
             {#if selected}<p class="pane-note">{selected.name} · {selected.place_id}{selLayer ? ` · ${selLayer.slug === PLACES_COLLECTION ? 'precomputed places' : selLayer.title}` : ''}{selected.area_km2 ? ` · ${Math.round(selected.area_km2).toLocaleString('en-US')} km²` : ''}. Or click a place on the map.</p>{/if}
             <p class="pane-note">{layers.length ? `${(gaz?.polygons.length ?? 0).toLocaleString('en-US')} places in ${layers.length} collections of the gazetteer. ` : ''}Polygon places only; lines and points are not maskable.{gazError ? ` The index did not load (${gazError}), so only the ${places.length} precomputed places are listed.` : ''}</p>

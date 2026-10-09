@@ -1,5 +1,6 @@
 // the feedback endpoint client: the payload's shape and privacy rules, where the endpoint comes from,
 // how it is POSTed, and the mark colours. Each rule on a small fixture with the exact expected output.
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildFeedbackPayload, fitImage, isEmail, MAX_IMAGE_DATA_URL_LENGTH, MAX_TEXT_LENGTH, type FeedbackPayloadInput } from './payload'
 import { feedbackEndpoint, FEEDBACK_URL_KEY } from './endpoint'
@@ -39,6 +40,16 @@ describe('buildFeedbackPayload', () => {
   it('an image over the cap is dropped, one under it is kept', () => {
     expect('image' in buildFeedbackPayload({ ...INPUT, image: 'x'.repeat(MAX_IMAGE_DATA_URL_LENGTH + 1) })).toBe(false)
     expect(buildFeedbackPayload({ ...INPUT, image: 'data:image/png;base64,AA' }).image).toBe('data:image/png;base64,AA')
+  })
+  it('the honeypot key is always sent, empty when the dialog gives none (0.3.4: no trap input)', () => {
+    const { website: _w, ...noTrap } = INPUT
+    expect(buildFeedbackPayload(noTrap).website).toBe('')
+  })
+  it('the dialog has no hidden trap input for autofill to fill (0.3.4 regression: feedback dropped as spam)', () => {
+    const src = readFileSync(new URL('./FeedbackDialog.svelte', import.meta.url), 'utf8')
+    const inputs = src.match(/<input\b[^>]*>/g) ?? []
+    expect(inputs.filter((i) => /type="(text|email|url|tel)"/.test(i)).map((i) => i.match(/type="(\w+)"/)![1])).toEqual(['email'])
+    expect(src).not.toMatch(/class="trap"|bind:value=\{website\}/)
   })
   it('the honeypot value is carried through', () => {
     expect(buildFeedbackPayload({ ...INPUT, website: 'spam' }).website).toBe('spam')
