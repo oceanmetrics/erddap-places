@@ -6,3 +6,4 @@ app/dist/
 .DS_Store
 catalog/cache/
 catalog/gazetteer/.portolan/
+catalog/staging/*/

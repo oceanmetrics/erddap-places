@@ -107,3 +107,12 @@ if [[ $do_upload -eq 1 ]]; then
   duckdb -c "SELECT place_id, status, status_date FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/boem_wind_leases/places.parquet') WHERE place_id LIKE 'BOEM:OCS-P%' ORDER BY 1"
   echo "expect: 0561 relinquished 2026-09-03 · 0562 active · 0563 active · 0564 settlement_pending · 0565 cancelled"
 fi
+
+# 8. commit the integrated collections (MUST land before monday's stats.yml run, which syncs the
+#    checkout to s3 with --delete and would otherwise remove the six collections from the bucket) ----
+cd "$dir_catalog/.."
+# shellcheck disable=SC2046
+git add catalog/gazetteer/catalog.json catalog/gazetteer/versions.json $(for s in $slugs; do echo "catalog/gazetteer/$s"; done)
+git commit -m "gazetteer: publish the six BOEM / NOAA collections (Erin's layers) at 1.0.0"
+git push origin main
+echo "done: six collections integrated, published and committed"
