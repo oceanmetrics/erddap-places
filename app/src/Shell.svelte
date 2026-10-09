@@ -118,7 +118,11 @@
     try {
       const [mod, cap] = await Promise.all([import('./lib/feedback/FeedbackDialog.svelte'), import('./lib/feedback/capture')])
       let image: HTMLCanvasElement | null = null
-      try { image = await cap.captureView(bodyEl, api?.maps() ?? []) } catch (e) { console.warn('feedback: capture failed', e); image = null }
+      // a capture that never settles (a throttled tab, a stuck map) must not hold fbBusy forever: after
+      // 15 s the dialog opens without the picture
+      const late = new Promise<null>((r) => setTimeout(() => r(null), 15000))
+      try { image = await Promise.race([cap.captureView(bodyEl, api?.maps() ?? []), late]) } catch (e) { console.warn('feedback: capture failed', e); image = null }
+      if (!image) console.warn('feedback: no picture (capture failed or timed out)')
       FeedbackDialog = mod.default
       fbKind = kind; fbImage = image; fbOpen = true
     } finally { fbBusy = false }

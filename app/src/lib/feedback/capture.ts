@@ -1,8 +1,8 @@
 // the feedback picture: html-to-image (pinned 1.11.13, as MarineSensitivity/atlas, CalCOFI explore
 // and obis-hex; html2canvas rejects color-mix()) over the page body (the sentence, the map stage and
 // its panes; the header and footer are left out), with the map composited from MapLibre's own canvas
-// (grabMap(), read in a render event, since the maps keep no drawing buffer and a WebGL canvas does
-// not survive html-to-image's clone). The Then vs Now swipe clips its right-hand map with
+// (grabMap(), a synchronous redraw then a copy, since the maps keep no drawing buffer and a WebGL
+// canvas does not survive html-to-image's clone). The Then vs Now swipe clips its right-hand map with
 // `clip-path: inset(…)`, which the composite honours.
 // Reached ONLY through the dynamic import() in Shell.svelte (help.test.ts checks the wiring);
 // html-to-image must never enter index.html's static graph.

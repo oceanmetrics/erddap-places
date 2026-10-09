@@ -107,8 +107,14 @@ describe('postFeedback', () => {
   it('a non-OK response is a failure', async () => expect((await postFeedback('https://x', {}, reply(false))).ok).toBe(false))
   it('a 200 whose body says ok:false is a failure carrying the script\'s reason', async () =>
     expect(await postFeedback('https://x', {}, reply(true, { ok: false, error: 'rate limited' }))).toEqual({ ok: false, error: 'rate limited' }))
-  it('an unreadable body on a 200 still counts as sent', async () =>
-    expect((await postFeedback('https://x', {}, vi.fn().mockResolvedValue({ ok: true, json: async () => { throw new Error('opaque') } }))).ok).toBe(true))
+  it('a 200 whose body is not the script\'s JSON receipt (Google\'s HTML error or sign-in page) is a failure', async () => {
+    const html = await postFeedback('https://x', {}, vi.fn().mockResolvedValue({ ok: true, json: async () => { throw new Error('not JSON') } }))
+    expect(html).toEqual({ ok: false, error: 'the feedback server answered with a page instead of a receipt' })
+    expect((await postFeedback('https://x', {}, reply(true, { endpoint: 'something else' }))).ok).toBe(false)
+    expect((await postFeedback('https://x', {}, reply(true, null))).ok).toBe(false)
+  })
+  it('the honeypot receipt (ok:true, skipped) counts as sent, so a bot learns nothing', async () =>
+    expect(await postFeedback('https://x', {}, reply(true, { ok: true, skipped: 'honeypot' }))).toEqual({ ok: true, issueUrl: undefined }))
   it('a rejected fetch resolves false, never throws', async () =>
     expect((await postFeedback('https://x', {}, vi.fn().mockRejectedValue(new Error('down')))).ok).toBe(false))
 })

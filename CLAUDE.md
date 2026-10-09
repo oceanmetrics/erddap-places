@@ -116,8 +116,10 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   it opens pages with `?tour=off` and waits on `.lens[data-state]`.
 - Feedback goes to the shared Ocean Metrics Apps Script when `VITE_FEEDBACK_URL` is set (a Google
   Sheet row, mail to the recipients, a GitHub issue; `scripts/feedback/Code.gs`, runbook
-  `docs/feedback.md`). Send is the one primary button, always shown. Without the variable it is
-  disabled, and when the POST fails, a one-line notice under it carries the inline link "open a GitHub
+  `docs/feedback.md`). Send is the one primary button, always shown. Only the script's JSON receipt
+  (`{ok:true,…}`) is "Sent": a 200 with any other body (Google's HTML error or sign-in page) is a
+  failure, because the first deployment said "Sent" on such pages while nothing arrived. Without the
+  variable Send is disabled, and when the POST fails, a one-line notice under it carries the inline link "open a GitHub
   issue" (a prefilled issue URL under 7,500 characters; the screenshot goes to the clipboard). There is no
   Copy report or Download PNG. The email field is optional: it goes to the Sheet and the mail only,
   never into the issue or the issue URL. The view link

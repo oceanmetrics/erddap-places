@@ -1,9 +1,10 @@
 # Feedback endpoint (Google Sheet + mail + GitHub issue)
 
-**Status: not yet deployed.** The code is in place (`scripts/feedback/Code.gs`, `app/src/lib/feedback/`),
-but Ben must create the Sheet and deploy the Apps Script (steps below) and set the repo variable. Until
-`VITE_FEEDBACK_URL` is set, the Send button is disabled and a line under it reads "Sending is not set up
-yet; open a GitHub issue instead", where the link opens the prefilled GitHub issue.
+**Status: deployed 2026-10-08** (Sheet "OceanMetrics feedback", the `oceanmetrics_feedback` web app below,
+`VITE_FEEDBACK_URL` set in erddap-places; verified end to end 2026-10-09 from curl and from the live page:
+Sheet row, mail, Drive screenshot and GitHub issue). Until an app has `VITE_FEEDBACK_URL`, its Send
+button is disabled and a line under it reads "Sending is not set up yet; open a GitHub issue instead",
+where the link opens the prefilled GitHub issue.
 
 One Apps Script serves all the Ocean Metrics apps. Each app's payload carries `app`, and the script's
 `APPS` map turns that into a repository and branch:
@@ -62,7 +63,12 @@ Each step reports into the row's `status` column, so a missing token or a mail f
    - `DRIVE_FOLDER_ID` (optional): a Drive folder for the per-app screenshot folders.
 4. **Deploy > New deployment > Web app**, execute as **Me**, who has access **Anyone**. Authorize when
    asked (Sheets, Drive, Mail, external requests). Copy the `/exec` URL. Opening it in a browser should
-   answer `{"ok":true,"endpoint":"oceanmetrics-feedback","apps":[...],...}`.
+   answer `{"ok":true,"endpoint":"oceanmetrics-feedback","apps":[...],...}`.  
+   - oceanmetrics_feedback:
+      - Deployment ID: AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg
+      - URL: https://script.google.com/macros/s/AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg/exec
+   - TODO: marinebon_feedback:
+      
 5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`,
    `marinebon/marinebon.github.io`) add the Actions variable `VITE_FEEDBACK_URL` under
    Settings > Secrets and variables > Actions > Variables (a variable, not a secret: it ships in the
@@ -82,6 +88,23 @@ Each step reports into the row's `status` column, so a missing token or a mail f
 
 Screenshot commits (`feedback/<id>.png`) land on `main` outside the Pages workflow's `paths`, so they
 do not redeploy the site.
+
+## When "Sent" shows but nothing arrives
+
+The script answers every request with JSON (`{"ok":true,…}` or `{"ok":false,"error":…}`). Google
+itself answers HTTP 200 with an **HTML page** when the deployment is not public ("who has access" is not
+*Anyone*), when it still needs authorisation, when the `/exec` URL is a stale deployment, or on its
+transient "unable to open the file at this time" error. Until app 0.3.1 / obis-hex 0.7.3 the dialogs
+took any 200 as sent, so such a page showed "Sent. Thank you." while nothing reached the Sheet. Now
+only the JSON receipt counts; anything else fails with the *open a GitHub issue* fallback and the
+reason "the feedback server answered with a page instead of a receipt".
+
+To check the script side: Apps Script editor → **Executions** lists every `doPost` with its status and
+log; a failed or missing execution for the time of the submission says whether the request reached
+the script. A GET of the `/exec` URL in a browser or curl must return the JSON status line (`rows`,
+`recipients`, `github`); an HTML page there means the deployment, not the app, is wrong. curl must
+follow the redirect the way a browser does: `curl -L --data '{…}' <url>` (no `-X POST`, which re-POSTs
+to the redirect target and gets a 405 even though the script already ran).
 
 ## Testing without the real deployment
 

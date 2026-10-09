@@ -101,6 +101,12 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.1** (2026-10-09): the feedback dialog says "Sent" only on the Apps Script's JSON receipt;
+any other 200 (Google's HTML error or sign-in page) is a failure with the *open a GitHub issue* fallback.
+The map in the picture is copied after a synchronous `redraw()` instead of in a render event, which a
+throttled tab never fired (the capture then hung and the dialog could not open again), and the capture is
+capped at 15 s, after which the dialog opens without the picture.
+
 ### URL grammar
 
 | key | lens | what |
@@ -240,7 +246,10 @@ behave alike. The logic is plain TypeScript under `src/lib/help/` and `src/lib/f
     `docs/feedback.md`), which writes a Google Sheet row, mails the recipients (the screenshot inline,
     a copy to the submitter) and opens a GitHub issue labelled with the kind, the screenshot committed
     as `feedback/<id>.png`. The email goes to the Sheet and the mail only, never into the issue. States:
-    Sending, Sent, or failed.
+    Sending, Sent, or failed. **Only the script's JSON receipt (`{ok:true,…}`) is "Sent"** (app 0.3.1):
+    Apps Script answers HTTP 200 with an HTML page when the deployment is not public, needs
+    authorisation, or hits Google's transient "unable to open the file" error, and the first live
+    deployment said "Sent" on such pages while nothing reached the Sheet, the mail or GitHub.
   - **Fallback**, the inline link *open a GitHub issue* in the one-line notice under Send. The notice
     reads "Sending is not set up yet; open a GitHub issue instead" when there is no endpoint (Send is
     then disabled), and "<reason>; open a GitHub issue instead" after a failed send. The link opens a

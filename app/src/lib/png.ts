@@ -1,17 +1,32 @@
 // a PNG of the view: the map as drawn, with the title sentence above it and the selection, the data
 // release and the view URL stamped below, so the picture never leaves the app anonymous.
 
-/** copy a MapLibre map's WebGL canvas while its frame is still in the buffer (no preserveDrawingBuffer). */
-export function grabMap(map: { getCanvas(): HTMLCanvasElement; once(t: string, f: () => void): unknown; triggerRepaint(): void }): Promise<HTMLCanvasElement> {
+/**
+ * Copy a MapLibre map's WebGL canvas while its frame is still in the buffer (no preserveDrawingBuffer).
+ * `redraw()` renders synchronously in this task, so the copy that follows sees the frame. The render-event
+ * form (`once('render')` + `triggerRepaint()`) waits on a requestAnimationFrame, which a throttled or
+ * background tab never grants: the feedback capture then hung, kept the dialog from ever opening again,
+ * and a capture that did resolve could still copy a blank canvas (2026-10-09). The event form stays for
+ * a map without `redraw` (tests), under a 1 s cap that resolves an empty canvas instead of hanging.
+ */
+export function grabMap(map: { getCanvas(): HTMLCanvasElement; once(t: string, f: () => void): unknown; triggerRepaint(): void; redraw?(): unknown }): Promise<HTMLCanvasElement> {
+  const copy = () => {
+    const src = map.getCanvas()
+    const c = document.createElement('canvas')
+    c.width = src.width; c.height = src.height
+    c.getContext('2d')!.drawImage(src, 0, 0)
+    return c
+  }
+  if (typeof map.redraw === 'function') {
+    map.redraw()
+    return Promise.resolve(copy())
+  }
   return new Promise((resolve) => {
-    map.once('render', () => {
-      const src = map.getCanvas()
-      const c = document.createElement('canvas')
-      c.width = src.width; c.height = src.height
-      c.getContext('2d')!.drawImage(src, 0, 0)
-      resolve(c)
-    })
+    let done = false
+    const finish = () => { if (!done) { done = true; resolve(copy()) } }
+    map.once('render', finish)
     map.triggerRepaint()
+    setTimeout(finish, 1000)
   })
 }
 
