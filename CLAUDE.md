@@ -139,10 +139,13 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   `ERDDAP_OFFLINE=1` tests, builds with `VITE_BASE=/erddap-places/`, checks the size budget, and
   deploys to GitHub Pages.
 - `.github/workflows/stats.yml`: runs weekly on the **self-hosted `macmini` runner** (msens until
-  2026-10-12; `obis-h3.yml` and `gazetteer-sync.yml` stay there). It precomputes the **full record**
+  2026-10-12; `gazetteer-sync.yml` stays there). It precomputes the **full record**
   into `catalog/gazetteer/stats/`, incrementally: each chunk's daily rows are kept in
   `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. It runs `rashid check`, and syncs the gazetteer to
   `s3://oceanmetrics.io-public/gazetteer/` using the host's AWS profile (the repo has no secrets).
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.
+- `.github/workflows/obis-h3.yml`: the monthly obis-h3 release for the obis-hex app, also on `macmini`
+  (since 2026-10-12). It runs obisindicators `data-raw/run_refresh_docker.sh` (Colima + Docker, data on
+  `/Volumes/msens_big/_big/obis`). One runner, one job at a time: it queues behind a stats run.
 - Data files (stats Parquet and provenance, Then vs Now COGs and series) are git-ignored. Only the
   STAC JSON, READMEs and AGENTS files are committed.

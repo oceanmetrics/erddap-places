@@ -111,9 +111,12 @@ incremental live on that host:
 - host tools from Homebrew: node, python3, `uv` (rashid is a uv tool), aws cli, duckdb. The precompute
   runs under `caffeinate -i`.
 - S3 credentials: the host's AWS profile (`~/.aws`, `default`). The repository has **no** AWS secrets.
-- `obis-h3.yml` and `gazetteer-sync.yml` stay on the **msens** runner (`msens`, labels
-  `self-hosted, linux, x64, msens`, `/share/github/oceanmetrics/actions-runner`, systemd service
+- `obis-h3.yml` also runs here (since 2026-10-12; see below). `gazetteer-sync.yml` stays on the
+  **msens** runner (`msens`, labels `self-hosted, linux, x64, msens`,
+  `/share/github/oceanmetrics/actions-runner`, systemd service
   `actions.runner.oceanmetrics-erddap-places.msens`, user `ubuntu`).
+- The runner takes one job at a time: a stats run and an obis-h3 run queue behind each other. A stats
+  run can be cancelled to let obis-h3 through and re-dispatched later; it resumes from its chunks.
 
 Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
 
@@ -157,14 +160,17 @@ elsewhere and follow "Precomputed statistics" above, then the `aws s3 sync` comm
 
 #### Monthly obis-h3 refresh (`obis-h3.yml`)
 
-`.github/workflows/obis-h3.yml` runs on the same `msens` runner on the 1st of each month (03:17 UTC; also
-`workflow_dispatch` with a release override and skip flags) and publishes the release that the obis-hex app
-reads. The workflow only updates the `/share/github/marinebon/obisindicators` checkout (branch `export-parquet`
-until `R/export.R` is merged to `main`; change `OBIS_BRANCH` then) and runs
-`data-raw/refresh_obis_h3.sh` there: sync OBIS open data, build the H3 store in the `plumber` container,
-`obis_h3_export_parquet()` into `/share/data/obis-h3/<release>/`, validate (total records at least 90% of the
-previous release's, else nothing is uploaded), `aws s3 sync` to `s3://oceanmetrics.io-public/obis-h3/<release>/`
-without `--delete`, and **last** `obis-h3/latest.json`:
+`.github/workflows/obis-h3.yml` runs on the `macmini` runner (msens until 2026-10-12) on the 1st of each month
+(03:17 UTC; also `workflow_dispatch` with a release override, skip flags and a dry run) and publishes the
+release that the obis-hex app reads. The workflow only updates the `~/Github/marinebon/obisindicators`
+checkout on the mini (branch `export-parquet` until `R/export.R` is merged to `main`; change `OBIS_BRANCH`
+then) and runs `data-raw/run_refresh_docker.sh` there under `caffeinate -i`. The wrapper checks that the
+external drive is mounted, starts the Colima VM `obis-h3` (stopped again afterwards), and runs
+`data-raw/refresh_obis_h3.sh` in its Docker image with `DATA_ROOT=/Volumes/msens_big/_big/obis` mounted as
+`/share/data`: sync OBIS open data, build the H3 store, `obis_h3_export_parquet()` into
+`$DATA_ROOT/obis-h3/<release>/`, validate (total records at least 90% of the previous release's, else nothing
+is uploaded), `aws s3 sync` to `s3://oceanmetrics.io-public/obis-h3/<release>/` without `--delete`, and
+**last** `obis-h3/latest.json`:
 
 ```json
 {"release": "vYYYYMMDD", "base": "https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/obis-h3/vYYYYMMDD/",
@@ -172,28 +178,30 @@ without `--delete`, and **last** `obis-h3/latest.json`:
 ```
 
 `latest.json` is served with `Cache-Control: max-age=300`. The release tag is the UTC date of the sync. Steps,
-flags and env overrides are documented in obisindicators `data-raw/README.md`. The run takes hours (`timeout-minutes: 1440`)
-and writes `/share/data/obis/log/refresh_YYYYMMDD.log`, also attached to the run as the `obis-h3-refresh-log`
-artifact.
+flags and env overrides are documented in obisindicators `data-raw/README.md` and the wrapper's header. The
+first run on the mini syncs the ~93 GB snapshot before it builds (~12 h; `timeout-minutes: 1440`). The log
+is `$DATA_ROOT/obis/log/refresh_YYYYMMDD.log`, also attached to the run as the `obis-h3-refresh-log`
+artifact, and a finished run writes `refresh_YYYYMMDD.done` beside it.
 
-- **Disk prerequisite**: the job needs 110 GB free on `/share` (400 GB volume; the 93 GB OBIS snapshot, the
-  store and old stores share it). It exits 2 before touching anything and lists the prunable old
-  `obis_h3_*.duckdb` stores, old `/share/data/obis-h3/v*` folders and the spill dir. Prune, then re-run
-  (`gh workflow run obis-h3 -R oceanmetrics/erddap-places`). Never prune the store `h3t` serves
-  (`readlink -f /share/data/obis/obis_h3.duckdb`).
+- **Exit codes**: 2 not enough disk (prune old `obis_h3_*.duckdb` stores and old `obis-h3/v*` folders under
+  `$DATA_ROOT`, then re-run with `gh workflow run obis-h3 -R oceanmetrics/erddap-places`), 3 another refresh
+  holds the container `obis-h3-refresh`, 4 validation failed, 5 the drive is not mounted or Colima/Docker is
+  missing.
+- **S3 credentials**: the mini's `~/.aws`, mounted read-only into the container. Credentials in the job's
+  environment would not reach the container, so the repository has no AWS secrets for this job.
 - **Rollback**: older releases stay on S3. Overwrite `obis-h3/latest.json` with the older release's `release`,
   `base`, `obis_snapshot` and `built_at` (the last two are in that release's `release.json`), with the same
   content type and cache-control as above. Clients pick it up within 5 minutes.
-- **WoRMS `taxon.parquet`** (`/share/data/derived/taxon.parquet`) is a **manual input**, refreshed separately
+- **WoRMS `taxon.parquet`** (`$DATA_ROOT/derived/taxon.parquet`) is a **manual input**, refreshed separately
   with `Rscript data-raw/build_taxon_parquet.R`; the monthly job reuses it and the build aborts if it is missing.
-- **Manual follow-up**: the `h3t` tile service is not swapped by the job (it needs sudo). After a good run:
+- **Manual follow-up**: the `h3t` tile service on msens is not swapped by the job (it needs sudo). The wrapper
+  rsyncs a published store to `msens:/share/data/obis/` when it can ssh there (only a warning otherwise; the
+  mini has no ssh route to msens yet), then on msens:
   `data-raw/deploy_obis_h3.sh --skip-sync --skip-build --store /share/data/obis/obis_h3_global_vYYYYMMDD.duckdb --yes`.
 - The job never sets `OBIS_GLOBAL=true` (streaming from S3 OOM-wedged msens on 2026-06-23); the build runs
-  from the local snapshot with memory 7GB, 2 threads, a 20GB spill cap.
-- If msens is unavailable the job can run on any Linux host with docker, a `plumber`-like image, ~110 GB free
-  and S3 credentials: register a second runner with the labels `self-hosted, linux, x64, msens` (see above), or
-  run `data-raw/refresh_obis_h3.sh` by hand.
+  from the local snapshot.
+- If the mini is unavailable, `data-raw/refresh_obis_h3.sh` still runs by hand on msens (see its README).
 
 ### CI credentials
 
-None needed in the repository: the self-hosted runner uses the msens host profile (see above).
+None needed in the repository: the self-hosted runners use their host's AWS profile (see above).
