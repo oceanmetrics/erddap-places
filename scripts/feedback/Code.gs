@@ -1,6 +1,7 @@
-// Code.gs -- the shared "Send feedback" endpoint of the Ocean Metrics apps (erddap-places, obis-hex,
-// marinebon.org). One Apps Script, bound to one Google Sheet, serves all of them: the payload's `app`
-// picks the GitHub repository and branch from APPS below. Runbook: docs/feedback.md.
+// Code.gs -- the shared "Send feedback" endpoint of the Ocean Metrics apps (erddap-places, obis-hex).
+// One Apps Script, bound to one Google Sheet, serves all of them: the payload's `app` picks the GitHub
+// repository and branch from APPS below. Runbook: docs/feedback.md. marinebon.org has its own copy
+// (marinebon/marinebon.github.io scripts/feedback.gs) since 2026-10-12.
 // Ported from MarineSensitivity/atlas (scripts/feedback/Code.gs) and, for the multi-app map, from
 // CalCOFI's generator (calcofi4r/R/feedback.R#cc_feedback_script(), its `repos` argument).
 //
@@ -26,13 +27,13 @@
 // GITHUB_TOKEN. DRIVE_FOLDER_ID (optional; default: a folder beside the Sheet).
 //
 // CORS: the apps POST `text/plain` JSON so the request stays a simple request (this endpoint answers
-// no OPTIONS, so a JSON preflight would be dropped). Spam: a honeypot field (`website`, must be
-// empty), a per-app cap per hour (MAX_PER_HOUR), and an unknown `app` is refused.
+// no OPTIONS, so a JSON preflight would be dropped). Spam: a honeypot (payload key `website`, must be
+// empty; the dialogs' hidden input is NOT named "website", since Chrome autofill fills a field of that
+// name together with the email), a per-app cap per hour (MAX_PER_HOUR), and an unknown `app` is refused.
 
 var APPS = {
   "erddap-places": { repo: "oceanmetrics/erddap-places", branch: "main" },
   "obis-hex": { repo: "oceanmetrics/obis-hex", branch: "main" },
-  "marinebon-org": { repo: "marinebon/marinebon.github.io", branch: "main" },
 };
 var FEEDBACK_HEADER = [
   "ts",

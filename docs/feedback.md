@@ -13,9 +13,12 @@ One Apps Script serves all the Ocean Metrics apps. Each app's payload carries `a
 |---|---|---|
 | `erddap-places` | `oceanmetrics/erddap-places` | `main` |
 | `obis-hex` | `oceanmetrics/obis-hex` | `main` |
-| `marinebon-org` | `marinebon/marinebon.github.io` | `main` |
 
 An unknown `app` is refused. To add an app, add a row to `APPS`, give the token that repo, and re-paste.
+**marinebon.org is no longer served here** (2026-10-12): it has its own copy of the script, Sheet, deployment
+and runbook in `marinebon/marinebon.github.io` (`scripts/feedback.gs`, `docs/feedback.md`), so people outside
+the Ocean Metrics org can change it. The `marinebon-org` row was removed from `APPS`; the oceanmetrics
+deployment keeps answering it until `Code.gs` is re-pasted, which is harmless.
 
 ## What one submission does
 
