@@ -86,6 +86,12 @@ Each step reports into the row's `status` column, so a missing token or a mail f
 
    Re-run the Pages workflow (or push to `app/`) so the build picks it up. An unset variable is the empty
    string, which the app treats as "no endpoint".
+
+   **marinebon.github.io is a Hugo site, not a Vite app**: the footer reads `params.feedback_url` from
+   `hugo.yaml`, else the build env `HUGO_FEEDBACK_URL`, which `.github/workflows/deploy.yml` fills from
+   the same repo variable `VITE_FEEDBACK_URL` (since 2026-10-12; before that the variable was never read
+   and the dialog said "The feedback endpoint is not set up yet"). Set the variable, then re-run *Deploy
+   MBON site to GitHub Pages* or push.
 6. **Re-paste `Code.gs` after any change** to it, then Deploy > Manage deployments > edit > New version
    (the `/exec` URL stays the same). There is no build step for Apps Script.
 
