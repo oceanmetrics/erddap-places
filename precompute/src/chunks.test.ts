@@ -86,6 +86,21 @@ describe('computeOne: chunked, cached, incremental', () => {
     expect(rows.every((r) => Number(r.n) === Number(rows[0].n) && Number(r.n) > 0)).toBe(true)
   }, 60_000)
 
+  it('a place stopped at the deadline keeps its finished chunks, and the next run fetches only the rest', async () => {
+    const ds = { ...stats.loadDataset('dhw_5km'), baseUrl: 'https://fake.test/erddap', datasetId: 'test_stop' }
+    const v  = stats.variableOf(ds, 'CRW_SST')
+    slabRequests.length = 0
+    let n = 0
+    // stop once the first chunk has started: its request finishes, nothing after it starts
+    await expect(stats.computeOne(ds, v, PLACE, ext('2026-07-31T12:00:00Z'), 'all', quiet, { shouldStop: () => n++ > 0 }))
+      .rejects.toBeInstanceOf(stats.StopRequested)
+    expect(slabRequests).toEqual(['2026-01-01..2026-03-31'])
+    slabRequests.length = 0
+    const p = await stats.computeOne(ds, v, PLACE, ext('2026-07-31T12:00:00Z'), 'all', quiet)
+    expect(slabRequests).toEqual(['2026-04-01..2026-06-29', '2026-06-30..2026-07-31'])
+    expect(p.rows).toBe(212)
+  }, 60_000)
+
   it('the chunk key changes with the mask, so a moved polygon never reuses old rows', () => {
     const ds = stats.loadDataset('dhw_5km'), v = stats.variableOf(ds, 'CRW_SST')
     const cells = [{ lon: -80.9, lat: 31.4, weight: 1 }]

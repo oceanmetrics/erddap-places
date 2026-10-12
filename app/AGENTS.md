@@ -80,7 +80,7 @@ storage host's 302 costs a redirect per range request). Code: `src/lib/gazetteer
 
 ## Precomputed stats first
 
-- `src/lib/precomputed.ts` reads the weekly `stats/<dataset_id>/<variable>/<place_id>.parquet` and
+- `src/lib/precomputed.ts` reads the daily `stats/<dataset_id>/<variable>/<place_id>.parquet` and
   `planRun()` decides what a run loads (README "Precomputed stats first"). Existence comes only from
   the cached `stats/collection.json` item links (`hasPrecomputed()`): never HEAD or GET a stats file
   for a combination that is not listed.

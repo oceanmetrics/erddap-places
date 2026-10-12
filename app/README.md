@@ -352,7 +352,7 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
   same file).
 - **Reproduce** (Share tab, closed): the exact griddap URL(s) used, the mask summary (cells, lobes,
   total area weight, partial boundary cells) and the rendered SQL of both queries, with *Copy all*.
-- **Precomputed stats first** (`src/lib/precomputed.ts`): the weekly precompute publishes
+- **Precomputed stats first** (`src/lib/precomputed.ts`): the daily precompute publishes
   `stats/<dataset_id>/<variable>/<place_id>.parquet` (the dataset's full record, 1985 on for CRW;
   `dataset_id` is `Dataset.datasetId`, e.g. `dhw_5km`). A window the file covers is not capped to
   `MAX_DAYS` (`capStart()`): the cap is the live path's, one slab, so a brush can span decades. When a run starts for a griddap

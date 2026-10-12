@@ -3,7 +3,7 @@
 Guidance for AI agents and LLMs. **If a precomputed file exists for your (dataset, variable, place),
 read it — it is one HTTP range-read instead of a minute of griddap.** Fall back to the live griddap
 recipe in [`../erddap/AGENTS.md`](../erddap/AGENTS.md) only for a place/variable/date range not
-covered here, or when you need data newer than the weekly refresh.
+covered here, or when you need data newer than the daily refresh.
 
 ## 1. Statistics for place X from the precomputed items
 
@@ -69,7 +69,7 @@ ORDER BY frac_area DESC;
 the fraction of its square the polygon covers, so a coastal place with many half-covered cells is
 not biased by them. Antimeridian places (`NMS:PMNM`) are fetched as two lobes and unioned before
 aggregation. The window is the dataset's full record (the live extent from its first step), so `end_datetime` is the
-dataset's last time step at the weekly refresh, not today.
+dataset's last time step at the daily refresh, not today.
 
 ## Do not
 

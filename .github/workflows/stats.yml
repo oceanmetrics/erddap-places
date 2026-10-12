@@ -9,7 +9,9 @@ name: stats
 
 on:
   schedule:
-    - cron: '17 9 * * 1'          # Mondays 09:17 UTC
+    # daily (weekly until 2026-10-12): while the full-record backfill is incomplete each run continues it
+    # (runs stop starting new work after PRECOMPUTE_HOURS); once caught up a run is the newest chunk per item
+    - cron: '17 9 * * *'          # 09:17 UTC
   workflow_dispatch:
     inputs:
       dataset:
@@ -32,13 +34,16 @@ concurrency:
 jobs:
   stats:
     runs-on: [self-hosted, macmini]
-    # the first full-record run is hours of requests (2026-10-12: from 1985 for CRW); a run cut off by the
-    # timeout loses nothing, because every aggregated chunk is kept in PRECOMPUTE_CHUNKS and the next run resumes
+    # the full-record backfill is days of light requests (2026-10-12: from 1985 for CRW, ~100k values per
+    # request). The precompute stops starting new work after PRECOMPUTE_HOURS, publishes every item as it
+    # finishes, and keeps every aggregated chunk in PRECOMPUTE_CHUNKS, so the next run resumes; the 24 h
+    # timeout is only a backstop
     timeout-minutes: 1440
     env:
       AWS_DEFAULT_REGION: us-east-1
       # outside the checkout: actions/checkout cleans ignored files, and these rows make runs incremental
       PRECOMPUTE_CHUNKS: ${{ github.workspace }}/../precompute-chunks
+      PRECOMPUTE_HOURS: 21
     steps:
       - uses: actions/checkout@v4
 
@@ -71,8 +76,17 @@ jobs:
             echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           fi
 
-      # the long pole: polite griddap requests (<=2 concurrent, one place at a time); hours for the first
-      # full-record run, then only each target's last chunk
+      # the published Items, so the collection.json uploaded after each item lists every item on S3, not
+      # only the ones this run has redone so far (the checkout holds just the committed ones)
+      - name: fetch the published stats Items
+        run: |
+          aws s3 sync s3://oceanmetrics.io-public/gazetteer/stats/items/ catalog/gazetteer/stats/items/ \
+            --only-show-errors --exclude '*' --include '*.json'
+          ls catalog/gazetteer/stats/items | wc -l
+
+      # the long pole: polite griddap requests (<=100k values each, <=2 concurrent per place, one place at
+      # a time per server, servers side by side; a failing server rests 10 min to 2 h while the others go
+      # on); days for the full-record backfill, then only each target's last chunk
       # one transient ERDDAP fetch failure (e.g. PacIOOS "fetch failed" after retries on 2026-10-07)
       # must not throw away the other items: keep going, publish what was produced, and fail the
       # job at the end so the red run is still visible
@@ -80,7 +94,10 @@ jobs:
         id: precompute
         continue-on-error: true
         working-directory: precompute
-        # caffeinate: the first full-record run is hours long; macOS must not idle-sleep under it
+        env:
+          # each finished (dataset, variable, place) is uploaded at once (precompute/src/publish.ts)
+          PRECOMPUTE_PUBLISH: ${{ (github.event_name == 'schedule' || inputs.publish) && 's3://oceanmetrics.io-public/gazetteer' || '' }}
+        # caffeinate: a run is up to PRECOMPUTE_HOURS long; macOS must not idle-sleep under it
         run: ${{ runner.os == 'macOS' && 'caffeinate -i ' || '' }}npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }}
 
       - name: validate the catalog
@@ -134,7 +151,7 @@ jobs:
       - name: fail the job if the precompute reported failures
         if: ${{ steps.precompute.outcome == 'failure' }}
         run: |
-          echo "::error::the precompute reported failed items (see its log); the successful items were published"
+          echo "::error::the precompute reported failed items or uploads (see its log); the successful items were published"
           exit 1
       - name: memory after the run
         if: always()

@@ -11,7 +11,7 @@ import { readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { render } from './sql'
-import { MAX_CHUNK_DAYS } from './targets'
+import { MAX_CHUNK_DAYS, MAX_REQUEST_VALUES } from './targets'
 import { vi } from 'vitest'
 import type { TimeExtent } from '../../app/src/lib/extent'
 import type { Place } from '../../app/src/lib/gazetteer'
@@ -55,24 +55,26 @@ describe('chunkDaysFor', () => {
   it('caps at MAX_CHUNK_DAYS for a small place', () => {
     expect(chunkDaysFor(6)).toBe(MAX_CHUNK_DAYS)                    // Gray's Reef: 6 cells a step
   })
-  it('shrinks so one request stays near 2 M rows', () => {
-    expect(chunkDaysFor(39_026)).toBe(51)                           // Pitcairn EEZ bbox
-    expect(chunkDaysFor(39_026) * 39_026).toBeLessThanOrEqual(2_000_000)
+  it("shrinks so one request stays under extractr's 100k values", () => {
+    expect(chunkDaysFor(1_200)).toBe(83)                            // a Monterey-sized box: 83 days
+    expect(chunkDaysFor(39_026)).toBe(2)                            // Pitcairn EEZ bbox
+    expect(chunkDaysFor(39_026) * 39_026).toBeLessThanOrEqual(MAX_REQUEST_VALUES)
   })
   it('never goes below a single step, however big the bbox', () => {
     expect(chunkDaysFor(50_000_000)).toBe(1)
+    expect(chunkDaysFor(101_000)).toBe(1)                           // NMS:PMNM's main lobe: one day a request
   })
   it('counts an 8-day product in days, not steps', () => {
-    expect(chunkDaysFor(250_000, 8)).toBe(64)                       // 8 steps x 8 days
+    expect(chunkDaysFor(25_000, 8)).toBe(32)                        // 4 steps x 8 days
+    expect(chunkDaysFor(250_000, 8)).toBe(8)                        // one step
   })
 })
-
 describe('chunkDaysFor: monthly', () => {
   it('counts up to MAX_CHUNK_DAYS time steps for a monthly product, not 90 days', () => {
     expect(chunkDaysFor(100, 30)).toBe(MAX_CHUNK_DAYS * 30)         // 90 months in one request
   })
-  it('still shrinks a monthly product under the row cap', () => {
-    expect(chunkDaysFor(100_000, 30)).toBe(600)                      // 20 steps x 30 days
+  it('still shrinks a monthly product under the value cap', () => {
+    expect(chunkDaysFor(5_000, 30)).toBe(600)                        // 20 steps x 30 days
   })
 })
 

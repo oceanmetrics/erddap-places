@@ -59,9 +59,25 @@ export function placesFor(t: Pick<Target, 'places'>, all: string[]): string[] {
 export const DAYS: number | 'all' = 'all'
 /** never ask ERDDAP for more than this many time steps in one request (90 days of a daily grid). */
 export const MAX_CHUNK_DAYS = 90
-/** and shrink the chunk further so a single request stays under this many grid rows. */
-export const MAX_CHUNK_ROWS = 2_000_000
-/** concurrent griddap requests (per place). */
+/**
+ * and shrink the chunk further so a single request (one lobe) stays under this many values: the
+ * `n_max_vals_per_req = 100000` of marinebon/extractr `ed_extract()`, which keeps an ERDDAP server
+ * responsive with many light requests instead of a few heavy ones. 2 M (until 2026-10-12) let one
+ * NMS:PMNM request carry ~20 days x 100k cells, and PacIOOS stalled and dropped those.
+ */
+export const MAX_REQUEST_VALUES = 100_000
+/** concurrent griddap requests (per place; places on one server run one after another). */
 export const CONCURRENCY = 2
 /** polite pause between griddap requests, ms. */
 export const SLEEP_MS = 750
+
+/**
+ * when a (dataset, variable, place) fails, its server rests this long before its next request
+ * (10 min, then 30, 60, 120 on consecutive failures; a success resets it) and the failed place goes to
+ * the back of that server's queue. Other servers keep working meanwhile (precompute.ts, schedule.ts).
+ */
+export const REST_MS = [10, 30, 60, 120].map((m) => m * 60_000)
+/** tries per (dataset, variable, place) in one run; the chunks it finished stay for the next run. */
+export const MAX_ATTEMPTS = 3
+/** stop starting new work after this many hours (the job's 24 h timeout must leave room to publish). */
+export const RUN_HOURS = 21

@@ -138,10 +138,13 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
 - `.github/workflows/pages.yml`: on push to `main` touching `app/` or `sql/`, it runs
   `ERDDAP_OFFLINE=1` tests, builds with `VITE_BASE=/erddap-places/`, checks the size budget, and
   deploys to GitHub Pages.
-- `.github/workflows/stats.yml`: runs weekly on the **self-hosted `macmini` runner** (msens until
+- `.github/workflows/stats.yml`: runs daily on the **self-hosted `macmini` runner** (msens until
   2026-10-12; `gazetteer-sync.yml` stays there). It precomputes the **full record**
   into `catalog/gazetteer/stats/`, incrementally: each chunk's daily rows are kept in
-  `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. It runs `rashid check`, and syncs the gazetteer to
+  `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. Requests
+  stay under 100k values (extractr's `n_max_vals_per_req`); `precompute/src/schedule.ts` runs one lane
+  per ERDDAP server and rests a failing server (10 min to 2 h) while the others go on; each finished item
+  is uploaded at once (`publish.ts`), and a run starts no new work after `PRECOMPUTE_HOURS` (21). It runs `rashid check`, and syncs the gazetteer to
   `s3://oceanmetrics.io-public/gazetteer/` using the host's AWS profile (the repo has no secrets).
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.
 - `.github/workflows/obis-h3.yml`: the monthly obis-h3 release for the obis-hex app, also on `macmini`

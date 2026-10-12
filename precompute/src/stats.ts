@@ -24,7 +24,7 @@ import type { TimeExtent }                    from '../../app/src/lib/extent'
 
 import { render } from './sql'
 import { CACHE, CHUNKS, GAZETTEER, PLACES, STATS } from './paths'
-import { DAYS, MAX_CHUNK_DAYS, MAX_CHUNK_ROWS, CONCURRENCY, SLEEP_MS } from './targets'
+import { DAYS, MAX_CHUNK_DAYS, MAX_REQUEST_VALUES, CONCURRENCY, SLEEP_MS } from './targets'
 
 // ── file naming ───────────────────────────────────────────────────────────────
 // place ids carry a colon (NMS:HIHWNMS). a colon is legal in an S3 key and in a URL path segment
@@ -136,15 +136,62 @@ export function chunks(start: string, end: string, chunkDays: number): Array<[st
 
 /**
  * days per request: MAX_CHUNK_DAYS time steps (90 days of a daily grid; a coarser grid's steps are
- * counted in its own days, so a monthly product asks for up to 90 months at once), shrunk so one slab
- * stays under MAX_CHUNK_ROWS grid rows.
+ * counted in its own days, so a monthly product asks for up to 90 months at once), shrunk so one
+ * request stays under MAX_REQUEST_VALUES values (extractr's n_max_vals_per_req). `cellsPerStep` is the
+ * largest lobe's axis cells: each lobe is its own request. Never below one step.
  */
 export function chunkDaysFor(cellsPerStep: number, stepDays = 1): number {
   const sd  = Math.max(1, stepDays)
   const cap = Math.floor(MAX_CHUNK_DAYS * sd)
   if (!(cellsPerStep > 0)) return cap
-  const steps = Math.max(1, Math.floor(MAX_CHUNK_ROWS / cellsPerStep))
+  const steps = Math.max(1, Math.floor(MAX_REQUEST_VALUES / cellsPerStep))
   return Math.max(1, Math.min(cap, Math.floor(steps * sd)))
+}
+
+/** a chunk file name, `<start>_<end>.parquet`, back to its days. */
+const chunkSpan = (f: string): [string, string] | null => {
+  const m = /^(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})\.parquet$/.exec(f)
+  return m ? [m[1], m[2]] : null
+}
+
+/**
+ * which chunks to fetch for the window, given the chunk files already done (their names). Every done
+ * chunk inside the window is kept, whatever size it was cut at, so a change of chunk size (2 M to 100k
+ * values, 2026-10-12) never throws finished work away; only the gaps are sliced, at `chunkDays`. The
+ * one exception is a short last chunk (fewer than `chunkDays` days, ending before the window does):
+ * it is fetched again to the new end, from its own start, and `supersede` names it so it is deleted
+ * once its replacement is written; that keeps a weekly or daily refresh at one file per chunk, not
+ * one more file per run. Files outside the window (or not chunk files) are in `drop`.
+ */
+export function planChunks(
+  win: { start: string; end: string }, chunkDays: number, done: string[],
+): { keep: Array<[string, string]>; todo: Array<[string, string]>; drop: string[]; supersede: string | null } {
+  const inWin = (s: string, e: string) => daysBetween(win.start, s) >= 0 && daysBetween(e, win.end) >= 0
+  const spans = done.map((f) => ({ f, span: chunkSpan(f) }))
+  const drop  = spans.filter((x) => !x.span || !inWin(...x.span!)).map((x) => x.f)
+  let keep    = spans.filter((x) => x.span && inWin(...x.span)).map((x) => x.span!)
+    .sort((a, b) => daysBetween(b[0], a[0]))
+  // overlapping chunks (cut at two sizes from the same start) are both kept: the merge is DISTINCT
+  let supersede: string | null = null
+  const last = keep[keep.length - 1]
+  if (last && daysBetween(last[1], win.end) > 0 && daysBetween(last[0], last[1]) + 1 < chunkDays &&
+      !keep.slice(0, -1).some(([, e]) => daysBetween(last[1], e) >= 0)) {
+    supersede = `${last[0]}_${last[1]}.parquet`
+    keep = keep.slice(0, -1)
+  }
+  // the gaps between the kept chunks, each cut into chunkDays slices
+  const todo: Array<[string, string]> = []
+  let from = win.start
+  for (const [s, e] of [...keep, [addDays(win.end, 1), addDays(win.end, 1)] as [string, string]]) {
+    if (daysBetween(from, s) > 0) todo.push(...chunks(from, addDays(s, -1), chunkDays))
+    if (daysBetween(from, addDays(e, 1)) > 0) from = addDays(e, 1)
+  }
+  return { keep, todo, drop, supersede }
+}
+
+/** thrown by computeOne() when `shouldStop()` turns true between chunks: the place is not failed, only unfinished. */
+export class StopRequested extends Error {
+  constructor() { super('stopped at the run deadline'); this.name = 'StopRequested' }
 }
 
 // ── the mask, per lobe ────────────────────────────────────────────────────────
@@ -190,12 +237,12 @@ export async function download(url: string, file: string, log = console.log): Pr
   throw new Error(`griddap failed twice: ${url}\n  ${last instanceof Error ? last.message : String(last)}`)
 }
 
-/** run `jobs` with at most `n` in flight, pausing SLEEP_MS between starts. */
-async function pool<T>(jobs: Array<() => Promise<T>>, n = CONCURRENCY): Promise<T[]> {
+/** run `jobs` with at most `n` in flight, pausing SLEEP_MS between starts; no new job once `stop()`. */
+async function pool<T>(jobs: Array<() => Promise<T>>, n = CONCURRENCY, stop: () => boolean = () => false): Promise<T[]> {
   const out = new Array<T>(jobs.length)
   let next = 0
   const worker = async () => {
-    while (next < jobs.length) {
+    while (next < jobs.length && !stop()) {
       const i = next++
       await sleep(SLEEP_MS)
       out[i] = await jobs[i]()
@@ -206,18 +253,19 @@ async function pool<T>(jobs: Array<() => Promise<T>>, n = CONCURRENCY): Promise<
 }
 
 // ── DuckDB ────────────────────────────────────────────────────────────────────
-let conn: DuckDBConnection | null = null
+// one in-memory instance; each computeOne() takes its own connection (its mask is a TEMP table, private
+// to that connection), so places on different servers can be computed at the same time
+let instance: Promise<DuckDBInstance> | null = null
 export async function db(): Promise<DuckDBConnection> {
-  if (!conn) conn = await (await DuckDBInstance.create(':memory:')).connect()
-  return conn
+  instance ??= DuckDBInstance.create(':memory:')
+  return (await instance).connect()
 }
 
 /** the mask cells as a DuckDB table (via a CSV side file: an Arrow insert is not worth the dep here). */
 async function insertMask(c: DuckDBConnection, cells: MaskCell[], tmp: string) {
   mkdirSync(dirname(tmp), { recursive: true })
   writeFileSync(tmp, 'latitude,longitude,weight\n' + cells.map((x) => `${x.lat},${x.lon},${x.weight}`).join('\n') + '\n')
-  await c.run('DROP TABLE IF EXISTS mask')
-  await c.run(`CREATE TABLE mask AS SELECT * FROM read_csv('${tmp}',
+  await c.run(`CREATE OR REPLACE TEMP TABLE mask AS SELECT * FROM read_csv('${tmp}',
     columns = {'latitude': 'DOUBLE', 'longitude': 'DOUBLE', 'weight': 'DOUBLE'}, header = true)`)
 }
 
@@ -284,6 +332,7 @@ export interface Provenance {
 
 export async function computeOne(
   ds: Dataset, v: CubeVariable, place: Place, ext: TimeExtent, days: number | 'all' = DAYS, log = console.log,
+  { shouldStop = () => false }: { shouldStop?: () => boolean } = {},
 ): Promise<Provenance> {
   const t0    = Date.now()
   const win   = window(ext, days)
@@ -294,11 +343,8 @@ export async function computeOne(
   const masks: LobeMask[] = []
   for (const lobe of lobes) { masks.push(await maskLobe(ds, lobe)); await sleep(SLEEP_MS) }
   const cells    = masks.flatMap((m) => m.cells)
-  const perStep  = masks.reduce((s, m) => s + m.nAxis, 0)
+  const perStep  = Math.max(...masks.map((m) => m.nAxis))
   const cd       = chunkDaysFor(perStep, ext.stepDays ?? 1)
-  const slices   = chunks(win.start, win.end, cd)
-  log(`    ${lobes.length} lobe(s), ${cells.length} masked cells, ${perStep} axis cells/step, ` +
-      `${slices.length} request(s) of <=${cd} d`)
 
   // 2. one chunk at a time: download its slab per lobe, aggregate it with the app's own SQL template into
   // the chunk's daily rows, keep those (a few kB) and drop the slabs. a day lies in exactly one chunk, so
@@ -309,6 +355,11 @@ export async function computeOne(
   const key  = maskKey(ds, v, cells)
   const dir  = join(CHUNKS, ds.datasetId, v.name, fileSafe(place.place_id), key)
   mkdirSync(dir, { recursive: true })
+  const plan = planChunks(win, cd, readdirSync(dir).filter((f) => f.endsWith('.parquet')))
+  for (const f of plan.drop) rmSync(join(dir, f))
+  const slices = [...plan.keep, ...plan.todo].sort((a, b) => daysBetween(b[0], a[0]))
+  log(`    ${lobes.length} lobe(s), ${cells.length} masked cells, ${perStep} axis cells/step (largest lobe), ` +
+      `${plan.keep.length} chunk(s) done, ${plan.todo.length} to fetch at <=${cd} d (${plan.todo.length * masks.length} request(s))`)
   const c    = await db()
   await insertMask(c, cells, join(CACHE, `mask_${key}.csv`))
   const t    = (d: string) => timeInstant(d, ext, noonZ)
@@ -318,11 +369,7 @@ export async function computeOne(
     latDescending: ds.latDescending, depth: ds.depth, format: 'parquet',
   })
   const chunkFiles = slices.map(([s, e]) => join(dir, `${s}_${e}.parquet`))
-  // a chunk file for the same start and another end is last run's partial last chunk: superseded
-  const keep = new Set(chunkFiles.map((f) => f.slice(dir.length + 1)))
-  for (const f of readdirSync(dir)) if (f.endsWith('.parquet') && !keep.has(f)) rmSync(join(dir, f))
   const todo = slices.map((sl, j) => ({ sl, j })).filter(({ j }) => !existsSync(chunkFiles[j]))
-  log(`    ${slices.length - todo.length} chunk(s) already done, ${todo.length} to fetch (${todo.length * masks.length} request(s))`)
 
   let agg = Promise.resolve()                 // one DuckDB connection: aggregate one chunk at a time
   let done = 0
@@ -337,12 +384,16 @@ export async function computeOne(
       await c.run(`COPY (SELECT ${selectList(v.categorical)} FROM (${body})) TO '${tmp}' (FORMAT PARQUET, COMPRESSION ZSTD)`)
       renameSync(tmp, chunkFiles[j])           // only a whole chunk ever counts as done
       for (const f of files) rmSync(f, { force: true })
+      // last run's short last chunk, now refetched from the same start to the new end
+      if (plan.supersede && s === plan.supersede.slice(0, 10)) rmSync(join(dir, plan.supersede), { force: true })
       done++
       if (done % 25 === 0 || done === todo.length) log(`      ${done}/${todo.length} chunk(s) aggregated`)
     })
     agg = run.catch(() => {})
     await run
-  }))
+  }), CONCURRENCY, shouldStop)
+  await agg
+  if (todo.some(({ j }) => !existsSync(chunkFiles[j]))) throw new StopRequested()
 
   // 3. the file: every chunk's rows, oldest first. DISTINCT again: two chunks snapped onto the same
   // step of a coarse axis give that step's row twice, identical

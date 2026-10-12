@@ -6,7 +6,8 @@ Seascapes, and the monthly "sanctuaries series" (CMEMS biogeochemistry and physi
 precipitation, VGPM NPP over the 18 `NMS:*` places). `DAYS = 'all'` in `precompute/src/targets.ts`;
 until 2026-10-12 the daily and 8-day grids covered only the last 365 days. Places outside an ocean
 model's domain (the Great Lakes, Mallows Bay) get a valid, empty file. Published at
-`https://storage.oceanmetrics.io/gazetteer/stats/`, refreshed weekly.
+`https://storage.oceanmetrics.io/gazetteer/stats/`, refreshed daily (each file is published as soon
+as it is computed, so a long backfill fills in over several days).
 
 These are the same numbers the [browser app](https://oceanmetrics.io/erddap-places/) computes live:
 the place polygon masks the dataset's own grid (a cell is in when its **centre** falls inside, and
@@ -130,7 +131,8 @@ rashid check catalog/gazetteer
 ```
 
 Runs are **incremental**. Each target is fetched in chunks of at most 90 days (fewer for a large
-place, so one request stays under 2 M grid rows), each chunk is aggregated to its daily rows as soon
+place, so one request stays under 100,000 values, the `n_max_vals_per_req` of marinebon/extractr's
+`ed_extract()`: many light requests keep an ERDDAP server responsive), each chunk is aggregated to its daily rows as soon
 as it arrives, and those rows are kept in `PRECOMPUTE_CHUNKS` (default `precompute/.cache/chunks/`;
 the runner keeps it outside the checkout), keyed by a hash of the mask. The raw slabs are deleted.
 A later run asks ERDDAP only for chunks it has not done, which after the first full-record run is the
@@ -138,7 +140,15 @@ last one, and an interrupted run resumes where it stopped. A changed polygon or 
 key, so old rows are never reused for a different mask. The first full-record run is long (hours:
 thousands of requests to PacIOOS, most of them for `NMS:PMNM`).
 
-CI does exactly this weekly — see `.github/workflows/stats.yml`.
+Runs are **polite**. Each (dataset, variable, place) is a unit, scheduled per ERDDAP server: one lane
+per server, the lanes side by side, places one after another within a lane, at most 2 requests in
+flight. When a unit fails, its server rests (10 minutes, then 30, 60 and 120 on consecutive failures)
+and the unit goes to the back of the queue; the other servers keep working. A unit is given up for the
+run after 3 tries (its finished chunks stay), and a run starts no new work after `PRECOMPUTE_HOURS`
+(21 h in CI), stopping a large place at its next chunk. With `PRECOMPUTE_PUBLISH` set, every finished
+file, its Item and the updated `collection.json` are uploaded at once.
+
+CI does exactly this daily — see `.github/workflows/stats.yml`.
 
 ## License
 

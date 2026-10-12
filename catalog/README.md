@@ -54,7 +54,7 @@ CSV `lyr, mean, time`) into three collections:
 
 See each collection's README for how a browser reads them. The data files are git-ignored (only the
 STAC and docs are tracked) and are uploaded from the Mac mini, where the 1.1 GB archive lives at
-`~/data/noaa-onms/climate-dashboard-app/erddap_sst/`. The weekly stats workflow excludes the three
+`~/data/noaa-onms/climate-dashboard-app/erddap_sst/`. The daily stats workflow excludes the three
 prefixes from its `--delete` sync.
 
 ```bash
@@ -99,7 +99,7 @@ Public base URL: `https://storage.oceanmetrics.io/gazetteer/`.
 
 ### Where it runs
 
-`.github/workflows/stats.yml` refreshes the statistics weekly (Mondays 09:17 UTC) and syncs the whole
+`.github/workflows/stats.yml` refreshes the statistics daily (09:17 UTC; weekly until 2026-10-12) and syncs the whole
 gazetteer to S3. Since 2026-10-12 it runs on a **self-hosted runner on the Mac mini** (`ssh macmini`),
 because the first full-record run is hours of requests and the per-chunk rows that make later runs
 incremental live on that host:

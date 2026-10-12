@@ -329,20 +329,30 @@ const writeJson = (path: string, o: unknown) => {
   writeFileSync(path, JSON.stringify(o, null, 2) + '\n')
 }
 
+/**
+ * write the Items of `only` (default: every one of `provs`), then the thumbnail and the collection over
+ * `provs` plus the earlier items in stats/items/ that `keep` accepts. Returns the files written, Items
+ * first and collection.json last (the order publish.ts uploads them in).
+ */
 export function writeStac(
   provs: Provenance[], places: Map<string, Place>, titles: Map<string, string>,
   keep: (dataset: string, variable: string) => boolean = () => false,
-) {
+  only: Provenance[] = provs,
+): string[] {
   // the items written now, then the earlier ones a partial run (--dataset / --place) did not touch
   const all = mergeItems(provs, existingItems(), keep).filter((r) => places.has(r.place_id))
-  // the thumbnail first: the collection records its size and checksum
-  writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))
-  for (const p of provs) {
+  const written: string[] = []
+  for (const p of only) {
     const item = buildItem(p, places.get(p.place_id)!, titles.get(p.dataset_id) ?? p.dataset_id)
-    writeJson(join(STATS, 'items', `${item.id}.json`), item)
+    const f = join(STATS, 'items', `${item.id}.json`)
+    writeJson(f, item)
+    written.push(f)
   }
+  // the thumbnail before the collection: the collection records its size and checksum
+  writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))
   writeJson(join(STATS, 'collection.json'), buildCollection(all, places))
   linkFromCatalog()
+  return [...written, join(STATS, THUMB), join(STATS, 'collection.json')]
 }
 
 /** add (once) the stats child link to the catalog root. */
