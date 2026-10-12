@@ -193,10 +193,13 @@ artifact, and a finished run writes `refresh_YYYYMMDD.done` beside it.
   content type and cache-control as above. Clients pick it up within 5 minutes.
 - **WoRMS `taxon.parquet`** (`$DATA_ROOT/derived/taxon.parquet`) is a **manual input**, refreshed separately
   with `Rscript data-raw/build_taxon_parquet.R`; the monthly job reuses it and the build aborts if it is missing.
-- **Manual follow-up**: the `h3t` tile service on msens is not swapped by the job (it needs sudo). The wrapper
-  rsyncs a published store to `msens:/share/data/obis/` when it can ssh there (only a warning otherwise; the
-  mini has no ssh route to msens yet), then on msens:
-  `data-raw/deploy_obis_h3.sh --skip-sync --skip-build --store /share/data/obis/obis_h3_global_vYYYYMMDD.duckdb --yes`.
+- **h3t swap (automatic since 2026-10-12)**: after a published release the wrapper rsyncs the store to
+  `msens:/share/data/obis/` (the mini's `Host msens` ssh key, user `ubuntu`), and the job's last step checks
+  the copy's size and runs, over ssh, `data-raw/deploy_obis_h3.sh --skip-sync --skip-build --store
+  /share/data/obis/obis_h3_global_vYYYYMMDD.duckdb --yes` in msens's obisindicators checkout. The deploy
+  refuses a store missing a layer, restarts h3t, fails unless `/h3t/health` reports the new file's mtime,
+  bans Varnish, and prints the rollback command. A failed copy fails the job before anything changes on msens; a deploy
+  that fails after the swap fails the job with the rollback command in its log (nothing rolls back by itself). `skip_deploy` on a manual dispatch leaves h3t alone.
 - The job never sets `OBIS_GLOBAL=true` (streaming from S3 OOM-wedged msens on 2026-06-23); the build runs
   from the local snapshot.
 - If the mini is unavailable, `data-raw/refresh_obis_h3.sh` still runs by hand on msens (see its README).

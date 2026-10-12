@@ -11,6 +11,11 @@
 # upload uses the host's ~/.aws, mounted read-only into the container: the repository holds no AWS
 # secrets, and credentials in the environment would not reach the container. The first run syncs
 # ~93 GB of OBIS snapshot before it builds: see data-raw/README.md
+#
+# after a published release the last step swaps the h3t tile service on msens to the new store
+# (ssh msens from the mini, data-raw/deploy_obis_h3.sh there, which refuses an incomplete store and
+# fails unless h3t reports the new file after its restart). First automatic on 2026-11-01; done by hand
+# for v20261012
 name: obis-h3
 
 on:
@@ -39,6 +44,11 @@ on:
         default: false
       skip_upload:
         description: 'skip the S3 upload and latest.json'
+        type: boolean
+        required: false
+        default: false
+      skip_deploy:
+        description: 'leave h3t on msens on its current store'
         type: boolean
         required: false
         default: false
@@ -109,6 +119,28 @@ jobs:
           # 5 = the drive is not mounted or Colima/Docker is missing
           # caffeinate: a run is hours long; macOS must not idle-sleep under it
           caffeinate -i "$OBIS_REPO/data-raw/run_refresh_docker.sh" ${args[@]+"${args[@]}"}
+
+      # h3t on msens serves the store the wrapper just copied there; only after a published release
+      # (store= is written then; a dry run or --skip-upload leaves it empty). The copy's size is
+      # checked first, because the wrapper's rsync only warns when it fails
+      - name: swap h3t on msens to the new store
+        if: ${{ steps.refresh.outcome == 'success' && steps.refresh.outputs.store != '' && !inputs.dry_run && !inputs.skip_upload && !inputs.skip_deploy }}
+        env:
+          STORE: ${{ steps.refresh.outputs.store }}
+          MSENS_OBIS_DIR: /share/data/obis
+        run: |
+          name=$(basename "$STORE")
+          remote="$MSENS_OBIS_DIR/$name"
+          want=$(stat -f %z "$STORE")
+          got=$(ssh -o BatchMode=yes -o ConnectTimeout=30 msens "stat -c %s '$remote'" || echo none)
+          if [ "$got" != "$want" ]; then
+            echo "::error::$remote on msens is $got bytes, $STORE here is $want: the copy did not complete; h3t keeps its current store"
+            exit 1
+          fi
+          # the deploy checks the store's layers, swaps the symlink, restarts h3t, fails unless
+          # /h3t/health reports the new file's mtime, bans Varnish, and prints the rollback
+          ssh -o BatchMode=yes -o ConnectTimeout=30 msens \
+            "cd /share/github/marinebon/obisindicators && ./data-raw/deploy_obis_h3.sh --skip-sync --skip-build --store '$remote' --yes"
 
       # the wrapper writes log=, release= and store= (host paths) to $GITHUB_OUTPUT
       - name: upload the log as an artifact
