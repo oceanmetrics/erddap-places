@@ -58,11 +58,10 @@ Each step reports into the row's `status` column, so a missing token or a mail f
 2. **Extensions > Apps Script**, delete the stub, paste all of `scripts/feedback/Code.gs`.
 3. **Project Settings > Script properties**:
    - `GITHUB_TOKEN`: a fine-grained personal access token with **Contents: Read and write** and
-     **Issues: Read and write** on the repos above. A fine-grained token has one resource owner, so make
-     one for `oceanmetrics` (erddap-places, obis-hex) and store it as `GITHUB_TOKEN_OCEANMETRICS`, and one
-     for `marinebon` (marinebon.github.io) stored as `GITHUB_TOKEN_MARINEBON`. The script uses
-     `GITHUB_TOKEN_<OWNER>` for a repo's owner first and the plain `GITHUB_TOKEN` otherwise, so a single
-     `GITHUB_TOKEN` works if one token can reach all three. Without a token the Sheet and mail still work
+     **Issues: Read and write** on the repos above (both under `oceanmetrics`, so one token; stored as
+     `GITHUB_TOKEN_OCEANMETRICS` or plain `GITHUB_TOKEN`). A fine-grained token has one resource owner, and
+     the script looks up `GITHUB_TOKEN_<OWNER>` for a repo's owner first and the plain `GITHUB_TOKEN`
+     otherwise, so an app under another owner can be added with its own token. Without a token the Sheet and mail still work
      and `status` says `issue skipped: no GITHUB_TOKEN`.
    - `DRIVE_FOLDER_ID` (optional): a Drive folder for the per-app screenshot folders.
 4. **Deploy > New deployment > Web app**, execute as **Me**, who has access **Anyone**. Authorize when
@@ -71,12 +70,10 @@ Each step reports into the row's `status` column, so a missing token or a mail f
    - oceanmetrics_feedback:
       - Deployment ID: AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg
       - URL: https://script.google.com/macros/s/AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg/exec
-   - marinebon_feedback (as ben@ecoquants.com):
-     - Deployment ID: AKfycbxp4Njdb3zYiUpu-H41DDRmJoi846McqWyPZGjz3gpsryyiIApZFfPPF6ex3YMW1nrc
-     - URL: https://script.google.com/macros/s/AKfycbxp4Njdb3zYiUpu-H41DDRmJoi846McqWyPZGjz3gpsryyiIApZFfPPF6ex3YMW1nrc/exec
-      
-5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`,
-   `marinebon/marinebon.github.io`) add the Actions variable `VITE_FEEDBACK_URL` under
+   - marinebon.org's deployment is recorded in its own runbook (`marinebon/marinebon.github.io`
+     `docs/feedback.md`).
+5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`)
+   add the Actions variable `VITE_FEEDBACK_URL` under
    Settings > Secrets and variables > Actions > Variables (a variable, not a secret: it ships in the
    public bundle). In erddap-places `.github/workflows/pages.yml` already passes it to the build:
 
@@ -90,11 +87,7 @@ Each step reports into the row's `status` column, so a missing token or a mail f
    Re-run the Pages workflow (or push to `app/`) so the build picks it up. An unset variable is the empty
    string, which the app treats as "no endpoint".
 
-   **marinebon.github.io is a Hugo site, not a Vite app**: the footer reads `params.feedback_url` from
-   `hugo.yaml`, else the build env `HUGO_FEEDBACK_URL`, which `.github/workflows/deploy.yml` fills from
-   the same repo variable `VITE_FEEDBACK_URL` (since 2026-10-12; before that the variable was never read
-   and the dialog said "The feedback endpoint is not set up yet"). Set the variable, then re-run *Deploy
-   MBON site to GitHub Pages* or push.
+   (marinebon.org, a Hugo site, uses the same variable name through its own `deploy.yml`; see its runbook.)
 6. **Re-paste `Code.gs` after any change** to it, then Deploy > Manage deployments > edit > New version
    (the `/exec` URL stays the same). There is no build step for Apps Script.
 
