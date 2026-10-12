@@ -146,6 +146,7 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.
 - `.github/workflows/obis-h3.yml`: the monthly obis-h3 release for the obis-hex app, also on `macmini`
   (since 2026-10-12). It runs obisindicators `data-raw/run_refresh_docker.sh` (Colima + Docker, data on
-  `/Volumes/msens_big/_big/obis`). One runner, one job at a time: it queues behind a stats run.
+  `/Volumes/msens_big/_big/obis`), then swaps the h3t tile service on msens to the new store over ssh
+  (`deploy_obis_h3.sh`). One runner, one job at a time: it queues behind a stats run.
 - Data files (stats Parquet and provenance, Then vs Now COGs and series) are git-ignored. Only the
   STAC JSON, READMEs and AGENTS files are committed.
