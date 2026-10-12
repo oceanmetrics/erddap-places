@@ -163,8 +163,7 @@ elsewhere and follow "Precomputed statistics" above, then the `aws s3 sync` comm
 `.github/workflows/obis-h3.yml` runs on the `macmini` runner (msens until 2026-10-12) on the 1st of each month
 (03:17 UTC; also `workflow_dispatch` with a release override, skip flags and a dry run) and publishes the
 release that the obis-hex app reads. The workflow only updates the `~/Github/marinebon/obisindicators`
-checkout on the mini (branch `export-parquet` until `R/export.R` is merged to `main`; change `OBIS_BRANCH`
-then) and runs `data-raw/run_refresh_docker.sh` there under `caffeinate -i`. The wrapper checks that the
+checkout on the mini (branch `main`, `OBIS_BRANCH`) and runs `data-raw/run_refresh_docker.sh` there under `caffeinate -i`. The wrapper checks that the
 external drive is mounted, starts the Colima VM `obis-h3` (stopped again afterwards), and runs
 `data-raw/refresh_obis_h3.sh` in its Docker image with `DATA_ROOT=/Volumes/msens_big/_big/obis` mounted as
 `/share/data`: sync OBIS open data, build the H3 store, `obis_h3_export_parquet()` into

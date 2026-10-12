@@ -61,8 +61,7 @@ jobs:
     timeout-minutes: 1440         # the first run on the mini (93 GB sync, then the build) is ~12 h
     env:
       AWS_DEFAULT_REGION: us-east-1
-      # obis_h3_export_parquet() is on this branch until it is merged to main; then change it to main
-      OBIS_BRANCH: export-parquet
+      OBIS_BRANCH: main
     steps:
       - name: host tools
         run: |
