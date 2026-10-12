@@ -68,7 +68,9 @@ Each step reports into the row's `status` column, so a missing token or a mail f
    - oceanmetrics_feedback:
       - Deployment ID: AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg
       - URL: https://script.google.com/macros/s/AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg/exec
-   - TODO: marinebon_feedback:
+   - marinebon_feedback (as ben@ecoquants.com):
+     - Deployment ID: AKfycbxp4Njdb3zYiUpu-H41DDRmJoi846McqWyPZGjz3gpsryyiIApZFfPPF6ex3YMW1nrc
+     - URL: https://script.google.com/macros/s/AKfycbxp4Njdb3zYiUpu-H41DDRmJoi846McqWyPZGjz3gpsryyiIApZFfPPF6ex3YMW1nrc/exec
       
 5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`,
    `marinebon/marinebon.github.io`) add the Actions variable `VITE_FEEDBACK_URL` under
