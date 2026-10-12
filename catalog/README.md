@@ -24,8 +24,8 @@
 
 ## Precomputed statistics (`gazetteer/stats/`)
 
-One Parquet per (ERDDAP dataset, variable, place) for the last 365 days (full record for the monthly
-sanctuaries series), built by `../precompute/`
+One Parquet per (ERDDAP dataset, variable, place) for the dataset's full record (incremental per
+chunk, see the stats README), built by `../precompute/`
 with the browser app's own mask and SQL. See [`gazetteer/stats/README.md`](gazetteer/stats/README.md).
 
 ```bash
@@ -100,21 +100,45 @@ Public base URL: `https://storage.oceanmetrics.io/gazetteer/`.
 ### Where it runs
 
 `.github/workflows/stats.yml` refreshes the statistics weekly (Mondays 09:17 UTC) and syncs the whole
-gazetteer to S3. It runs on a **self-hosted runner on the msens VM** (`ssh msens`), not on a
-GitHub-hosted machine:
+gazetteer to S3. Since 2026-10-12 it runs on a **self-hosted runner on the Mac mini** (`ssh macmini`),
+because the first full-record run is hours of requests and the per-chunk rows that make later runs
+incremental live on that host:
 
-- runner name `msens`, labels `self-hosted, linux, x64, msens`, installed in
-  `/share/github/oceanmetrics/actions-runner` as the systemd service
-  `actions.runner.oceanmetrics-erddap-places.msens` (user `ubuntu`).
-- host tools: node 22 (NodeSource apt package), `python3` 3.10 + `python3-pip`, `rashid` in
-  `~ubuntu/.local` (the workflow upgrades it each run), aws cli (snap).
-- S3 credentials: the host's AWS profile (`~ubuntu/.aws`, IAM user `ben`). The repository has **no**
-  AWS secrets; if `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` are ever added they take precedence.
+- runner name `macmini`, labels `self-hosted, macOS, ARM64, macmini`, installed in
+  `~/actions-runner/erddap-places` (user `bbest`), working directory `_work`. The chunk store is
+  `_work/erddap-places/precompute-chunks` (`PRECOMPUTE_CHUNKS`, beside the checkout, which
+  `actions/checkout` cleans). Delete it only to force a full refetch.
+- host tools from Homebrew: node, python3, `uv` (rashid is a uv tool), aws cli, duckdb. The precompute
+  runs under `caffeinate -i`.
+- S3 credentials: the host's AWS profile (`~/.aws`, `default`). The repository has **no** AWS secrets.
+- `obis-h3.yml` and `gazetteer-sync.yml` stay on the **msens** runner (`msens`, labels
+  `self-hosted, linux, x64, msens`, `/share/github/oceanmetrics/actions-runner`, systemd service
+  `actions.runner.oceanmetrics-erddap-places.msens`, user `ubuntu`).
 
-Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`;
-on msens `sudo systemctl status actions.runner.oceanmetrics-erddap-places.msens`.
+Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
 
-Re-register (e.g. after the VM is rebuilt or the runner was removed in Settings → Actions → Runners):
+Register the Mac mini runner (by hand: Claude Code's auto mode will not install a runner service).
+`PATH` must include Homebrew when `config.sh` runs, because the runner keeps the `PATH` it was
+configured with:
+
+```bash
+# on the laptop (repo admin): a registration token, valid one hour
+gh api -X POST repos/oceanmetrics/erddap-places/actions/runners/registration-token --jq .token
+# on the mini
+export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
+mkdir -p ~/actions-runner/erddap-places && cd ~/actions-runner/erddap-places
+V=$(curl -s https://api.github.com/repos/actions/runner/releases/latest | sed -n 's/.*"tag_name": "v\(.*\)".*/\1/p')
+curl -sSLo runner.tgz https://github.com/actions/runner/releases/download/v$V/actions-runner-osx-arm64-$V.tar.gz
+tar xzf runner.tgz && rm runner.tgz
+./config.sh --unattended --url https://github.com/oceanmetrics/erddap-places --token <token> \
+  --name macmini --labels macmini --work _work
+./svc.sh install && ./svc.sh start      # a LaunchAgent: needs bbest logged in on the mini's desktop
+# no desktop login (headless): run it in tmux instead, and restart it after a reboot
+tmux new-session -d -s om -n runner 2>/dev/null || tmux new-window -t om -n runner
+tmux send-keys -t om:runner 'cd ~/actions-runner/erddap-places && ./run.sh' Enter
+```
+
+Re-register msens (e.g. after the VM is rebuilt or the runner was removed in Settings → Actions → Runners):
 
 ```bash
 # on the laptop (repo admin)

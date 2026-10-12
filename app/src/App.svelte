@@ -21,7 +21,7 @@
   import PlotBox from './lib/PlotBox.svelte'
   import { cellPoints, cellSquares, indexBounds, type ValueCell } from './lib/cells'
   import { isAbort, Runs, type RunHandle } from './lib/runToken'
-  import { hasPrecomputed, inWindow, loadPrecomputed, loadProvenance, lobeAxes, planRun, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type Provenance, type RunPlan } from './lib/precomputed'
+  import { capStart, hasPrecomputed, inWindow, loadPrecomputed, loadProvenance, lobeAxes, planRun, precomputedIndex, precomputedUrl, provenanceUrl, sourceLabel, usePrecomputed, type Coverage, type Precomputed, type Provenance, type RunPlan } from './lib/precomputed'
   import { mapFailMessage } from './lib/fetchRetry'
   import { decodeHash, encodeHash, type RunState } from './lib/permalink'
   import { copyText, download, resultFileName, toCsv } from './lib/download'
@@ -483,13 +483,14 @@
       const opts = winOpts(ds), cap = opts.maxDays
       const win = clampWindow({ start: startDate, end: endDate }, ext, opts)
       if (win.snapped) note = `window ${win.reason}`
-      let end = win.end, start = win.start
-      if (daysBetween(start, end) + 1 > cap) start = iso(new Date(Date.parse(end) - (cap - 1) * 864e5))
-      // the clamped window is what ran: the run-on-change effect must not see it as a new pick
-      lastKey = keyOf(placeKey(ref), ds.id, v.name, start, end)
-      startDate = start; endDate = end
-      const days = daysBetween(start, end) + 1
-      const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
+      // the span cap is the live path's (one slab): a window the precomputed file covers keeps its span
+      const end = win.end
+      let start = win.start
+      const settle = () => {
+        // the clamped window is what ran: the run-on-change effect must not see it as a new pick
+        lastKey = keyOf(placeKey(ref), ds.id, v.name, start, end)
+        startDate = start; endDate = end
+      }
 
       // precomputed first: the weekly stats for this (dataset, variable, place), if published, are the Time
       // strip's whole series at once, and the window rows come out of them; only the latest time step is
@@ -511,8 +512,10 @@
           }
           if (h.stale()) return
           const { pre, prov: { asOf }, ms: preMs } = preMem!
+          start = capStart({ start, end }, cap, pre.coverage)
           plan = planRun({ protocol: ds.protocol, has, coverage: pre.coverage }, { start, end }, ext?.end)
           if (plan.strip === 'precomputed') {
+            settle()
             series = pre.rows; seriesSpan = pre.coverage; seriesKey = tkey; fileRows = pre.rows.length
             rows = inWindow(pre.rows, { start, end }); shownVar = v; shownProtocol = ds.protocol
             shownSource = { kind: 'precomputed', through: pre.coverage!.end, asOf, mapDate: null, failed: false }
@@ -528,6 +531,8 @@
         } catch (e) { if (h.stale()) return; console.debug('precomputed stats skipped', e); plan = { strip: 'live', map: 'window', slice: null } }
       }
       if (plan.strip === 'live') {
+        start = capStart({ start, end }, cap)
+        settle()
         // the full live path: nothing from a previous precomputed view may stay on screen
         rows = []; series = null; seriesSpan = null; seriesKey = ''; fileRows = 0; shownVar = null; shownSource = null; shownRun = null
         // a precomputed target that turned out not to be usable (window before the file, a failed read)
@@ -542,6 +547,8 @@
         const prov = preMem!.prov
         plan = planRun({ protocol: ds.protocol, has, coverage: preMem!.pre.coverage }, { start, end }, ext?.end ?? prov.end)
       }
+      const days = daysBetween(start, end) + 1
+      const steps = Math.max(1, Math.round(days / (ext?.stepDays ?? 1)))
       // the one step the map needs when the statistics are precomputed; with no extent, the provenance's
       // last instant stands in for it (timeInstant() uses an endpoint verbatim: MUR sits at 09:00Z)
       const provExt: TimeExtent | null = preMem?.url === preUrl && preMem.prov.end ? { start: preMem.prov.end, end: preMem.prov.end } : null
@@ -746,8 +753,8 @@
     if (r.v0 === undefined || r.v1 === undefined) return
     let a = iso(new Date(Math.round(r.v0 / 864e5) * 864e5)), b = iso(new Date(Math.round(r.v1 / 864e5) * 864e5 - 864e5))
     if (b < a) b = a
-    const cap = winOpts(dataset).maxDays
-    if (daysBetween(a, b) + 1 > cap) a = addDays(b, -(cap - 1))
+    // inside a precomputed series the brush keeps its span; the live path caps it (capStart)
+    a = capStart({ start: a, end: b }, winOpts(dataset).maxDays, shownSource ? seriesSpan : null)
     startDate = a; endDate = b
     brush = winBrush
   }

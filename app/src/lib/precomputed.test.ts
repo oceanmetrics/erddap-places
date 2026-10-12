@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 import {
   hasPrecomputed, inWindow, itemId, planRun, parseStatsCollection, precomputedIndex, precomputedPath, precomputedUrl, provenanceUrl,
   readPrecomputed, resetPrecomputedIndex, shapeRows, sourceLabel, usePrecomputed, windowCovered, loadPrecomputed,
-  parseProvenance, lobeAxes, type LobeAxes,
+  parseProvenance, lobeAxes, capStart, type LobeAxes,
 } from './precomputed'
 import { GAZETTEER_BASE, GAZETTEER_FALLBACK } from './gazetteer'
 import { fmtDay } from './sentence'
@@ -121,6 +121,21 @@ describe('provenance: the label, the fallback last step and the axes', () => {
     expect(lobeAxes(axes, [lobes[1], lobes[0]])).toBeNull()                                     // another order
     expect(lobeAxes(axes, [{ bbox: [-83.2, 24.3, -80.1, 25.7] }, lobes[1]])).toBeNull()         // the polygon moved
     expect(lobeAxes(null, lobes)).toBeNull()
+  })
+})
+
+describe('capStart: the span cap is the live path\'s', () => {
+  const full = { start: '1985-04-01', end: '2026-10-10' }          // a full daily record
+  it('a window inside the precomputed record keeps its span (a decade brush)', () => {
+    expect(capStart({ start: '2010-01-01', end: '2019-12-31' }, 90, full)).toBe('2010-01-01')
+  })
+  it('without a covering file it is capped to the last maxDays days', () => {
+    expect(capStart({ start: '2010-01-01', end: '2019-12-31' }, 90)).toBe('2019-10-03')
+    expect(capStart({ start: '1980-01-01', end: '1985-06-01' }, 90, full)).toBe('1985-03-04')   // starts before the file
+  })
+  it('a window within the cap is untouched', () => {
+    expect(capStart({ start: '2026-09-11', end: '2026-10-10' }, 90)).toBe('2026-09-11')
+    expect(capStart({ start: '2026-07-13', end: '2026-10-10' }, 90)).toBe('2026-07-13')         // exactly 90 days
   })
 })
 

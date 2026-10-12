@@ -1,7 +1,7 @@
 // what gets precomputed. one entry per (dataset, variable).
 //   places: 'all', 'nms' (every NMS:* place, the 18 NOAA sanctuaries / monuments) or an explicit list
 //   days  : the window, in days ending at the dataset's last time step, or 'all' for the full record
-//           (default DAYS). the monthly sanctuary-series products use 'all'.
+//           (default DAYS = 'all').
 export interface Target {
   dataset : string              // the erddap/<id> collection directory name
   variable: string
@@ -51,8 +51,12 @@ export function placesFor(t: Pick<Target, 'places'>, all: string[]): string[] {
   return t.places
 }
 
-/** default days of history to precompute (clamped to the dataset's own live extent). */
-export const DAYS = 365
+/**
+ * default days of history to precompute: the dataset's whole record (Ben, 2026-10-12: the precomputed
+ * places should carry every step ERDDAP has, not the last year). Runs are incremental per chunk
+ * (stats.ts computeOne), so only the first run fetches the record.
+ */
+export const DAYS: number | 'all' = 'all'
 /** never ask ERDDAP for more than this many time steps in one request (90 days of a daily grid). */
 export const MAX_CHUNK_DAYS = 90
 /** and shrink the chunk further so a single request stays under this many grid rows. */

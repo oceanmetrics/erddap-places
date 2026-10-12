@@ -8,7 +8,8 @@
 //   app/src/lib/extent.ts     the live time extent and the clamping
 //   sql/stats_*.sql           the aggregation itself
 // only the engine differs: native DuckDB here, DuckDB-WASM there.
-import { mkdirSync, writeFileSync, existsSync, statSync, readFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, existsSync, statSync, readFileSync, readdirSync, rmSync, renameSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname } from 'node:path'
 import { DuckDBInstance, type DuckDBConnection } from '@duckdb/node-api'
 
@@ -22,7 +23,7 @@ import { addDays, day, daysBetween, parseInfoExtent, timeInstant } from '../../a
 import type { TimeExtent }                    from '../../app/src/lib/extent'
 
 import { render } from './sql'
-import { CACHE, GAZETTEER, PLACES, STATS } from './paths'
+import { CACHE, CHUNKS, GAZETTEER, PLACES, STATS } from './paths'
 import { DAYS, MAX_CHUNK_DAYS, MAX_CHUNK_ROWS, CONCURRENCY, SLEEP_MS } from './targets'
 
 // ── file naming ───────────────────────────────────────────────────────────────
@@ -229,6 +230,21 @@ function selectList(categorical: boolean): string {
 }
 
 // ── one (dataset, variable, place) ────────────────────────────────────────────
+/** at most this many request URLs are listed verbatim in a provenance (else the templates + chunks). */
+export const GRIDDAP_URLS_MAX = 24
+
+/**
+ * what a cached chunk's rows depend on besides its dates: the server, the dataset, the value
+ * expression, the template and the mask cells. a changed polygon or grid gives a new key, so stale
+ * chunk rows are never reused.
+ */
+export function maskKey(ds: Pick<Dataset, 'baseUrl' | 'datasetId' | 'depth'>, v: CubeVariable, cells: MaskCell[]): string {
+  const h = createHash('sha1')
+  h.update(JSON.stringify([ds.baseUrl, ds.datasetId, ds.depth ?? null, v.name, valueExpr(v), statsTemplate(v)]))
+  for (const c of cells) h.update(`${c.lon},${c.lat},${c.weight};`)
+  return h.digest('hex').slice(0, 12)
+}
+
 export interface LobeAxes { bbox: [number, number, number, number]; lon: number[]; lat: number[] }
 /** the provenance's `axes`: what each lobe's mask was computed from. */
 export const provenanceAxes = (masks: LobeMask[]): LobeAxes[] =>
@@ -251,7 +267,13 @@ export interface Provenance {
    * again, so a precomputed place's map needs only its one time step (app `lobeAxes()`).
    */
   axes        ?: LobeAxes[]
-  griddap_urls : string[]
+  /** every request, when there are at most GRIDDAP_URLS_MAX of them (a full daily record has hundreds) */
+  griddap_urls ?: string[]
+  /** one per lobe: the request with its time constraint as `({t0}):1:({t1})`; with `griddap_chunks`, every request exactly */
+  griddap_url_templates: string[]
+  /** the [t0, t1] instants of each request, oldest first (every lobe is asked for every chunk) */
+  griddap_chunks: Array<[string, string]>
+  griddap_requests: number
   rows         : number
   bytes        : number
   generated    : string
@@ -278,50 +300,75 @@ export async function computeOne(
   log(`    ${lobes.length} lobe(s), ${cells.length} masked cells, ${perStep} axis cells/step, ` +
       `${slices.length} request(s) of <=${cd} d`)
 
-  // 2. download every (lobe x slice) griddap slab
-  const files: string[] = []
-  const urls : string[] = []
-  const jobs : Array<() => Promise<void>> = []
-  for (const [i, m] of masks.entries()) {
-    for (const [j, [s, e]] of slices.entries()) {
-      const url = griddapUrl({
-        base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name,
-        time: [timeInstant(s, ext, noonZ), timeInstant(e, ext, noonZ)],
-        lat : [m.lat[m.lat.length - 1], m.lat[0]], lon: [m.lon[0], m.lon[m.lon.length - 1]],
-        latDescending: ds.latDescending, depth: ds.depth, format: 'parquet',
-      })
-      const file = join(CACHE, ds.datasetId, v.name, fileSafe(place.place_id), `lobe${i}_${s}_${e}.parquet`)
-      urls.push(url); files.push(file)
-      jobs.push(async () => { await download(url, file, log) })
-    }
-  }
-  await pool(jobs)
+  // 2. one chunk at a time: download its slab per lobe, aggregate it with the app's own SQL template into
+  // the chunk's daily rows, keep those (a few kB) and drop the slabs. a day lies in exactly one chunk, so
+  // the per-chunk rows ARE the file's rows; the full record never sits on disk as raw grid. the chunk
+  // rows are kept in CHUNKS (outside the checkout on the runner), keyed by the mask, so the next run
+  // (or a resumed one) asks ERDDAP only for the chunks it has not done: after the first full-record
+  // run, a weekly refresh is the last chunk.
+  const key  = maskKey(ds, v, cells)
+  const dir  = join(CHUNKS, ds.datasetId, v.name, fileSafe(place.place_id), key)
+  mkdirSync(dir, { recursive: true })
+  const c    = await db()
+  await insertMask(c, cells, join(CACHE, `mask_${key}.csv`))
+  const t    = (d: string) => timeInstant(d, ext, noonZ)
+  const urlFor = (m: LobeMask, t0: string, t1: string) => griddapUrl({
+    base: ds.baseUrl, datasetId: ds.datasetId, variable: v.name, time: [t0, t1],
+    lat : [m.lat[m.lat.length - 1], m.lat[0]], lon: [m.lon[0], m.lon[m.lon.length - 1]],
+    latDescending: ds.latDescending, depth: ds.depth, format: 'parquet',
+  })
+  const chunkFiles = slices.map(([s, e]) => join(dir, `${s}_${e}.parquet`))
+  // a chunk file for the same start and another end is last run's partial last chunk: superseded
+  const keep = new Set(chunkFiles.map((f) => f.slice(dir.length + 1)))
+  for (const f of readdirSync(dir)) if (f.endsWith('.parquet') && !keep.has(f)) rmSync(join(dir, f))
+  const todo = slices.map((sl, j) => ({ sl, j })).filter(({ j }) => !existsSync(chunkFiles[j]))
+  log(`    ${slices.length - todo.length} chunk(s) already done, ${todo.length} to fetch (${todo.length * masks.length} request(s))`)
 
-  // 3. aggregate with the app's own SQL template
-  const c = await db()
-  await insertMask(c, cells, join(CACHE, 'mask.csv'))
-  // DISTINCT: consecutive slices never overlap by date, but a coarse axis (the 8-day grid) can snap
-  // two slice endpoints onto the same time step, and a duplicated row would inflate `n`.
-  const slab = `(SELECT DISTINCT * FROM read_parquet([${files.map((f) => `'${f}'`).join(', ')}]))`
-  const body = render(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
-  const out  = statsPath(ds.datasetId, v.name, place.place_id)
+  let agg = Promise.resolve()                 // one DuckDB connection: aggregate one chunk at a time
+  let done = 0
+  await pool(todo.map(({ sl: [s, e], j }) => async () => {
+    const files = masks.map((_, i) => join(CACHE, ds.datasetId, v.name, fileSafe(place.place_id), `lobe${i}_${s}_${e}.parquet`))
+    for (const [i, m] of masks.entries()) await download(urlFor(m, t(s), t(e)), files[i], log)
+    const run = agg.then(async () => {
+      // DISTINCT: a coarse axis (the 8-day grid) can snap a chunk's two endpoints onto one step
+      const slab = `(SELECT DISTINCT * FROM read_parquet([${files.map((f) => `'${f}'`).join(', ')}]))`
+      const body = render(statsTemplate(v), { expr: valueExpr(v), slab, mask: 'mask' })
+      const tmp  = chunkFiles[j] + '.tmp'
+      await c.run(`COPY (SELECT ${selectList(v.categorical)} FROM (${body})) TO '${tmp}' (FORMAT PARQUET, COMPRESSION ZSTD)`)
+      renameSync(tmp, chunkFiles[j])           // only a whole chunk ever counts as done
+      for (const f of files) rmSync(f, { force: true })
+      done++
+      if (done % 25 === 0 || done === todo.length) log(`      ${done}/${todo.length} chunk(s) aggregated`)
+    })
+    agg = run.catch(() => {})
+    await run
+  }))
+
+  // 3. the file: every chunk's rows, oldest first. DISTINCT again: two chunks snapped onto the same
+  // step of a coarse axis give that step's row twice, identical
+  const order = v.categorical ? 'date, class' : 'date'
+  const out   = statsPath(ds.datasetId, v.name, place.place_id)
   mkdirSync(dirname(out), { recursive: true })
-  const sql = `COPY (
-  SELECT ${selectList(v.categorical)},
-         '${place.place_id}' AS place_id, '${ds.datasetId}' AS dataset_id, '${v.name}' AS variable
-  FROM (${body})
-) TO '${out}' (FORMAT PARQUET, COMPRESSION ZSTD)`
-  await c.run(sql)
+  await c.run(`COPY (
+  SELECT *, '${place.place_id}' AS place_id, '${ds.datasetId}' AS dataset_id, '${v.name}' AS variable
+  FROM (SELECT DISTINCT * FROM read_parquet([${chunkFiles.map((f) => `'${f}'`).join(', ')}])) ORDER BY ${order}
+) TO '${out}' (FORMAT PARQUET, COMPRESSION ZSTD)`)
 
   const n = Number((await c.runAndReadAll(`SELECT count(*) AS n FROM read_parquet('${out}')`)).getRowObjects()[0].n)
   const bytes = statSync(out).size
+  const chunksAt = slices.map(([s, e]): [string, string] => [t(s), t(e)])
+  const urls = masks.flatMap((m) => chunksAt.map(([a, b]) => urlFor(m, a, b)))
   const prov: Provenance = {
     place_id: place.place_id, dataset_id: ds.datasetId, variable: v.name, categorical: v.categorical,
     start_date: win.start, end_date: win.end,
-    start_datetime: timeInstant(win.start, ext, noonZ), end_datetime: timeInstant(win.end, ext, noonZ),
-    lobes: lobes.length, mask_cells: cells.length, axes: provenanceAxes(masks), griddap_urls: urls,
+    start_datetime: t(win.start), end_datetime: t(win.end),
+    lobes: lobes.length, mask_cells: cells.length, axes: provenanceAxes(masks),
+    ...(urls.length <= GRIDDAP_URLS_MAX ? { griddap_urls: urls } : {}),
+    griddap_url_templates: masks.map((m) => urlFor(m, '{t0}', '{t1}')),
+    griddap_chunks: chunksAt, griddap_requests: urls.length,
     rows: n, bytes, generated: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
-    erddap_base: ds.baseUrl, erddap_version: ds.version, sql: body,
+    erddap_base: ds.baseUrl, erddap_version: ds.version,
+    sql: render(statsTemplate(v), { expr: valueExpr(v), slab: '(SELECT DISTINCT * FROM read_parquet([<one griddap slab per lobe for the chunk>]))', mask: 'mask' }),
   }
   writeFileSync(out.replace(/\.parquet$/, '.provenance.json'), JSON.stringify(prov, null, 2) + '\n')
   log(`    -> ${n} rows, ${(bytes / 1e3).toFixed(0)} kB in ${((Date.now() - t0) / 1000).toFixed(0)} s`)

@@ -1,9 +1,10 @@
 # Precomputed place statistics
 
-One Parquet file per (ERDDAP dataset, variable, gazetteer place), covering the **last 365 days**
-(or the dataset's full extent, if shorter) for the daily / 8-day grids, and the **full record** for
-the monthly "sanctuaries series" (CMEMS biogeochemistry and physics, IMERG precipitation, VGPM NPP
-over the 18 `NMS:*` places; `days: 'all'` in `precompute/src/targets.ts`). Places outside an ocean
+One Parquet file per (ERDDAP dataset, variable, gazetteer place), covering the dataset's **full
+record** as ERDDAP serves it: NOAA CRW daily SST and bleaching alert area from 1985, the AOML 8-day
+Seascapes, and the monthly "sanctuaries series" (CMEMS biogeochemistry and physics, IMERG
+precipitation, VGPM NPP over the 18 `NMS:*` places). `DAYS = 'all'` in `precompute/src/targets.ts`;
+until 2026-10-12 the daily and 8-day grids covered only the last 365 days. Places outside an ocean
 model's domain (the Great Lakes, Mallows Bay) get a valid, empty file. Published at
 `https://storage.oceanmetrics.io/gazetteer/stats/`, refreshed weekly.
 
@@ -112,7 +113,11 @@ lobes and masked cells, the rendered SQL and the generation timestamp. `axes` (f
 per lobe in `placeLobes()` order, the lobe's `bbox` and the server's `lon` / `lat` axis values over it:
 what the mask was computed from, so a client can rebuild the mask (and the app its map request) without
 asking ERDDAP for the axes. `end_datetime` is the last time step used, an instant the server holds. The same URL list is on the
-Item as `erddap-places:griddap_urls`.
+Item as `erddap-places:griddap_urls` when there are at most 24 requests. A full daily record has
+hundreds (one per ≤90-day chunk and lobe), so the provenance always carries `griddap_url_templates`
+(one per lobe, the time constraint written `({t0}):1:({t1})`) and `griddap_chunks` (every request's
+`[t0, t1]` instants): together they give every URL exactly. The Item carries the templates and
+`erddap-places:griddap_requests`.
 
 ## Regenerating
 
@@ -120,9 +125,18 @@ The parquet files are **not in git** (see `.gitignore`); the STAC Items and this
 Rebuild them from the repo root:
 
 ```bash
-cd precompute && npm ci && npm run stats       # ~25 min, polite: <=2 concurrent griddap requests
+cd precompute && npm ci && npm run stats       # polite: <=2 concurrent griddap requests
 rashid check catalog/gazetteer
 ```
+
+Runs are **incremental**. Each target is fetched in chunks of at most 90 days (fewer for a large
+place, so one request stays under 2 M grid rows), each chunk is aggregated to its daily rows as soon
+as it arrives, and those rows are kept in `PRECOMPUTE_CHUNKS` (default `precompute/.cache/chunks/`;
+the runner keeps it outside the checkout), keyed by a hash of the mask. The raw slabs are deleted.
+A later run asks ERDDAP only for chunks it has not done, which after the first full-record run is the
+last one, and an interrupted run resumes where it stopped. A changed polygon or grid changes the
+key, so old rows are never reused for a different mask. The first full-record run is long (hours:
+thousands of requests to PacIOOS, most of them for `NMS:PMNM`).
 
 CI does exactly this weekly — see `.github/workflows/stats.yml`.
 

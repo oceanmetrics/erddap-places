@@ -39,7 +39,9 @@ under `items/`. An Item gives you:
 
 - `assets.data.href` — the Parquet file (relative to `stats/`), plus `table:columns`, `file:size`
 - `properties.erddap-places:place_id` / `:dataset_id` / `:variable`
-- `properties.erddap-places:griddap_urls` — the exact ERDDAP requests behind the file
+- `properties.erddap-places:griddap_url_templates` / `erddap-places:griddap_requests` — the ERDDAP
+  requests behind the file (one template per lobe; `griddap_urls` too when there are ≤ 24). The
+  provenance JSON's `griddap_chunks` fills `{t0}` / `{t1}` for every request
 - `properties.start_datetime` / `end_datetime` — the covered window (`datetime` is `null`)
 - `geometry` — the place's **lobe bounding boxes**, not its outline (the outlines run to ~40,000
   vertices; get the real polygon from [`../places/places.parquet`](../places/collection.json))
@@ -66,8 +68,7 @@ ORDER BY frac_area DESC;
 `mean` is over grid cells whose **centre** falls inside the polygon; `mean_wt` weights each cell by
 the fraction of its square the polygon covers, so a coastal place with many half-covered cells is
 not biased by them. Antimeridian places (`NMS:PMNM`) are fetched as two lobes and unioned before
-aggregation. The window is the last 365 days of the dataset's live extent (the full record for the monthly
-sanctuaries series), so `end_datetime` is the
+aggregation. The window is the dataset's full record (the live extent from its first step), so `end_datetime` is the
 dataset's last time step at the weekly refresh, not today.
 
 ## Do not

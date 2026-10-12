@@ -22,7 +22,7 @@ SELECT * FROM read_parquet('https://storage.oceanmetrics.io/gazetteer/stats/dhw_
 ORDER BY date;
 ```
 
-The last 365 days (the full record for the monthly sanctuaries series), refreshed weekly, `place_id` colon and all. See [`stats/AGENTS.md`](stats/AGENTS.md).
+The dataset's full record, refreshed weekly, `place_id` colon and all. See [`stats/AGENTS.md`](stats/AGENTS.md).
 
 ## 3. Fresh statistics for a place
 

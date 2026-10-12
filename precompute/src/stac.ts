@@ -233,7 +233,11 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
       'erddap-places:categorical' : p.categorical,
       'erddap-places:mask_cells'  : p.mask_cells,
       'erddap-places:lobes'       : p.lobes,
-      'erddap-places:griddap_urls': p.griddap_urls,
+      // the full record of a daily grid is hundreds of requests: the Item carries the per-lobe template
+      // and the count (the provenance JSON lists every chunk's instants), and the URLs only when few
+      ...(p.griddap_urls ? { 'erddap-places:griddap_urls': p.griddap_urls } : {}),
+      'erddap-places:griddap_url_templates': p.griddap_url_templates,
+      'erddap-places:griddap_requests'     : p.griddap_requests,
     },
     assets,
     links: [

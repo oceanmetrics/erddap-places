@@ -84,6 +84,17 @@ export const usePrecomputed = (t: { protocol: string; has: boolean }) => t.proto
 export const windowCovered = (cov: Coverage | null, win: Window) =>
   !!cov && win.start >= cov.start && win.start <= cov.end
 
+/**
+ * The start of a window after the span cap (`maxDays`, the live path's limit on one ERDDAP slab). A
+ * window that the precomputed file covers is not capped: no slab is fetched for it, so a brush can
+ * span decades of the full record.
+ */
+export function capStart(win: Window, maxDays: number, cov?: Coverage | null): string {
+  if (windowCovered(cov ?? null, win)) return win.start
+  const days = Math.round((ms(win.end) - ms(win.start)) / 864e5) + 1
+  return days > maxDays ? ymd(ms(win.end) - (maxDays - 1) * 864e5) : win.start
+}
+
 export interface RunPlan {
   /** where the Time strip's series (and the table's window rows) come from */
   strip: 'precomputed' | 'live'
@@ -171,7 +182,8 @@ async function fetchStats(url: string, init?: RequestInit): Promise<Response> {
  */
 export async function loadPrecomputed(url: string, kind: StatsKind, win?: Window,
                                       opts: { signal?: AbortSignal; timeoutMs?: number } = {}): Promise<Precomputed> {
-  const { signal, timeoutMs = 6000 } = opts
+  // a full daily record is ~0.5 MB (15,000 days; ×5 rows for a categorical variable): give it time
+  const { signal, timeoutMs = 20_000 } = opts
   const sig = signal ? AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]) : AbortSignal.timeout(timeoutMs)
   const res = await fetchStats(url, { signal: sig })
   return readPrecomputed(await res.arrayBuffer(), kind, win)

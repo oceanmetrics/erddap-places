@@ -1,9 +1,9 @@
 # refresh the precomputed place statistics (catalog/gazetteer/stats/) and publish the whole gazetteer
 # to s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
 #
-# runs on the self-hosted runner `msens` (labels self-hosted, msens; see catalog/README.md "Where it
-# runs"): node 22 (NodeSource), python3 + pip and the aws cli are installed on the host, and the S3
-# sync uses the host's AWS profile (~ubuntu/.aws). The repository holds no AWS secrets; if the
+# runs on the self-hosted runner `macmini` (labels self-hosted, macOS, ARM64, macmini; see
+# catalog/README.md "Where it runs"; msens until 2026-10-12): node, python3, uv and the aws cli come
+# from Homebrew on the host, and the S3 sync uses the host's AWS profile (~/.aws). The repository holds no AWS secrets; if the
 # two secrets AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are ever added they take precedence.
 name: stats
 
@@ -31,20 +31,24 @@ concurrency:
 
 jobs:
   stats:
-    runs-on: [self-hosted, msens]
-    timeout-minutes: 240
+    runs-on: [self-hosted, macmini]
+    # the first full-record run is hours of requests (2026-10-12: from 1985 for CRW); a run cut off by the
+    # timeout loses nothing, because every aggregated chunk is kept in PRECOMPUTE_CHUNKS and the next run resumes
+    timeout-minutes: 1440
     env:
       AWS_DEFAULT_REGION: us-east-1
+      # outside the checkout: actions/checkout cleans ignored files, and these rows make runs incremental
+      PRECOMPUTE_CHUNKS: ${{ github.workspace }}/../precompute-chunks
     steps:
       - uses: actions/checkout@v4
 
-      # node 22 comes from the host (NodeSource apt package), no actions/setup-node
+      # node comes from the host (Homebrew), no actions/setup-node
       - name: host tools
         run: |
           node --version
           python3 --version
           aws --version
-          free -g
+          free -g 2>/dev/null || vm_stat | head -5
       - run: npm ci
         working-directory: precompute
       # the precompute tests import the app's TypeScript (extent, gazetteer), and esbuild resolves
@@ -56,13 +60,19 @@ jobs:
         run: npm test
         working-directory: precompute
 
-      # host python3 (3.10); rashid lives in the runner user's ~/.local
+      # rashid as a uv tool (Homebrew's python3 refuses `pip install --user`); pip where there is no uv
       - name: install rashid
         run: |
-          python3 -m pip install --user --upgrade --quiet rashid
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          if command -v uv >/dev/null; then
+            uv tool install --upgrade --quiet rashid
+            uv tool dir --bin >> "$GITHUB_PATH"
+          else
+            python3 -m pip install --user --upgrade --quiet rashid
+            echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          fi
 
-      # the long pole: ~1 h of polite griddap requests (<=2 concurrent, one place at a time)
+      # the long pole: polite griddap requests (<=2 concurrent, one place at a time); hours for the first
+      # full-record run, then only each target's last chunk
       # one transient ERDDAP fetch failure (e.g. PacIOOS "fetch failed" after retries on 2026-10-07)
       # must not throw away the other items: keep going, publish what was produced, and fail the
       # job at the end so the red run is still visible
@@ -70,7 +80,8 @@ jobs:
         id: precompute
         continue-on-error: true
         working-directory: precompute
-        run: npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }}
+        # caffeinate: the first full-record run is hours long; macOS must not idle-sleep under it
+        run: ${{ runner.os == 'macOS' && 'caffeinate -i ' || '' }}npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }}
 
       - name: validate the catalog
         run: rashid check catalog/gazetteer
@@ -127,4 +138,4 @@ jobs:
           exit 1
       - name: memory after the run
         if: always()
-        run: free -g
+        run: free -g 2>/dev/null || vm_stat | head -5

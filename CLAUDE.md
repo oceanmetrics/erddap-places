@@ -138,8 +138,10 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
 - `.github/workflows/pages.yml`: on push to `main` touching `app/` or `sql/`, it runs
   `ERDDAP_OFFLINE=1` tests, builds with `VITE_BASE=/erddap-places/`, checks the size budget, and
   deploys to GitHub Pages.
-- `.github/workflows/stats.yml`: runs weekly on the **self-hosted `msens` runner**. It precomputes
-  `catalog/gazetteer/stats/`, runs `rashid check`, and syncs the gazetteer to
+- `.github/workflows/stats.yml`: runs weekly on the **self-hosted `macmini` runner** (msens until
+  2026-10-12; `obis-h3.yml` and `gazetteer-sync.yml` stay there). It precomputes the **full record**
+  into `catalog/gazetteer/stats/`, incrementally: each chunk's daily rows are kept in
+  `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. It runs `rashid check`, and syncs the gazetteer to
   `s3://oceanmetrics.io-public/gazetteer/` using the host's AWS profile (the repo has no secrets).
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.
 - Data files (stats Parquet and provenance, Then vs Now COGs and series) are git-ignored. Only the

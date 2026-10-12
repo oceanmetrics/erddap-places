@@ -196,6 +196,8 @@ const prov = (place: Place, variable: string, categorical: boolean): Provenance 
   start_date: '2025-09-15', end_date: '2026-09-14',
   start_datetime: '2025-09-15T12:00:00Z', end_datetime: '2026-09-14T12:00:00Z',
   lobes: 1, mask_cells: 6, griddap_urls: ['https://example.org/erddap/griddap/dhw_5km.parquet?x'],
+  griddap_url_templates: ['https://example.org/erddap/griddap/dhw_5km.parquet?CRW_SST%5B({t0}):1:({t1})%5D'],
+  griddap_chunks: [['2025-09-15T12:00:00Z', '2026-09-14T12:00:00Z']], griddap_requests: 1,
   rows: 365, bytes: 1234, generated: '2026-09-15T00:00:00Z', erddap_base: 'https://example.org/erddap',
   sql: 'SELECT 1',
 })

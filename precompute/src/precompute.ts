@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 // precompute the stats/ collection: for every (dataset, variable) in targets.ts and every place,
-// fetch the target's window of griddap (the last 365 days by default, the full record for the monthly
-// sanctuaries series), mask it with the place polygon, aggregate with the app's SQL,
+// fetch the target's window of griddap (the dataset's full record by default, incremental per chunk:
+// stats.ts computeOne), mask it with the place polygon, aggregate with the app's SQL,
 // and write catalog/gazetteer/stats/{dataset}/{variable}/{place_id}.parquet + a STAC Item.
 //
 //   npx tsx src/precompute.ts                     # everything in TARGETS

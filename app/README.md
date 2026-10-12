@@ -101,6 +101,11 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.6** (2026-10-12): the precomputed files now hold each dataset's full record (CRW from
+1985; the precompute is incremental per chunk, so only the first run fetches it), and a window inside
+a precomputed series is no longer capped to 90 days (`capStart()`): a brush can span decades, since no
+slab is fetched for it. The live path keeps the cap. A precomputed file may take 20 s to load (was 6 s).
+
 **app 0.3.5** (2026-10-09): a slow or failing ERDDAP no longer holds up a precomputed place. PacIOOS
 answered an info request in 20 s and then dropped the map's slice, so the strip waited on ERDDAP while
 its S3 file was ready, and the map failed with the browser's bare "Failed to fetch". Now (1) a precomputed
@@ -348,8 +353,9 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
 - **Reproduce** (Share tab, closed): the exact griddap URL(s) used, the mask summary (cells, lobes,
   total area weight, partial boundary cells) and the rendered SQL of both queries, with *Copy all*.
 - **Precomputed stats first** (`src/lib/precomputed.ts`): the weekly precompute publishes
-  `stats/<dataset_id>/<variable>/<place_id>.parquet` (last 365 days, or the full record for the
-  monthly series; `dataset_id` is `Dataset.datasetId`, e.g. `dhw_5km`). When a run starts for a griddap
+  `stats/<dataset_id>/<variable>/<place_id>.parquet` (the dataset's full record, 1985 on for CRW;
+  `dataset_id` is `Dataset.datasetId`, e.g. `dhw_5km`). A window the file covers is not capped to
+  `MAX_DAYS` (`capStart()`): the cap is the live path's, one slab, so a brush can span decades. When a run starts for a griddap
   target that `stats/collection.json` lists (its `rel: "item"` links, fetched once from the bucket URL
   like then-now, because the storage host's 302 has no CORS header, and cached; no HEAD per run, so an
   unpublished combination costs no request), `run()` reads the whole file with hyparquet (no DuckDB-WASM
