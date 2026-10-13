@@ -101,7 +101,36 @@ export function datasetProviders(datasetIds: string[]): Array<{ name: string; ro
 }
 
 /** what buildCollection needs of an item: its identity and time span. */
-export type ItemRef = Pick<Provenance, 'place_id' | 'dataset_id' | 'variable' | 'start_datetime' | 'end_datetime'>
+export type ItemRef = Pick<Provenance, 'place_id' | 'dataset_id' | 'variable' | 'start_datetime' | 'end_datetime' | 'record_start'>
+/** a (dataset, variable, place) the targets ask for, whether or not it has an Item yet. */
+export type PlannedRef = Pick<Provenance, 'place_id' | 'dataset_id' | 'variable'>
+
+// ── status ────────────────────────────────────────────────────────────────────
+/**
+ * how much of its target an Item covers, in `erddap-places:status` (the word the erddap collections
+ * already use for `pending`):
+ *   complete  the file starts at the dataset's first time step: the whole record up to end_datetime
+ *   partial   it starts later: an older, shorter window (365 days until 2026-10-12) or a backfill under way
+ *   pending   a target with no file yet: no Item and no item link, only an entry in the collection's
+ *             `erddap-places:pending` (a link must resolve; the app reads every item link as a file)
+ */
+export type ItemStatus = 'complete' | 'partial'
+
+/** the dataset's first time step (UTC day): the provenance's record_start, else its erddap collection's temporal start. */
+export function recordStart(datasetId: string, fromProvenance?: string): string | undefined {
+  if (fromProvenance) return fromProvenance.slice(0, 10)
+  const p = join(GAZETTEER, 'erddap', datasetId, 'collection.json')
+  if (!existsSync(p)) return undefined
+  const start = JSON.parse(readFileSync(p, 'utf8')).extent?.temporal?.interval?.[0]?.[0]
+  return start ? String(start).slice(0, 10) : undefined
+}
+
+/** 'complete' or 'partial' (see ItemStatus); undefined when the dataset's record start is unknown. */
+export function itemStatus(r: ItemRef): ItemStatus | undefined {
+  const first = recordStart(r.dataset_id, r.record_start)
+  if (!first) return undefined
+  return r.start_datetime.slice(0, 10) <= first ? 'complete' : 'partial'
+}
 
 /** the Items already in stats/items/ (from an earlier run), as ItemRefs. */
 export function existingItems(dir = join(STATS, 'items')): ItemRef[] {
@@ -111,6 +140,7 @@ export function existingItems(dir = join(STATS, 'items')): ItemRef[] {
     return {
       place_id: pr['erddap-places:place_id'], dataset_id: pr['erddap-places:dataset_id'],
       variable: pr['erddap-places:variable'], start_datetime: pr.start_datetime, end_datetime: pr.end_datetime,
+      ...(pr['erddap-places:record_start'] ? { record_start: pr['erddap-places:record_start'] } : {}),
     }
   }).filter((r) => r.place_id && r.dataset_id && r.variable)
 }
@@ -192,6 +222,8 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
   const href    = statsHref(p.dataset_id, p.variable, p.place_id)
   const parquet = statsPath(p.dataset_id, p.variable, p.place_id)
   const rel     = (h: string) => h.replace(/^\.\//, '../../')      // items/ is two levels under stats/
+  const status  = itemStatus(p)
+  const first   = recordStart(p.dataset_id, p.record_start)
   const assets: Record<string, any> = {
     data: {
       href : rel(href),
@@ -230,6 +262,8 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
       'erddap-places:place_id'    : p.place_id,
       'erddap-places:dataset_id'  : p.dataset_id,
       'erddap-places:variable'    : p.variable,
+      ...(status ? { 'erddap-places:status': status } : {}),
+      ...(first  ? { 'erddap-places:record_start': first } : {}),
       'erddap-places:categorical' : p.categorical,
       'erddap-places:mask_cells'  : p.mask_cells,
       'erddap-places:lobes'       : p.lobes,
@@ -253,7 +287,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
 }
 
 // ── collection ────────────────────────────────────────────────────────────────
-export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
+export function buildCollection(provs: ItemRef[], places: Map<string, Place>, planned: PlannedRef[] = []) {
   const boxes = provs.map((p) => places.get(p.place_id)!.bbox)
   const bbox  = [
     Math.min(...boxes.map((b) => b[0])), Math.min(...boxes.map((b) => b[1])),
@@ -262,6 +296,12 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
   const start = provs.map((p) => p.start_datetime).sort()[0]
   const end   = provs.map((p) => p.end_datetime).sort().slice(-1)[0]
   const datasets = [...new Set(provs.map((p) => p.dataset_id))]
+  const key      = (r: PlannedRef) => itemId(r.dataset_id, r.variable, r.place_id)
+  const status   = new Map(provs.map((p) => [key(p), itemStatus(p)]))
+  const have     = new Set(status.keys())
+  const pending  = [...new Map(planned.filter((r) => !have.has(key(r)) && places.has(r.place_id)).map((r) => [key(r), r])).values()]
+    .sort((a, b) => key(a).localeCompare(key(b)))
+  const count    = (s: ItemStatus) => [...status.values()].filter((x) => x === s).length
   return {
     type        : 'Collection',
     id          : 'stats',
@@ -270,8 +310,11 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
     title       : 'Precomputed place statistics',
     description :
       'Precomputed statistics of ERDDAP grid variables over the gazetteer places: one Parquet file ' +
-      'per (dataset, variable, place), covering the last 365 days (or the dataset\'s full extent if ' +
-      'shorter) for the daily and 8-day grids, and the full record for the monthly sanctuaries series. Each file is produced by exactly the code the browser app runs live — the place ' +
+      'per (dataset, variable, place), covering the dataset\'s full record. A long backfill fills in ' +
+      'over several daily runs, so each item link and Item says how far it has got in ' +
+      'erddap-places:status (complete: from the first time step; partial: a later start, still being ' +
+      'backfilled), and erddap-places:pending lists the targets with no file yet. Each file is ' +
+      'produced by exactly the code the browser app runs live — the place ' +
       'polygon masks the dataset\'s own grid (cell centre inside, partial-area weight on the ' +
       'boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a ' +
       'precomputed row and a live in-browser row agree. Use these when you want the answer now; run ' +
@@ -288,7 +331,11 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
       'erddap-places:dataset_id': datasets,
       'erddap-places:variable'  : [...new Set(provs.map((p) => p.variable))],
       'erddap-places:place_id'  : [...new Set(provs.map((p) => p.place_id))].sort(),
+      'erddap-places:status'    : (['complete', 'partial'] as const).filter((s) => count(s) > 0),
     },
+    // how far the backfill has got: Items by status, and the targets that have no file yet
+    'erddap-places:item_counts': { complete: count('complete'), partial: count('partial'), pending: pending.length },
+    'erddap-places:pending'    : pending.map((r) => ({ id: key(r), dataset_id: r.dataset_id, variable: r.variable, place_id: r.place_id })),
     // the continuous (stats_daily) schema; categorical items carry their own table:columns
     'table:columns': DAILY_COLUMNS,
     assets: {
@@ -315,9 +362,10 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>) {
       ...datasets.flatMap((d) => { const v = datasetVia(d); return v ? [{ ...v, rel: 'via', type: 'text/html' }] : [] }),
       ...provs.map((p) => ({
         rel  : 'item',
-        href : `./items/${itemId(p.dataset_id, p.variable, p.place_id)}.json`,
+        href : `./items/${key(p)}.json`,
         type : 'application/geo+json',
         title: `${p.place_id} — ${p.variable}`,
+        ...(status.get(key(p)) ? { 'erddap-places:status': status.get(key(p)) } : {}),
       })),
     ],
   }
@@ -331,13 +379,15 @@ const writeJson = (path: string, o: unknown) => {
 
 /**
  * write the Items of `only` (default: every one of `provs`), then the thumbnail and the collection over
- * `provs` plus the earlier items in stats/items/ that `keep` accepts. Returns the files written, Items
- * first and collection.json last (the order publish.ts uploads them in).
+ * `provs` plus the earlier items in stats/items/ that `keep` accepts; the `planned` targets without an
+ * Item are listed as pending. Returns the files written, Items first and collection.json last (the
+ * order publish.ts uploads them in).
  */
 export function writeStac(
   provs: Provenance[], places: Map<string, Place>, titles: Map<string, string>,
   keep: (dataset: string, variable: string) => boolean = () => false,
   only: Provenance[] = provs,
+  planned: PlannedRef[] = [],
 ): string[] {
   // the items written now, then the earlier ones a partial run (--dataset / --place) did not touch
   const all = mergeItems(provs, existingItems(), keep).filter((r) => places.has(r.place_id))
@@ -350,7 +400,7 @@ export function writeStac(
   }
   // the thumbnail before the collection: the collection records its size and checksum
   writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))
-  writeJson(join(STATS, 'collection.json'), buildCollection(all, places))
+  writeJson(join(STATS, 'collection.json'), buildCollection(all, places, planned))
   linkFromCatalog()
   return [...written, join(STATS, THUMB), join(STATS, 'collection.json')]
 }

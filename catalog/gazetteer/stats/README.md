@@ -7,7 +7,10 @@ precipitation, VGPM NPP over the 18 `NMS:*` places). `DAYS = 'all'` in `precompu
 until 2026-10-12 the daily and 8-day grids covered only the last 365 days. Places outside an ocean
 model's domain (the Great Lakes, Mallows Bay) get a valid, empty file. Published at
 `https://storage.oceanmetrics.io/gazetteer/stats/`, refreshed daily (each file is published as soon
-as it is computed, so a long backfill fills in over several days).
+as it is computed, so a long backfill fills in over several days). Until it is done, each item
+link and Item says how far it has got in `erddap-places:status`: `complete` when the file starts at
+the dataset's first time step, and `partial` when it starts later. `erddap-places:pending` in
+`collection.json` lists the targets with no file yet, and `erddap-places:item_counts` totals all three.
 
 These are the same numbers the [browser app](https://oceanmetrics.io/erddap-places/) computes live:
 the place polygon masks the dataset's own grid (a cell is in when its **centre** falls inside, and

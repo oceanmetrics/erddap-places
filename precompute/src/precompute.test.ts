@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, provenanceAxes, statsHref, window, EXTENT_ATTEMPTS } from './stats'
 import { lobeAxes, parseProvenance } from '../../app/src/lib/precomputed'
 import { placeLobes, plainPlace } from '../../app/src/lib/gazetteer'
-import { buildCollection, buildItem, datasetProviders, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
+import { buildCollection, buildItem, datasetProviders, itemStatus, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
 import { TARGETS, placesFor } from './targets'
 import { readFileSync, rmSync } from 'node:fs'
@@ -282,6 +282,47 @@ describe('buildCollection', () => {
     expect(col['table:columns']).toBe(DAILY_COLUMNS)
     expect(col.stac_extensions.join(' ')).toContain('table')
     expect(col.stac_extensions.join(' ')).not.toContain('datacube')
+  })
+})
+
+describe('erddap-places:status: how far the backfill has got', () => {
+  // dhw_5km's record starts 1985-04-01 (its erddap collection); the fixture is a 365-day file
+  const old  = prov(SMALL, 'CRW_SST', false)
+  const full = { ...prov(PMNM, 'CRW_SST', false), start_date: '1985-04-01', start_datetime: '1985-04-01T12:00:00Z', record_start: '1985-04-01' }
+  it('a file starting after the record start is partial, one starting at it complete', () => {
+    expect(itemStatus(old)).toBe('partial')
+    expect(itemStatus(full)).toBe('complete')
+  })
+  it('without record_start in the provenance (files before 2026-10-13), the dataset collection\'s start decides', () => {
+    expect(itemStatus({ ...full, record_start: undefined })).toBe('complete')
+    expect(itemStatus({ ...old, dataset_id: 'no_such_dataset' })).toBeUndefined()
+  })
+  it('the provenance\'s record_start wins over the collection\'s (the server\'s record can move)', () => {
+    expect(itemStatus({ ...old, record_start: '2025-09-15' })).toBe('complete')
+  })
+  it('the Item carries its status and the record start', () => {
+    const item = buildItem(old, SMALL, 'CRW 5km') as any
+    expect(item.properties['erddap-places:status']).toBe('partial')
+    expect(item.properties['erddap-places:record_start']).toBe('1985-04-01')
+  })
+  it('the collection: a status on each item link, counts, and the targets without a file as pending', () => {
+    const places  = new Map([[SMALL.place_id, SMALL], [PMNM.place_id, PMNM]])
+    const planned = [
+      { dataset_id: 'dhw_5km', variable: 'CRW_SST', place_id: 'NMS:GRNMS' },     // has a file (partial)
+      { dataset_id: 'dhw_5km', variable: 'CRW_SST', place_id: 'NMS:PMNM' },      // has a file (complete)
+      { dataset_id: 'dhw_5km', variable: 'CRW_BAA', place_id: 'NMS:PMNM' },      // no file yet
+      { dataset_id: 'dhw_5km', variable: 'CRW_BAA', place_id: 'NMS:PMNM' },      // listed once
+      { dataset_id: 'dhw_5km', variable: 'CRW_BAA', place_id: 'NMS:GONE' },      // not a place any more
+    ]
+    const col = buildCollection([old, full], places, planned) as any
+    const links = col.links.filter((l: any) => l.rel === 'item')
+    expect(links.map((l: any) => l['erddap-places:status'])).toEqual(['partial', 'complete'])
+    expect(col['erddap-places:item_counts']).toEqual({ complete: 1, partial: 1, pending: 1 })
+    expect(col['erddap-places:pending']).toEqual([
+      { id: 'dhw_5km_CRW_BAA_NMS-PMNM', dataset_id: 'dhw_5km', variable: 'CRW_BAA', place_id: 'NMS:PMNM' }])
+    expect(col.summaries['erddap-places:status']).toEqual(['complete', 'partial'])
+    // a pending target is never an item link: the app reads every link as a file that exists
+    expect(links.map((l: any) => l.href)).not.toContain('./items/dhw_5km_CRW_BAA_NMS-PMNM.json')
   })
 })
 

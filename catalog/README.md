@@ -135,11 +135,17 @@ curl -sSLo runner.tgz https://github.com/actions/runner/releases/download/v$V/ac
 tar xzf runner.tgz && rm runner.tgz
 ./config.sh --unattended --url https://github.com/oceanmetrics/erddap-places --token <token> \
   --name macmini --labels macmini --work _work
-./svc.sh install && ./svc.sh start      # a LaunchAgent: needs bbest logged in on the mini's desktop
-# no desktop login (headless): run it in tmux instead, and restart it after a reboot
-tmux new-session -d -s om -n runner 2>/dev/null || tmux new-window -t om -n runner
-tmux send-keys -t om:runner 'cd ~/actions-runner/erddap-places && ./run.sh' Enter
+./svc.sh install && ./svc.sh start      # a LaunchAgent: it runs in bbest's desktop session
 ```
+
+Since 2026-10-13 the runner is that LaunchAgent, and the mini logs bbest in automatically, so the runner
+comes back after a reboot (until then it ran in tmux). A LaunchDaemon would not do: Colima's vz VM
+does not start outside a desktop session. Two macOS privacy (TCC) grants are needed, or Colima hangs at
+start and obis-h3 fails with exit 5. Both were given on 2026-10-13, on the mini's screen:
+
+- **Allow** the removable-volume prompt for the runner's `externals/node24/bin/node`, for
+  `/Volumes/msens_big`. A runner upgrade that changes the node path may ask again.
+- **Full Disk Access** for `limactl` (System Settings → Privacy & Security).
 
 Re-register msens (e.g. after the VM is rebuilt or the runner was removed in Settings → Actions → Runners):
 

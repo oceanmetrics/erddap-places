@@ -307,6 +307,8 @@ export interface Provenance {
   end_date     : string
   start_datetime: string
   end_datetime  : string
+  /** the dataset's first time step (UTC day) when this file was computed: the file is the full record when start_date is it */
+  record_start ?: string
   lobes        : number
   mask_cells   : number
   /**
@@ -412,7 +414,7 @@ export async function computeOne(
   const prov: Provenance = {
     place_id: place.place_id, dataset_id: ds.datasetId, variable: v.name, categorical: v.categorical,
     start_date: win.start, end_date: win.end,
-    start_datetime: t(win.start), end_datetime: t(win.end),
+    start_datetime: t(win.start), end_datetime: t(win.end), record_start: day(ext.start),
     lobes: lobes.length, mask_cells: cells.length, axes: provenanceAxes(masks),
     ...(urls.length <= GRIDDAP_URLS_MAX ? { griddap_urls: urls } : {}),
     griddap_url_templates: masks.map((m) => urlFor(m, '{t0}', '{t1}')),

@@ -43,8 +43,22 @@ under `items/`. An Item gives you:
   requests behind the file (one template per lobe; `griddap_urls` too when there are ≤ 24). The
   provenance JSON's `griddap_chunks` fills `{t0}` / `{t1}` for every request
 - `properties.start_datetime` / `end_datetime` — the covered window (`datetime` is `null`)
+- `properties.erddap-places:status` — `complete` (the file starts at the dataset's first time step:
+  the whole record up to `end_datetime`) or `partial` (it starts later: an older 365-day window, or a
+  backfill still under way); `erddap-places:record_start` is that first time step
 - `geometry` — the place's **lobe bounding boxes**, not its outline (the outlines run to ~40,000
   vertices; get the real polygon from [`../places/places.parquet`](../places/collection.json))
+
+### How far the backfill has got
+
+The full record of a daily grid takes several daily runs to fill in, a little at a time so the ERDDAP
+servers are not overloaded. `collection.json` says where it stands without opening every Item:
+
+- each `rel: "item"` link carries the Item's `erddap-places:status` (`complete` or `partial`)
+- `erddap-places:item_counts` — `{complete, partial, pending}`
+- `erddap-places:pending` — the targets with **no file yet** (`id`, `dataset_id`, `variable`,
+  `place_id`). They have no item link, because every item link resolves to a file. Use the live
+  griddap recipe for those, and for the earlier dates of a `partial` file
 
 ## 3. Continuous vs categorical
 

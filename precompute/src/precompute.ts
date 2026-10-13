@@ -71,6 +71,13 @@ async function main() {
   const inTargets = new Set(TARGETS.map((t) => `${t.dataset}/${t.variable}`))
   const keep = (d: string, v: string) => inTargets.has(`${d}/${v}`)
 
+  // every (dataset, variable, place) the targets ask for, whatever --dataset / --place pick: the
+  // collection lists those without an Item yet as pending
+  const planned = TARGETS.flatMap((t) => {
+    const ds = loadDataset(t.dataset), v = variableOf(ds, t.variable)
+    return placesFor(t, places.map((p) => p.place_id)).map((place_id) => ({ dataset_id: ds.datasetId, variable: v.name, place_id }))
+  })
+
   // every (dataset, variable, place) of the targets, in target order
   const jobs: Job[] = []
   for (const t of TARGETS.filter((t) => !opts.datasets.length || opts.datasets.includes(t.dataset))) {
@@ -122,7 +129,7 @@ async function main() {
       catch (e) { if (e instanceof StopRequested) { log(' stopped at the deadline; resumes next run'); return 'deferred' } throw e }
       provs.push(prov)
       const parquet = statsPath(prov.dataset_id, prov.variable, prov.place_id)
-      const stac = writeStac(provs, byId, titles, keep, [prov])
+      const stac = writeStac(provs, byId, titles, keep, [prov], planned)
       void pub.publish([parquet, parquet.replace(/\.parquet$/, '.provenance.json'), ...stac])
       return 'done'
     },
@@ -132,7 +139,7 @@ async function main() {
 
   if (!provs.length && !failed.length && !res.deferred.length) throw new Error('nothing computed')
   // the whole collection once more (also the --items-only path)
-  if (provs.length) writeStac(provs, byId, titles, keep)
+  if (provs.length) writeStac(provs, byId, titles, keep, provs, planned)
   console.log(`\n${res.done.length} item(s) computed, ${provs.length} in ${join(STATS, 'items')} + collection.json` +
               (pub.enabled ? `; ${pub.stats.files} file(s) uploaded, ${pub.stats.failures} upload failure(s)` : ''))
   console.log(`parquet: ${(provs.reduce((s, p) => s + p.bytes, 0) / 1e6).toFixed(1)} MB, ${provs.reduce((s, p) => s + p.rows, 0)} rows`)

@@ -53,6 +53,9 @@ jobs:
     env:
       AWS_DEFAULT_REGION: us-east-1
       BASE: https://storage.oceanmetrics.io/gazetteer
+      # the Python uv fetches: left to itself it took the newest, 3.15.0, which has no pyarrow wheel, and
+      # building pyarrow from source failed (run 38281168301, 2026-10-13). The lock has wheels to 3.14
+      UV_PYTHON: '3.13'
     steps:
       - uses: actions/checkout@v4
 
