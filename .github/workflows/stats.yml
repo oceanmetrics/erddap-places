@@ -94,11 +94,22 @@ jobs:
         id: precompute
         continue-on-error: true
         working-directory: precompute
+        shell: bash
         env:
           # each finished (dataset, variable, place) is uploaded at once (precompute/src/publish.ts)
           PRECOMPUTE_PUBLISH: ${{ (github.event_name == 'schedule' || inputs.publish) && 's3://oceanmetrics.io-public/gazetteer' || '' }}
-        # caffeinate: a run is up to PRECOMPUTE_HOURS long; macOS must not idle-sleep under it
-        run: ${{ runner.os == 'macOS' && 'caffeinate -i ' || '' }}npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }}
+          # the live progress log on the host, removed by the last step (precompute/heartbeat.sh)
+          PROGRESS_LOG: ${{ github.workspace }}/../stats-progress.log
+        # caffeinate: a run is up to PRECOMPUTE_HOURS long; macOS must not idle-sleep under it.
+        # the output also goes, each line stamped, to PROGRESS_LOG, with a heartbeat every 5 min (quiet
+        # time, counts, whether each ERDDAP server answers): the job log on GitHub can lag by hours
+        run: |
+          set -o pipefail
+          : > "$PROGRESS_LOG"
+          ./heartbeat.sh "$PROGRESS_LOG" & hb=$!
+          trap 'kill $hb 2>/dev/null' EXIT
+          ${{ runner.os == 'macOS' && 'caffeinate -i ' || '' }}npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }} 2>&1 \
+            | tee >(perl -MPOSIX -ne 'BEGIN { $| = 1 } print strftime("%H:%M:%SZ ", gmtime), $_' >> "$PROGRESS_LOG")
 
       - name: validate the catalog
         run: rashid check catalog/gazetteer
@@ -156,3 +167,7 @@ jobs:
       - name: memory after the run
         if: always()
         run: free -g 2>/dev/null || vm_stat | head -5
+      # the job log holds the same lines; the progress log is only for watching a run live
+      - name: remove the progress log
+        if: always()
+        run: rm -f "${{ github.workspace }}/../stats-progress.log"
