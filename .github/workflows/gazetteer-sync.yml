@@ -7,14 +7,14 @@
 # published next to the collection; a layer that serves no edit date (BOEM Pacific map service) is compared on its
 # payload checksum, the NOAA zip on its HTTP validators. nothing changed = nothing rebuilt = nothing published.
 #
-# runs on the self-hosted runner `msens` like stats.yml (see catalog/README.md "Where it runs"): the S3 sync uses the
-# host's AWS profile (~ubuntu/.aws); the repository holds no AWS secrets, and if AWS_ACCESS_KEY_ID /
-# AWS_SECRET_ACCESS_KEY are ever added they take precedence (same fallback as stats.yml).
+# runs on the self-hosted runner `macmini` like stats.yml (see catalog/README.md "Where it runs"; msens until
+# 2026-10-13): the S3 sync uses the host's AWS profile (~/.aws); the repository holds no AWS secrets, and if
+# AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are ever added they take precedence (same fallback as stats.yml).
 #
-# the host needs, beyond stats.yml's tools: uv (installed below with pip), tippecanoe (built below when missing; needs
-# gcc, make, libsqlite3-dev and zlib1g-dev, none of which this workflow can install without sudo: install them once
-# on msens) and portolan (uv tool). collections must already be integrated in catalog/gazetteer/<slug>/ (see
-# catalog/staging/RUNBOOK.md); a collection that is not is reported and skipped.
+# the host needs, beyond stats.yml's tools: uv and tippecanoe from Homebrew (`brew install uv tippecanoe`, once;
+# this workflow does not install system packages) and portolan + rashid (uv tools, installed below). collections
+# must already be integrated in catalog/gazetteer/<slug>/ (see catalog/staging/RUNBOOK.md); a collection that is
+# not is reported and skipped.
 name: gazetteer-sync
 
 on:
@@ -41,14 +41,15 @@ permissions:
   contents: write                  # commits the rebuilt collections back to main (git stays the source of truth)
 
 # one gazetteer writer at a time: stats.yml syncs the whole catalog/gazetteer/ checkout to S3 with --delete, so a
-# publish that overlaps it (or a checkout that predates our commit) would remove or revert collections
+# publish that overlaps it (or a checkout that predates our commit) would remove or revert collections. Both now
+# run on the one macmini runner as well, so this only decides which waits for the other
 concurrency:
   group: stats
   cancel-in-progress: false
 
 jobs:
   sync:
-    runs-on: [self-hosted, msens]
+    runs-on: [self-hosted, macmini]
     timeout-minutes: 90
     env:
       AWS_DEFAULT_REGION: us-east-1
@@ -59,31 +60,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Homebrew's uv and tippecanoe; uv tools (portolan, rashid) land in ~/.local/bin
       - name: host tools
         run: |
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          python3 --version
-          aws --version
-          gcc --version | head -1
-          make --version | head -1
+          echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin"  >> "$GITHUB_PATH"
+          export PATH="/opt/homebrew/bin:$HOME/.local/bin:$PATH"
+          for t in python3 aws uv tippecanoe; do
+            command -v "$t" >/dev/null || { echo "::error::$t is not on the runner host (brew install $t)"; exit 1; }
+          done
+          python3 --version; aws --version; uv --version; tippecanoe --version
 
-      # uv fetches Python >= 3.11 itself (the host python3 is 3.10); portolan and rashid are python tools
-      - name: install uv, portolan and rashid
+      # uv fetches the Python the catalog's tools run on itself (UV_PYTHON above)
+      - name: install portolan and rashid
         run: |
-          python3 -m pip install --user --upgrade --quiet uv rashid
-          export PATH="$HOME/.local/bin:$PATH"
           uv tool install --upgrade portolan-cli
-          uv --version; portolan --version; rashid --version
-
-      - name: install tippecanoe (once; kept in ~/.local)
-        run: |
-          export PATH="$HOME/.local/bin:$PATH"
-          if ! command -v tippecanoe >/dev/null; then
-            git clone --depth 1 --branch 2.79.0 https://github.com/felt/tippecanoe.git "$RUNNER_TEMP/tippecanoe"
-            make -C "$RUNNER_TEMP/tippecanoe" -j"$(nproc)"
-            make -C "$RUNNER_TEMP/tippecanoe" install PREFIX="$HOME/.local"
-          fi
-          tippecanoe --version
+          uv tool install --upgrade rashid
+          portolan --version; rashid --version
 
       - name: unit tests (rules, status overlay, antimeridian, licence and attribution, PMTiles metadata)
         working-directory: catalog
@@ -146,7 +139,6 @@ jobs:
       - name: integrate the rebuilt collections
         if: ${{ steps.build.outputs.built != '' }}
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
           cd catalog/gazetteer
           for b in ${{ steps.build.outputs.built }}; do
             slug=${b%%:*}; want=${b##*:}
@@ -178,7 +170,7 @@ jobs:
           AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # no secrets: fall back to the host's AWS profile (IAM user on msens)
+          # no secrets: fall back to the host's AWS profile (the mini's default profile)
           if [ -z "$AWS_ACCESS_KEY_ID" ]; then
             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
@@ -190,13 +182,14 @@ jobs:
           done
           # the bucket has a second publisher (oceanmetrics/places): merge this run's entries into
           # the PUBLISHED root files instead of overwriting them from the checkout
-          aws s3 cp s3://oceanmetrics.io-public/gazetteer/versions.json /tmp/pub_versions.json
-          aws s3 cp s3://oceanmetrics.io-public/gazetteer/catalog.json  /tmp/pub_catalog.json
+          aws s3 cp s3://oceanmetrics.io-public/gazetteer/versions.json "$RUNNER_TEMP/pub_versions.json"
+          aws s3 cp s3://oceanmetrics.io-public/gazetteer/catalog.json  "$RUNNER_TEMP/pub_catalog.json"
           python3 - "${{ steps.build.outputs.built }}" <<'PYEOF'
-          import datetime, json, sys
+          import datetime, json, os, sys
+          tmp = os.environ["RUNNER_TEMP"]
           built = [b.split(":")[0] for b in sys.argv[1].split()]
           now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-          root = json.load(open("/tmp/pub_versions.json"))
+          root = json.load(open(f"{tmp}/pub_versions.json"))
           for slug in built:
               led = json.load(open(f"catalog/gazetteer/{slug}/versions.json"))
               cur = next(v for v in led["versions"] if v["version"] == led["current_version"])
@@ -205,17 +198,17 @@ jobs:
                   "asset_count": len(cur["assets"]),
                   "total_size_bytes": sum(a["size_bytes"] for a in cur["assets"].values())}
           root["updated"] = now
-          json.dump(root, open("/tmp/pub_versions.json", "w"), indent=2)
-          cat = json.load(open("/tmp/pub_catalog.json"))
+          json.dump(root, open(f"{tmp}/pub_versions.json", "w"), indent=2)
+          cat = json.load(open(f"{tmp}/pub_catalog.json"))
           have = {l.get("href") for l in cat["links"]}
           for slug in built:
               href = f"./{slug}/collection.json"
               if href not in have:
                   cat["links"].append({"rel": "child", "href": href, "type": "application/json", "title": slug})
-          json.dump(cat, open("/tmp/pub_catalog.json", "w"), indent=2)
+          json.dump(cat, open(f"{tmp}/pub_catalog.json", "w"), indent=2)
           PYEOF
-          aws s3 cp /tmp/pub_versions.json s3://oceanmetrics.io-public/gazetteer/versions.json --content-type application/json
-          aws s3 cp /tmp/pub_catalog.json  s3://oceanmetrics.io-public/gazetteer/catalog.json  --content-type application/json
+          aws s3 cp "$RUNNER_TEMP/pub_versions.json" s3://oceanmetrics.io-public/gazetteer/versions.json --content-type application/json
+          aws s3 cp "$RUNNER_TEMP/pub_catalog.json"  s3://oceanmetrics.io-public/gazetteer/catalog.json  --content-type application/json
 
       - name: fail the job if a collection failed to build
         if: ${{ steps.build.outcome == 'failure' }}

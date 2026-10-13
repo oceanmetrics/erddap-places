@@ -111,12 +111,14 @@ incremental live on that host:
 - host tools from Homebrew: node, python3, `uv` (rashid is a uv tool), aws cli, duckdb. The precompute
   runs under `caffeinate -i`.
 - S3 credentials: the host's AWS profile (`~/.aws`, `default`). The repository has **no** AWS secrets.
-- `obis-h3.yml` also runs here (since 2026-10-12; see below). `gazetteer-sync.yml` stays on the
-  **msens** runner (`msens`, labels `self-hosted, linux, x64, msens`,
-  `/share/github/oceanmetrics/actions-runner`, systemd service
-  `actions.runner.oceanmetrics-erddap-places.msens`, user `ubuntu`).
-- The runner takes one job at a time: a stats run and an obis-h3 run queue behind each other. A stats
-  run can be cancelled to let obis-h3 through and re-dispatched later; it resumes from its chunks.
+- `obis-h3.yml` (since 2026-10-12; see below) and `gazetteer-sync.yml` (since 2026-10-13) run here
+  too, so every self-hosted workflow is on the mini. gazetteer-sync takes uv and tippecanoe from
+  Homebrew, and portolan and rashid as uv tools.
+- The runner takes one job at a time: stats, obis-h3 and gazetteer-sync runs queue behind each other.
+  A stats run can be cancelled to let obis-h3 through and re-dispatched later; it resumes from its
+  chunks. A stats run starts no new work after 21 h, so the 24 h day leaves room for Monday's
+  gazetteer-sync (07:43 UTC). After the first full-record backfill, a daily run fetches only the new
+  time steps.
 
 Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
 
@@ -147,21 +149,21 @@ start and obis-h3 fails with exit 5. Both were given on 2026-10-13, on the mini'
   `/Volumes/msens_big`. A runner upgrade that changes the node path may ask again.
 - **Full Disk Access** for `limactl` (System Settings → Privacy & Security).
 
-Re-register msens (e.g. after the VM is rebuilt or the runner was removed in Settings → Actions → Runners):
+The old **msens** runner (`msens`, labels `self-hosted, linux, x64, msens`,
+`/share/github/oceanmetrics/actions-runner`, systemd service
+`actions.runner.oceanmetrics-erddap-places.msens`, user `ubuntu`) has no workflow since 2026-10-13.
+msens still serves h3t, which obis-h3 swaps over ssh. To retire the runner (by hand):
 
 ```bash
-# on the laptop (repo admin)
-gh api -X POST repos/oceanmetrics/erddap-places/actions/runners/registration-token --jq .token
+# on the laptop (repo admin): a removal token
+gh api -X POST repos/oceanmetrics/erddap-places/actions/runners/remove-token --jq .token
 # on msens, in /share/github/oceanmetrics/actions-runner
 sudo ./svc.sh stop && sudo ./svc.sh uninstall && ./config.sh remove --token <token>
-./config.sh --unattended --url https://github.com/oceanmetrics/erddap-places --token <token> \
-  --name msens --labels self-hosted,linux,x64,msens --work _work
-sudo ./svc.sh install ubuntu && sudo ./svc.sh start
 ```
 
 Run by hand: prefer `gh workflow run stats -R oceanmetrics/erddap-places -f dataset=<id> -f publish=false`
 (blank `dataset` = every target). The runner's checkout under `actions-runner/_work/` is **not** a
-place to work in (it is wiped by the next run); for a manual precompute on msens `git clone` the repo
+place to work in (it is wiped by the next run); for a manual precompute on the mini `git clone` the repo
 elsewhere and follow "Precomputed statistics" above, then the `aws s3 sync` commands from the workflow.
 
 #### Monthly obis-h3 refresh (`obis-h3.yml`)

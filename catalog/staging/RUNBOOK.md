@@ -116,12 +116,12 @@ duckdb -c "SELECT place_id, status, status_date FROM read_parquet('https://stora
 
 ## 8. Turn on the weekly sync
 
-`.github/workflows/gazetteer-sync.yml` (Mondays 07:43 UTC) runs on the `msens` self-hosted runner. Before the first
-run, once on msens: `sudo apt-get install -y build-essential libsqlite3-dev zlib1g-dev` (the workflow builds
-tippecanoe 2.79.0 from source into `~/.local`; there is no tippecanoe on msens yet). It also needs a branch that
+`.github/workflows/gazetteer-sync.yml` (Mondays 07:43 UTC) runs on the `macmini` self-hosted runner (msens until
+2026-10-13). The host needs uv and tippecanoe from Homebrew (`brew install uv tippecanoe`; both are installed on the
+mini); the workflow installs portolan and rashid as uv tools itself. It also needs a branch that
 `github-actions[bot]` may push to (it commits the rebuilt collections to `main`; if `main` is protected, change the
 commit step to open a PR). S3 credentials: the repository has no AWS secrets; like `stats.yml` the publish step uses the
-msens host profile and takes `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repository secrets if they are ever added.
+runner host's profile and takes `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repository secrets if they are ever added.
 
 ```bash
 git push

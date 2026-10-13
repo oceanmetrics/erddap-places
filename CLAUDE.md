@@ -139,7 +139,7 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   `ERDDAP_OFFLINE=1` tests, builds with `VITE_BASE=/erddap-places/`, checks the size budget, and
   deploys to GitHub Pages.
 - `.github/workflows/stats.yml`: runs daily on the **self-hosted `macmini` runner** (msens until
-  2026-10-12; `gazetteer-sync.yml` stays there). It precomputes the **full record**
+  2026-10-12; `gazetteer-sync.yml` moved there too on 2026-10-13, so no workflow runs on msens). It precomputes the **full record**
   into `catalog/gazetteer/stats/`, incrementally: each chunk's daily rows are kept in
   `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. Requests
   stay under 100k values (extractr's `n_max_vals_per_req`); `precompute/src/schedule.ts` runs one lane

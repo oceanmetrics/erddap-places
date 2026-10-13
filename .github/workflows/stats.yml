@@ -126,7 +126,7 @@ jobs:
           AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          # no secrets: fall back to the host's AWS profile (IAM user on msens)
+          # no secrets: fall back to the host's AWS profile (the mini's default profile)
           if [ -z "$AWS_ACCESS_KEY_ID" ]; then
             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
