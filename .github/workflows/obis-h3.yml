@@ -142,9 +142,10 @@ jobs:
           ssh -o BatchMode=yes -o ConnectTimeout=30 msens \
             "cd /share/github/marinebon/obisindicators && ./data-raw/deploy_obis_h3.sh --skip-sync --skip-build --store '$remote' --yes"
 
-      # the wrapper writes log=, release= and store= (host paths) to $GITHUB_OUTPUT
+      # the wrapper writes log=, release= and store= (host paths) to $GITHUB_OUTPUT; a dry run (or a
+      # failure before the refresh starts) writes no log=, and upload-artifact errors on an empty path
       - name: upload the log as an artifact
-        if: always()
+        if: always() && steps.refresh.outputs.log != ''
         uses: actions/upload-artifact@v4
         with:
           name: obis-h3-refresh-log
