@@ -13,6 +13,7 @@ One Apps Script serves all the Ocean Metrics apps. Each app's payload carries `a
 |---|---|---|
 | `erddap-places` | `oceanmetrics/erddap-places` | `main` |
 | `obis-hex` | `oceanmetrics/obis-hex` | `main` |
+| `oceanmetrics-atlas` | `oceanmetrics/atlas` | `main` |
 
 An unknown `app` is refused. To add an app, add a row to `APPS`, give the token that repo, and re-paste.
 **marinebon.org is no longer served here** (2026-10-12): it has its own copy of the script, Sheet, deployment
@@ -72,7 +73,7 @@ Each step reports into the row's `status` column, so a missing token or a mail f
       - URL: https://script.google.com/macros/s/AKfycbwWzQTsmJfevqrQlOpHeE_gJ3jB5SZ1qAghffRs9uwN8C3EyCrd4Igsa8SYws1iAhyDGg/exec
    - marinebon.org's deployment is recorded in its own runbook (`marinebon/marinebon.github.io`
      `docs/feedback.md`).
-5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`)
+5. **Give each app the URL**: in each repo (`oceanmetrics/erddap-places`, `oceanmetrics/obis-hex`, `oceanmetrics/atlas`)
    add the Actions variable `VITE_FEEDBACK_URL` under
    Settings > Secrets and variables > Actions > Variables (a variable, not a secret: it ships in the
    public bundle). In erddap-places `.github/workflows/pages.yml` already passes it to the build:

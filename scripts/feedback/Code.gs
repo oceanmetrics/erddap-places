@@ -34,6 +34,7 @@
 var APPS = {
   "erddap-places": { repo: "oceanmetrics/erddap-places", branch: "main" },
   "obis-hex": { repo: "oceanmetrics/obis-hex", branch: "main" },
+  "oceanmetrics-atlas": { repo: "oceanmetrics/atlas", branch: "main" },
 };
 var FEEDBACK_HEADER = [
   "ts",
