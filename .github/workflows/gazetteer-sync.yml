@@ -178,7 +178,8 @@ jobs:
           # only the rebuilt collections plus the two catalog-level files; never --delete the rest of the gazetteer
           for b in ${{ steps.build.outputs.built }}; do
             slug=${b%%:*}
-            aws s3 sync "catalog/gazetteer/$slug/" "s3://oceanmetrics.io-public/gazetteer/$slug/" --delete --exclude '.portolan/*'
+            # h3/ is the place x H3 membership oceanmetrics/places builds from the published parquet: never --delete it
+            aws s3 sync "catalog/gazetteer/$slug/" "s3://oceanmetrics.io-public/gazetteer/$slug/" --delete --exclude '.portolan/*' --exclude 'h3/*'
           done
           # the bucket has a second publisher (oceanmetrics/places): merge this run's entries into
           # the PUBLISHED root files instead of overwriting them from the checkout
