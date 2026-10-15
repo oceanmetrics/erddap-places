@@ -48,6 +48,9 @@ under `items/`. An Item gives you:
   backfill still under way); `erddap-places:record_start` is that first time step
 - `geometry` — the place's **lobe bounding boxes**, not its outline (the outlines run to ~40,000
   vertices; get the real polygon from [`../places/places.parquet`](../places/collection.json))
+- `bbox` — the union of those lobes; for a place across ±180 it crosses with west > east
+  (RFC 7946 §5): `NMS:PMNM` is about `[177.8, 19.2, -161.0, 31.8]`, not `[-180, …, 180, …]`.
+  The collection extent follows the same rule
 
 ### How far the backfill has got
 

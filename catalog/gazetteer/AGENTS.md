@@ -47,6 +47,14 @@ Full walkthrough: [`erddap/AGENTS.md`](erddap/AGENTS.md).
 See [`rasters/AGENTS.md`](rasters/AGENTS.md), [`climatology/AGENTS.md`](climatology/AGENTS.md),
 [`series/AGENTS.md`](series/AGENTS.md).
 
+## Bounding boxes across ±180
+
+Geometries are stored split at ±180, so `NMS:PMNM` has parts on both sides. Every **STAC bbox**
+(Item `bbox`, collection `extent.spatial.bbox`) and the **file-level GeoParquet `geo` bbox** cross
+the antimeridian with west > east (RFC 7946 §5): PMNM is about `[177.8, 19.2, -161.0, 31.8]`. The
+**per-row `bbox` column** of `places.parquet` stays plain min/max (PMNM: `-180 … 180`), so
+`xmin <= x AND x <= xmax` filters keep working. Fetch data per lobe (one per side), never one box.
+
 ## Collections
 
 - [`places/`](places/) — the gazetteer (GeoParquet + PMTiles).

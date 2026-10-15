@@ -205,6 +205,42 @@ export function placeLobes(place: Place): Lobe[] {
   return lobes.sort((a, b) => a.bbox[0] - b.bbox[0])
 }
 
+// ── antimeridian-aware bboxes (what the STAC metadata publishes) ──────────────
+/**
+ * The smallest [west, south, east, north] holding every box, with west > east when it crosses ±180
+ * (RFC 7946 §5, as STAC and GeoParquet read it). A box may itself cross. Longitude is a circle: the
+ * result leaves out the widest stretch no box covers, so PMNM's two lobes (177.8..180, -180..-161)
+ * give [177.8, s, -161, n] and not the band round the globe [-180, s, 180, n]. Boxes that cover every
+ * longitude give -180..180; a tie keeps the box that does not cross. Python twin: `union_bbox()` in
+ * `catalog/erin_layers/bbox.py` (same rule, same fixtures).
+ */
+export function unionBbox(boxes: ReadonlyArray<readonly number[]>): [number, number, number, number] {
+  if (!boxes.length) throw new Error('unionBbox: no boxes')
+  const s = Math.min(...boxes.map((b) => b[1])), n = Math.max(...boxes.map((b) => b[3]))
+  // the longitude spans inside [-180, 180] (a crossing box is cut in two), merged where they touch
+  const spans = boxes.flatMap(([w, , e]): Array<[number, number]> => w <= e ? [[w, e]] : [[w, 180], [-180, e]])
+    .sort((a, b) => a[0] - b[0])
+  const merged: Array<[number, number]> = []
+  for (const [a, b] of spans) {
+    const last = merged[merged.length - 1]
+    if (last && a <= last[1]) last[1] = Math.max(last[1], b)
+    else merged.push([a, b])
+  }
+  // the widest gap: round the back of the globe (last span to first) or between two spans
+  let w = merged[0][0], e = merged[merged.length - 1][1], gap = w + 360 - e
+  for (let i = 0; i + 1 < merged.length; i++) {
+    const g = merged[i + 1][0] - merged[i][1]
+    if (g > gap) { gap = g; w = merged[i + 1][0]; e = merged[i][1] }
+  }
+  return [w, s, e, n]
+}
+
+/** a place's published bbox: `unionBbox()` of its lobes, so an antimeridian place crosses instead of spanning the globe. */
+export function placeBbox(place: Place): [number, number, number, number] {
+  const lobes = placeLobes(place)
+  return lobes.length ? unionBbox(lobes.map((l) => l.bbox)) : [...place.bbox] as [number, number, number, number]
+}
+
 // ── the whole gazetteer: manifest, index, a place on demand ───────────────────
 //
 // three published files, all read from the bucket host (never the storage host: its 302 costs one

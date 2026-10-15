@@ -19,6 +19,14 @@
   Portolan (synced from here by `publish_places.sh`).
 - `build_then_now.py` — builds the Then vs Now `gazetteer/rasters/`, `climatology/`, `series/`
   collections (see below).
+- `antimeridian.py` (rule and tests in `erin_layers/bbox.py`; TypeScript twin `unionBbox()` /
+  `placeBbox()` in `app/src/lib/gazetteer.ts`, shared cases `tests/union_bbox_cases.json`) — published
+  bboxes cross ±180 with west > east (RFC 7946 §5) when the places do, never the band round the
+  globe. `geo-bbox` sets the file-level GeoParquet bbox (`build_places.R`, and `publish_places.sh`
+  after `portolan add`, which rewrites the file); `join-extent` turns portolan's two halves of a
+  crossing extent into one bbox (`publish_places.sh` with `--data`, `gazetteer-sync.yml`). The
+  per-row `bbox` column stays plain min/max. rashid 0.1.8 `PTL-DAT-005` assumes west <= east and
+  warns on a crossing extent that matches; that warning is expected for `places`.
 - `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` + Then vs Now collections).
   Validate with `rashid check catalog/gazetteer` / `portolan check catalog/gazetteer`.
 

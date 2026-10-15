@@ -4,7 +4,7 @@ import { deflateSync }                    from 'node:zlib'
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { join, dirname }                  from 'node:path'
 import type { Place }                     from '../../app/src/lib/gazetteer'
-import { placeLobes, plainPlace }         from '../../app/src/lib/gazetteer'
+import { placeBbox, placeLobes, plainPlace, unionBbox } from '../../app/src/lib/gazetteer'
 import type { Provenance }                from './stats'
 import { itemId, statsHref, statsPath }   from './stats'
 import { GAZETTEER, STATS }               from './paths'
@@ -248,7 +248,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
     id,
     collection  : 'stats',
     geometry    : lobeBoxGeometry(place),
-    bbox        : place.bbox,
+    bbox        : placeBbox(plainPlace(place)),   // west > east for an antimeridian place (PMNM)
     properties  : {
       title      : `${place.name} — ${p.variable} (${p.dataset_id})`,
       description: `Precomputed ${p.categorical ? 'per-class composition' : 'daily statistics'} of ` +
@@ -288,11 +288,8 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
 
 // ── collection ────────────────────────────────────────────────────────────────
 export function buildCollection(provs: ItemRef[], places: Map<string, Place>, planned: PlannedRef[] = []) {
-  const boxes = provs.map((p) => places.get(p.place_id)!.bbox)
-  const bbox  = [
-    Math.min(...boxes.map((b) => b[0])), Math.min(...boxes.map((b) => b[1])),
-    Math.max(...boxes.map((b) => b[2])), Math.max(...boxes.map((b) => b[3])),
-  ]
+  // the items' bboxes unioned round the globe: crosses ±180 when the places do (PMNM), never -180..180 for it
+  const bbox  = unionBbox(provs.map((p) => placeBbox(plainPlace(places.get(p.place_id)!))))
   const start = provs.map((p) => p.start_datetime).sort()[0]
   const end   = provs.map((p) => p.end_datetime).sort().slice(-1)[0]
   const datasets = [...new Set(provs.map((p) => p.dataset_id))]

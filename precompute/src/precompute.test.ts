@@ -236,6 +236,10 @@ describe('item geometry', () => {
 
 describe('buildItem', () => {
   const item = buildItem(prov(SMALL, 'CRW_SST', false), SMALL, 'CRW 5km') as any
+  it('has the place bbox, crossing 180 (west > east) for an antimeridian place', () => {
+    expect(item.bbox).toEqual([-80.92, 31.36, -80.83, 31.42])
+    expect((buildItem(prov(PMNM, 'CRW_SST', false), PMNM, 'CRW 5km') as any).bbox).toEqual([177, 19, -161, 32])
+  })
   it('is a datetime-null Item with a closed interval', () => {
     expect(item.properties.datetime).toBeNull()
     expect(item.properties.start_datetime).toBe('2025-09-15T12:00:00Z')
@@ -270,8 +274,8 @@ describe('buildCollection', () => {
     expect(col.id).toBe('stats')
     expect(col.links.filter((l: any) => l.rel === 'item')).toHaveLength(2)
   })
-  it('spans the union of the place bboxes and the full time window', () => {
-    expect(col.extent.spatial.bbox[0]).toEqual([-180, 19, 180, 32])
+  it('spans the union of the place bboxes, crossing 180 for PMNM, and the full time window', () => {
+    expect(col.extent.spatial.bbox[0]).toEqual([177, 19, -80.83, 32])   // not [-180, 19, 180, 32]
     expect(col.extent.temporal.interval[0]).toEqual(['2025-09-15T12:00:00Z', '2026-09-14T12:00:00Z'])
   })
   it('summarises what is precomputed', () => {

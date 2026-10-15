@@ -5,12 +5,15 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, loadPlaces, placeLobes, placesPmtilesUrl, type Place } from './gazetteer'
+import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, loadPlaces, placeBbox, placeLobes, placesPmtilesUrl, unionBbox, type Place } from './gazetteer'
 import { PMTiles } from 'pmtiles'
 import { configureGazetteer, loadIndex, loadLayers, placeGeometry } from './gazetteer'
 
 const DIR   = path.dirname(fileURLToPath(import.meta.url))
 const LOCAL = path.resolve(DIR, '../../../catalog/gazetteer/places/places.parquet')
+// shared with the python twin (catalog/tests/test_bbox.py), so the two rules cannot drift
+const BBOX_CASES = JSON.parse(fs.readFileSync(path.resolve(DIR, '../../../catalog/tests/union_bbox_cases.json'), 'utf8')).cases as
+  Array<{ name: string; boxes: number[][]; want: number[] }>
 
 const online = async () => {
   if (process.env.ERDDAP_OFFLINE) return false
@@ -40,6 +43,20 @@ describe('places.parquet (local copy)', () => {
     expect(lobes[0].bbox[2]).toBeLessThanOrEqual(0)     // western lobe, negative longitudes
     expect(lobes[1].bbox[0]).toBeGreaterThanOrEqual(0)  // eastern lobe, positive longitudes
     expect(lobes[1].bbox[2]).toBeLessThanOrEqual(180)
+  })
+
+  it('publishes PMNM with a bbox that crosses 180 (west > east), not one spanning the globe', () => {
+    const pm = places.find((p) => p.place_id === 'NMS:PMNM')!
+    const [lobeW, lobeE] = placeLobes(pm)
+    expect(pm.bbox[0]).toBe(-180)                                     // the parquet's own bbox spans the globe
+    expect(placeBbox(pm)).toEqual([lobeE.bbox[0], Math.min(lobeW.bbox[1], lobeE.bbox[1]),
+                                   lobeW.bbox[2], Math.max(lobeW.bbox[3], lobeE.bbox[3])])
+    expect(placeBbox(pm)[0]).toBeGreaterThan(placeBbox(pm)[2])
+  })
+
+  it('keeps the bbox of a place that does not cross the antimeridian', () => {
+    const fk = places.find((p) => p.place_id === 'NMS:FKNMS')!
+    expect(placeBbox(fk)).toEqual(fk.bbox)
   })
 
   it('keeps a place that does not cross the antimeridian in one request', () => {
@@ -89,4 +106,9 @@ describe('published gazetteer', () => {
     expect(bytes).toBeGreaterThan(0)
     expect(bytes).toBeLessThan(3_000_000)
   }, 120_000)
+})
+
+describe('unionBbox (the shared antimeridian cases)', () => {
+  for (const c of BBOX_CASES) it(c.name, () => expect(unionBbox(c.boxes)).toEqual(c.want))
+  it('refuses an empty list', () => expect(() => unionBbox([])).toThrow())
 })

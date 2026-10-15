@@ -166,11 +166,15 @@ system(glue::glue(
   "duckdb -c \"",
   "INSTALL spatial; LOAD spatial; ",
   "COPY (SELECT place_id, gazetteer, name, area_km2, source_url, CAST(source_date AS DATE) AS source_date, ",
-  # bbox is the geoparquet bbox-covering struct (for antimeridian-crossing places such as PMNM it
-  # spans -180..180); written here so the output matches what portolan publishes
+  # bbox is the geoparquet bbox-covering struct (per row, plain min/max: for antimeridian-crossing places
+  # such as PMNM it spans -180..180, which readers' xmin <= x <= xmax filters need); written here so the
+  # output matches what portolan publishes
   "{{'xmin': ST_XMin(geom), 'ymin': ST_YMin(geom), 'xmax': ST_XMax(geom), 'ymax': ST_YMax(geom)}} AS bbox, ",
   "geom AS geometry FROM ST_Read('{f_tmp_geojson}')) ",
   "TO '{f_parquet}' (FORMAT PARQUET);\""))
+# the FILE-level geo bbox crosses +/-180 (west > east, RFC 7946) when the places do, so the STAC extent
+# portolan derives from it is not the band round the globe (rule and tests: catalog/erin_layers/bbox.py)
+stopifnot(system2("uv", c("run", "catalog/antimeridian.py", "geo-bbox", f_parquet)) == 0)
 fs::file_delete(f_tmp_geojson)
 
 if (fs::file_exists(f_geojson)) fs::file_delete(f_geojson)

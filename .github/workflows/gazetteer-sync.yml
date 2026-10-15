@@ -144,6 +144,8 @@ jobs:
             slug=${b%%:*}; want=${b##*:}
             cp -R "../staging/$slug/." "$slug/"
             portolan add "$slug/" --force --force-thumbnails
+            # portolan splits a crossing extent into two halves; STAC wants one bbox with west > east
+            uv run ../antimeridian.py join-extent "$slug/collection.json"
             got=$(portolan --format json version current "$slug" | python3 -c "import json,sys; print(json.load(sys.stdin)['data']['version'])")
             if [ "$got" != "$want" ]; then
               echo "::warning::$slug: portolan recorded $got but the rows say version $want (checkout behind the published versions.json?)"

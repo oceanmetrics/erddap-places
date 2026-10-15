@@ -58,6 +58,9 @@ done
 
 cd "$dir_gaz"
 portolan add places/ --no-thumbnails
+# add rewrites places.parquet (it adds the bbox covering) and with it the file-level geo bbox, back to
+# -180..180 for PMNM: set it to cross +/-180 again (west > east) before bump records the file
+uv run "$dir_catalog/antimeridian.py" geo-bbox "$dir_gaz/places/places.parquet"
 
 for f in $others catalog.json places/versions.json; do
   cp "$snap/$f" "$dir_gaz/$f"
@@ -101,6 +104,10 @@ with open(p, "w") as f:
     json.dump(c, f, indent=2, ensure_ascii=False)
     f.write("\n")
 PYEOF
+
+# the extent from the data: portolan writes a crossing extent as two halves (STAC reads the first bbox as the
+# whole extent) and unions it with the old -180..180 extent; one bbox with west > east instead (PMNM)
+uv run "$dir_catalog/antimeridian.py" join-extent "$dir_gaz/places/collection.json" --data "$dir_gaz/places/places.parquet"
 
 # 5. check: rashid check is the gate (hard stop; portolan check also lists pre-existing warnings
 #    for other collections) ----

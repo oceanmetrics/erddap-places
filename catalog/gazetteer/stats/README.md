@@ -67,7 +67,8 @@ credentials, from a real glob: `read_parquet('s3://oceanmetrics.io-public/gazett
 | `noaa_aoml_seascapes_8day` | `CLASS` | categorical (seascape class 1–33) | the 5 reef/tropical places: `NMS:FKNMS`, `PSGID:939`, `NMS:HIHWNMS`, `NMS:NMSAS`, `NMS:PMNM` |
 
 `NMS:PMNM` crosses the antimeridian, so it is fetched as **two lobes** (one each side of ±180) and
-the two masks are unioned before aggregating.
+the two masks are unioned before aggregating. Its Item `bbox` crosses ±180 with west > east
+(RFC 7946 §5), and so does the collection extent, instead of spanning the globe (from 2026-10-15).
 
 ## Schema
 
