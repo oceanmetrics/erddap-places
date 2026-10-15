@@ -5,5 +5,7 @@ spikes/*.parquet
 app/dist/
 .DS_Store
 catalog/cache/
-catalog/gazetteer/.portolan/
+# portolan state stays local; config.yaml is tracked because `portolan add` needs it to find the catalog root (a fresh runner checkout)
+catalog/gazetteer/.portolan/*
+!catalog/gazetteer/.portolan/config.yaml
 catalog/staging/*/
