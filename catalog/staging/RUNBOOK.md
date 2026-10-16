@@ -1,3 +1,6 @@
+> **Superseded 2026-10-16.** These six collections are now built and published by
+> [oceanmetrics/places](https://github.com/oceanmetrics/places); nothing here publishes them. Kept for history.
+
 # RUNBOOK: integrate "Erin's layers" into the published gazetteer
 
 Six staged collections in `catalog/staging/<slug>/` (built 2026-10-08, nothing integrated, committed or uploaded yet):

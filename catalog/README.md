@@ -24,10 +24,15 @@
   bboxes cross ±180 with west > east (RFC 7946 §5) when the places do, never the band round the
   globe. `geo-bbox` sets the file-level GeoParquet bbox (`build_places.R`, and `publish_places.sh`
   after `portolan add`, which rewrites the file); `join-extent` turns portolan's two halves of a
-  crossing extent into one bbox (`publish_places.sh` with `--data`, `gazetteer-sync.yml`). The
+  crossing extent into one bbox (`publish_places.sh` with `--data`). The
   per-row `bbox` column stays plain min/max. rashid 0.1.8 `PTL-DAT-005` assumes west <= east and
   warns on a crossing extent that matches; that warning is expected for `places`.
 - `gazetteer/` — the published Portolan/STAC catalog (`places` + `erddap/*` + `stats` + Then vs Now collections).
+  The bucket's other place collections (the five BOEM ones, `noaa_aoa_socal`, NOAA sanctuaries, MPAs, ...) are
+  published by [oceanmetrics/places](https://github.com/oceanmetrics/places), never from here.
+- Retired 2026-10-16: `build_erin_layers.py`, `erin_layers/` (except `bbox.py`, which `antimeridian.py` uses),
+  `sources/`, `integrate_erin_layers.sh`, `staging/RUNBOOK.md` and `gazetteer-sync.yml` built and published the
+  BOEM and NOAA AOA collections, which moved to oceanmetrics/places; they publish nothing now.
   Validate with `rashid check catalog/gazetteer` / `portolan check catalog/gazetteer`.
 
 ## Precomputed statistics (`gazetteer/stats/`)
@@ -119,13 +124,12 @@ incremental live on that host:
 - host tools from Homebrew: node, python3, `uv` (rashid is a uv tool), aws cli, duckdb. The precompute
   runs under `caffeinate -i`.
 - S3 credentials: the host's AWS profile (`~/.aws`, `default`). The repository has **no** AWS secrets.
-- `obis-h3.yml` (since 2026-10-12; see below) and `gazetteer-sync.yml` (since 2026-10-13) run here
-  too, so every self-hosted workflow is on the mini. gazetteer-sync takes uv and tippecanoe from
-  Homebrew, and portolan and rashid as uv tools.
-- The runner takes one job at a time: stats, obis-h3 and gazetteer-sync runs queue behind each other.
+- `obis-h3.yml` (since 2026-10-12; see below) runs here too, so every self-hosted workflow is on the
+  mini. (`gazetteer-sync.yml` ran here 2026-10-13 to 2026-10-16, then retired with the BOEM / AOA
+  collections it published.)
+- The runner takes one job at a time: stats and obis-h3 runs queue behind each other.
   A stats run can be cancelled to let obis-h3 through and re-dispatched later; it resumes from its
-  chunks. A stats run starts no new work after 21 h, so the 24 h day leaves room for Monday's
-  gazetteer-sync (07:43 UTC). After the first full-record backfill, a daily run fetches only the new
+  chunks. A stats run starts no new work after 21 h. After the first full-record backfill, a daily run fetches only the new
   time steps.
 
 Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
