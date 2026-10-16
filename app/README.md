@@ -212,6 +212,7 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
 - the layers manifest (`index/layers.json`, canonical, falling back to `layers.json`; 37 kB, 22 layers: slug == collection == PMTiles source-layer; top-level `base_direct` is the redirect-free S3 host): title, credit, citation,
   licence, paint. Its `pmtiles` URLs name the storage host; `loadLayers()` rewrites each to
   `<bucket>/<slug>/places.pmtiles` (the path-style bucket URL the rest of the app uses; same bucket as `base_direct`).
+  Reference raster rows (`kind: 'raster'`, places client 0.3.0; none published yet) are dropped there: they have no places.
 - `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 11 of its columns (`group_id` only when the file has it) and leaves
   `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
   through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads

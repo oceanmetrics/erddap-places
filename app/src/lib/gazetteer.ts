@@ -261,8 +261,13 @@ export const placeKey = (r: PlaceKey) => `${r.collection}\u0001${r.place_id}`
 
 /** the PMTiles of a collection on the bucket host, whatever host the manifest names. */
 export const bucketPmtiles = (slug: string) => `${GAZETTEER_FALLBACK}${slug}/places.pmtiles`
-/** the manifest with every `pmtiles` rewritten to the bucket prefix (the manifest names the storage host). */
-export const rewriteLayers = (layers: Layer[]): Layer[] => layers.map((l) => ({ ...l, pmtiles: bucketPmtiles(l.slug) }))
+/**
+ * the manifest's place layers, each `pmtiles` rewritten to the bucket prefix (the manifest names the storage host).
+ * reference rasters (places client 0.3.0 `kind: 'raster'`: tiles only, no pmtiles, parquet or places) are left out:
+ * nothing here can be masked by them.
+ */
+export const rewriteLayers = (layers: Layer[]): Layer[] =>
+  layers.filter((l) => (l as { kind?: string }).kind !== 'raster').map((l) => ({ ...l, pmtiles: bucketPmtiles(l.slug) }))
 /** the collection's geometry file */
 export const collectionParquet = (slug: string) => `${GAZETTEER_FALLBACK}${slug}/places.parquet`
 
@@ -316,7 +321,7 @@ export function configureGazetteer(next: Partial<ClientConfig> = {}) {
 }
 
 let layersMemo: { src: Layer[]; out: Layer[] } | null = null
-/** the layers manifest, each `pmtiles` on the bucket host, in manifest order (cached). */
+/** the layers manifest's place layers (no rasters), each `pmtiles` on the bucket host, in manifest order (cached). */
 export async function loadLayers(): Promise<Layer[]> {
   const src = await listLayers()
   if (layersMemo?.src !== src) layersMemo = { src, out: rewriteLayers(src) }

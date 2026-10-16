@@ -57,6 +57,15 @@ describe('the layers manifest', () => {
     expect(collectionParquet('mpa_inventory')).toBe(`${GAZETTEER_FALLBACK}mpa_inventory/places.parquet`)
   })
 
+  it('rewriteLayers() leaves out reference rasters (places client 0.3.0 kind: raster), keeps vector rows', () => {
+    const [a, b] = MANIFEST.layers as Layer[]
+    const raster = { ...b, slug: 'mr_eez_raster', kind: 'raster', pmtiles: null, source_layer: null, parquet: null,
+                     raster: { tiles: ['https://example.invalid/{z}/{x}/{y}.png'], tile_size: 256, minzoom: 0, maxzoom: 8, link: null } }
+    const out = rewriteLayers([{ ...a, kind: 'vector', raster: null } as Layer, raster as unknown as Layer, a])
+    expect(out.map((l) => l.slug)).toEqual([a.slug, a.slug])
+    expect(out.every((l) => l.pmtiles === bucketPmtiles(l.slug))).toBe(true)
+  })
+
   it('credits a collection once: nothing for `places`, nothing for a string the places source already carries', () => {
     const wind = (MANIFEST.layers as Layer[]).find((l) => l.slug === 'boem_wind_leases')!
     expect(collectionAttribution(wind)).toBe(wind.attribution_html)
