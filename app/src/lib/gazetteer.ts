@@ -331,7 +331,7 @@ export function placeAsRow(p: Place): IndexPlace {
   return {
     place_id: p.place_id, name: p.name, authority: p.gazetteer, place_type: '', geom_type: 'MultiPolygon',
     collection: PLACES_COLLECTION, bbox: p.bbox, centroid: null, area_km2: p.area_km2 || null,
-    license: null, attribution: null, version: null, updated: null,
+    license: null, attribution: null, version: null, updated: null, group_id: null,
   }
 }
 

@@ -182,7 +182,8 @@
   // ── pickers (the Controls tabs and the sentence chips show the same ones) ───
   // the Place picker lists the whole gazetteer index (PlacePicker.svelte, rules in placePicker.ts); the
   // client's ranked search runs over every polygon place
-  const searchPolygons = (q: string) => gazSearch(q, { geomType: ['MultiPolygon', 'Polygon'], limit: Number.MAX_SAFE_INTEGER })
+  // one hit per place: copies of a place in several layers (group_id) collapse into one, the precomputed `places` copy first
+  const searchPolygons = (q: string) => gazSearch(q, { geomType: ['MultiPolygon', 'Polygon'], limit: Number.MAX_SAFE_INTEGER, group: true, prefer: [PLACES_COLLECTION] })
   const cadenceGroup = (d: Dataset) => d.protocol === 'tabledap' ? 'Samples (tabledap)'
     : d.timeStep === 'P1D' ? 'Daily grids' : d.timeStep === 'P1M' ? 'Monthly grids' : 'Other grids'
   const datasetItems = $derived<PickerItem[]>(datasets.map((d) => ({

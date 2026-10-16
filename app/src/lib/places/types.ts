@@ -10,6 +10,16 @@ export interface LayerPaint {
   circle?: Record<string, unknown>
 }
 
+/** a dated status event of a whole layer (layers.json `status` and the items of `status_history`). */
+export interface LayerStatus {
+  value : string
+  /** ISO date, or a partial one (YYYY, YYYY-MM). */
+  date  : string
+  /** URL that documents the status. */
+  source: string
+  note? : string | null
+}
+
 /** one row of layers.json (written by scripts/build_layers_json.py). */
 export interface Layer {
   slug            : string
@@ -27,12 +37,34 @@ export interface Layer {
   paint           : LayerPaint
   authority       : string | null
   place_type      : string | null
+  /** the collection extent; unwrapped (east may exceed 180) for a layer with places cut at the antimeridian, like the index bbox. */
   bbox            : BBox | null
   attribution     : string
   attribution_html: string
   license         : string | null
   license_url     : string | null
   citation        : string
+  // added in client 0.1.3 (manifest rows from before lack them; null when unknown) ----
+  /** the layer-level status, e.g. { value: 'rescinded', date: '2025-07-30', source, note }; null when the layer has none. */
+  status?         : LayerStatus | null
+  /** the layer's status events, ascending by date. */
+  status_history? : LayerStatus[] | null
+  /** 'rescinded 2025-07-30' (value with '_' as space, then the date): show it as `${title} (${status_label})`, see `layerLabel`. */
+  status_label?   : string | null
+  /** which copy of a place to show when it is in several layers (lower first): 0 the agency's own layer, 1 layers that
+   * re-use other agencies' boundaries (MPA Inventory, HAPCs), 2 legacy copies. absent in older manifests (= 0). */
+  search_rank?    : number | null
+  /** ISO date of the collection's first published version. */
+  created?        : string | null
+  /** latest upstream data edit date across the collection's sources (ISO date). */
+  source_date?    : string | null
+  /** absolute URL of the collection's places.parquet. */
+  parquet?        : string | null
+  /** sha256 (hex) of places.parquet at `version`: pin `version` + `parquet_sha256`. */
+  parquet_sha256? : string | null
+  /** URL of `<slug>/h3/membership.json`: the place x H3 membership (res 1-7, the share of each cell inside each
+   *  place), set only while it was built from this `parquet_sha256`; null for points, lines and stale builds. */
+  h3?             : string | null
 }
 
 export interface ClientConfig {
@@ -67,6 +99,10 @@ export interface IndexPlace {
   attribution: string | null
   version   : string | null
   updated   : string | null
+  /** rows that are the same place in different collections share it (null: no other copy). see `search({ group })`. */
+  group_id  : string | null
+  /** with `search({ group: true })`: the other copies of this place, in preference order. */
+  also?     : IndexPlace[]
 }
 
 export interface SearchOptions {
@@ -74,13 +110,23 @@ export interface SearchOptions {
   bbox?     : BBox
   type?     : string | string[]
   authority?: string | string[]
+  /** keep places of these collection slugs (an index row's `collection`, a layers.json `collection`). */
+  collection?: string | string[]
   /** keep only these geometry types (case insensitive), e.g. 'MultiPolygon' (local patch) */
   geomType? : string | string[]
   limit?    : number
+  /** one hit per place: copies sharing a `group_id` collapse into the preferred one, the rest go to its `also`. */
+  group?    : boolean
+  /** collection slugs to prefer when grouping, first wins; then layers.json `search_rank`, then the search order. */
+  prefer?   : string[]
 }
 
-/** a GeoJSON Feature; `id` is the place_id, `properties` the collection's columns without geometry and bbox. */
-export type PlaceFeature = Feature<Geometry, Record<string, unknown>> & { id: string; bbox?: BBox }
+/**
+ * a GeoJSON Feature; `id` is the place_id, `properties` the collection's columns without geometry and bbox.
+ * `collection` (a foreign member) is the slug of the collection the place was read from: place_id is not unique
+ * across collections, so this is what links the feature back to its layers.json entry (licence, attribution, citation).
+ */
+export type PlaceFeature = Feature<Geometry, Record<string, unknown>> & { id: string; bbox?: BBox; collection: string }
 
 export interface GetPlaceOptions {
   /** unwrap antimeridian-split parts into contiguous longitudes beyond 180 (see `unwrapAntimeridian`). */

@@ -3,7 +3,7 @@
   // whole gazetteer index. The kit's Picker filters the items it is given, so it cannot sit on 14,734
   // rows (one DOM row each) or run a ranked search of its own; this one lists a curated set of
   // collections without a query and the client's ranked search with one (see placePicker.ts for the rules).
-  import { azRows, defaultView, searchView, type PickRow } from './placePicker'
+  import { alsoIn, azRows, defaultView, searchView, type PickRow } from './placePicker'
   import { placeKey } from './gazetteer'
   import type { IndexPlace, Layer } from './places'
 
@@ -132,13 +132,14 @@
 {#snippet rows(list: PickRow[])}
   {#each list as r (r.key)}
     {@const i = index.get(r.key) ?? -1}
+    {@const also = alsoIn(r.row, layers)}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div id="{uid}-o-{i}" role="option" class="opt" class:active={i === active} aria-selected={r.key === value}
          tabindex="-1" onclick={() => pick(r)} onpointermove={() => (active = i)}>
       <span class="sw" aria-hidden="true"></span>
       <span class="two">
         <span class="lab">{r.row.name}</span>
-        <span class="sub">{r.row.place_id}</span>
+        <span class="sub" title={also.length ? `also in ${also.join(', ')}` : undefined}>{r.row.place_id}{also.length ? ` · also in ${also.length} other layer${also.length === 1 ? '' : 's'}` : ''}</span>
       </span>
       {#if r.precomputed}<span class="pre" title="its statistics are computed weekly and read from a file, not recomputed in your browser">✓ precomputed</span>{/if}
     </div>

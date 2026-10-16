@@ -86,7 +86,7 @@ describe('the place index', () => {
   beforeAll(async () => { rows = await loadIndex() })
 
   it('reads only the columns the app uses and keeps no per-row credit', () => {
-    expect(INDEX_COLUMNS).toEqual(['place_id', 'name', 'authority', 'place_type', 'geom_type', 'collection', 'bbox', 'centroid_lon', 'centroid_lat', 'area_km2'])
+    expect(INDEX_COLUMNS).toEqual(['place_id', 'name', 'authority', 'place_type', 'geom_type', 'collection', 'bbox', 'centroid_lon', 'centroid_lat', 'area_km2', 'group_id'])
     for (const dropped of ['attribution', 'license', 'version', 'updated']) expect(INDEX_COLUMNS).not.toContain(dropped)
     expect(rows).toHaveLength(55)
     for (const r of rows) {

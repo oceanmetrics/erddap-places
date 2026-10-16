@@ -6,14 +6,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fileFetch } from './__fixtures__/fileFetch'
 import { buildIndex, configureGazetteer, loadIndex, type GazIndex } from './gazetteer'
-import { CURATED, GROUP_CAP, NOISY, PLACES_TITLE, SEARCH_LIMIT, azRows, defaultView, groupOrder, searchView } from './placePicker'
-import { search, type IndexPlace, type Layer } from './places'
+import { CURATED, GROUP_CAP, NOISY, PLACES_TITLE, SEARCH_LIMIT, alsoIn, azRows, defaultView, groupOrder, searchView } from './placePicker'
+import { groupHits, search, type IndexPlace, type Layer } from './places'
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), '__fixtures__/gazetteer')
 const LAYERS: Layer[] = JSON.parse(fs.readFileSync(path.join(FIX, 'layers.json'), 'utf8')).layers
 const row = (collection: string, i: number, over: Partial<IndexPlace> = {}): IndexPlace => ({
   place_id: `${collection}:${i}`, name: `${collection} ${String(i).padStart(4, '0')}`, authority: 'X', place_type: '', geom_type: 'MultiPolygon',
-  collection, bbox: [0, 0, 1, 1], centroid: [0.5, 0.5], area_km2: null, license: null, attribution: null, version: null, updated: null, ...over,
+  collection, bbox: [0, 0, 1, 1], centroid: [0.5, 0.5], area_km2: null, license: null, attribution: null, version: null, updated: null, group_id: null, ...over,
 })
 const many = (collection: string, n: number) => Array.from({ length: n }, (_, i) => row(collection, i))
 
@@ -138,10 +138,46 @@ describe('the ranked search over the whole index', () => {
     expect(searchView(wide, LAYERS).shown).toBeLessThanOrEqual(220)
   })
 
+  it('loads an index from before group_id (the column is absent): every row ungrouped, grouped search unchanged', async () => {
+    expect(idx.rows.every((r) => r.group_id === null)).toBe(true)
+    const opts = { geomType: ['MultiPolygon', 'Polygon'], limit: 1e6 }
+    expect(await search('ocs', { ...opts, group: true, prefer: ['places'] })).toEqual(await search('ocs', opts))
+  })
+
   it('never lists a line or a point (the polygon filter), however well it matches', async () => {
     const hits = await search('calcofi', { geomType: ['MultiPolygon', 'Polygon'], limit: 1e6 })
     expect(hits).toHaveLength(0)
     expect(searchView(hits, LAYERS).sections).toEqual([])
     expect(idx.polygons.some((r) => /calcofi/i.test(r.collection))).toBe(false)
+  })
+})
+
+describe('one hit per place (grouped search)', () => {
+  // Florida Keys NMS as the live index has it (2026-10-16): 5 rows in 4 collections, one group_id
+  const g = { group_id: 'grp:fknms', name: 'Florida Keys' }
+  const copies = [
+    row('noaa_sanctuaries', 1, g), row('mpa_inventory', 2, g), row('places', 3, g), row('noaa_hapc', 4, g), row('noaa_hapc', 5, g),
+  ]
+  // what the client's search({ group: true, prefer: ['places'] }) ranks by: `prefer` first, then search_rank
+  const rank = (p: IndexPlace) => (p.collection === 'places' ? 0 : 100) + (p.collection === 'noaa_sanctuaries' ? 0 : 1)
+  const title = (slug: string) => LAYERS.find((l) => l.slug === slug)!.title
+
+  it('lists the precomputed `places` copy once, in its own section, with the others in `also`', () => {
+    const hits = groupHits([...copies, row('mpa_inventory', 9)], rank)
+    expect(hits).toHaveLength(2)
+    expect(hits[0].collection).toBe('places')
+    expect(hits[0].also!.map((c) => c.collection)).toEqual(['noaa_sanctuaries', 'mpa_inventory', 'noaa_hapc', 'noaa_hapc'])
+    const v = searchView(hits, LAYERS)
+    expect(v.sections.map((s) => [s.slug, s.rows.length])).toEqual([['places', 1], ['mpa_inventory', 1]])
+    expect(v.sections[0].rows[0].precomputed).toBe(true)
+  })
+
+  it('names each other layer once, in preference order, and nothing for a place with no copy', () => {
+    const [hit] = groupHits(copies, rank)
+    expect(alsoIn(hit, LAYERS)).toEqual([title('noaa_sanctuaries'), title('mpa_inventory'), title('noaa_hapc')])
+    expect(alsoIn(row('mpa_inventory', 9), LAYERS)).toEqual([])
+    // a second copy in the hit's own collection is not "another layer"
+    const [hapc] = groupHits([row('noaa_hapc', 4, g), row('noaa_hapc', 5, g)])
+    expect(alsoIn(hapc, LAYERS)).toEqual([])
   })
 })

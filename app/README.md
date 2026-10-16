@@ -101,6 +101,12 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.7** (2026-10-16): a search lists each place once. The same place in several layers (Florida
+Keys NMS is in `places`, `noaa_sanctuaries`, `mpa_inventory` and twice in `noaa_hapc`) shares a `group_id` in
+the index, and the picker asks the client for `search(q, { group: true, prefer: ['places'] })` (places client
+0.2.0): the precomputed `places` copy is the hit, and its row says "also in N other layers" (the names on hover).
+"florida keys" gives 10 hits instead of 14. The list with no query is unchanged (one section per collection).
+
 **app 0.3.6** (2026-10-12): the precomputed files now hold each dataset's full record (CRW from
 1985; the precompute is incremental per chunk, so only the first run fetches it), and a window inside
 a precomputed series is no longer capped to 90 days (`capStart()`): a brush can span decades, since no
@@ -186,9 +192,10 @@ items it is given and has no hook for a query, so it cannot sit on that many row
   first 50 rows by name and then "… N more, type to search". `noaa_submarine_cables` (2,816),
   `boem_wind_planning_rescinded` (3,325), and the collections that are not curated (`noaa_sanctuaries`,
   `gebco_undersea`) sit behind one "show N more collections" row. About 520 DOM rows, never 14,000.
-- **A query**: the client's ranked `search(q, { geomType })` over every polygon place (name or
-  `place_id`, every word must match; exact name, prefix, word prefix, substring, then area), grouped by
-  collection. At most about 200 rows, and no collection takes more than its share (200 / the collections
+- **A query**: the client's ranked `search(q, { geomType, group: true, prefer: ['places'] })` over every
+  polygon place (name or `place_id`, every word must match; exact name, prefix, word prefix, substring, then
+  area), one hit per place (copies sharing a `group_id` fold into the `places` copy, else the layers.json
+  `search_rank` order; `alsoIn()` names the others), grouped by collection. At most about 200 rows, and no collection takes more than its share (200 / the collections
   with hits, 10 to 50 rows), so a word that matches 900 cable areas still shows the wind leases;
   each group says how many more matches it has.
 - **Selection** is (collection, `place_id`): `place_id` is NOT unique across collections. `placeId` and
@@ -200,12 +207,12 @@ items it is given and has no hook for a query, so it cannot sit on that many row
 
 Everything is read from the **bucket host** (`https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/`),
 never `storage.oceanmetrics.io`: its 302 costs a redirect per range request. `configureGazetteer()` points
-the vendored client (`src/lib/places/`, re-vendored from places@345c22e = client 0.1.1; its header lists the three local patches) there and wraps its `fetch` (`meteredFetch()`).
+the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client 0.2.0; its header lists the four local patches) there and wraps its `fetch` (`meteredFetch()`).
 
 - the layers manifest (`index/layers.json`, canonical, falling back to `layers.json`; 37 kB, 22 layers: slug == collection == PMTiles source-layer; top-level `base_direct` is the redirect-free S3 host): title, credit, citation,
   licence, paint. Its `pmtiles` URLs name the storage host; `loadLayers()` rewrites each to
   `<bucket>/<slug>/places.pmtiles` (the path-style bucket URL the rest of the app uses; same bucket as `base_direct`).
-- `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 10 of its 14 columns and leaves
+- `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 11 of its columns (`group_id` only when the file has it) and leaves
   `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
   through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads
   the file whole (0.8 s). The index loads alongside the datasets and the 20 places, and a failure leaves the 20

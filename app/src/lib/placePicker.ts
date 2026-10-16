@@ -4,8 +4,9 @@
 //   - no query: a curated set of collections, each capped at GROUP_CAP rows with a "… N more, type to
 //     search" row, the two noisiest collections (3,325 rescinded wind blocks, 2,816 cable areas) and the
 //     collections nobody asked for behind one "show N more collections" row;
-//   - a query: the client's ranked search over EVERY polygon place, the first SEARCH_LIMIT hits, grouped
-//     by collection.
+//   - a query: the client's ranked search over EVERY polygon place, one hit per place (copies of a place in
+//     several layers share a group_id; the precomputed `places` copy wins, the rest are in `also`), the first
+//     SEARCH_LIMIT hits, grouped by collection.
 // Only polygons are listed: a grid mask needs an area, so lines and points are not selectable.
 import { PLACES_COLLECTION, placeKey } from './gazetteer'
 import type { IndexPlace, Layer } from './places'
@@ -106,4 +107,12 @@ export function searchView(hits: IndexPlace[], layers: Pick<Layer, 'slug' | 'tit
 /** the A–Z view: one list sorted by name (stable for equal names by id) */
 export function azRows(sections: PickSection[]): PickRow[] {
   return sections.flatMap((s) => s.rows).sort((a, b) => byName(a.row, b.row))
+}
+
+/**
+ * the other layers a grouped search hit is also in (its `also` copies), as distinct section titles in the
+ * client's preference order; [] for a place with no other copy.
+ */
+export function alsoIn(row: IndexPlace, layers: Pick<Layer, 'slug' | 'title'>[]): string[] {
+  return [...new Set((row.also ?? []).filter((c) => c.collection !== row.collection).map((c) => sectionTitle(c.collection, layers)))]
 }

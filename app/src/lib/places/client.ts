@@ -1,12 +1,13 @@
-// vendored from oceanmetrics/places client/src (commit 345c22e, client 0.1.1, 2026-10-08), MIT. the package is
+// vendored from oceanmetrics/places client/src (commit cd1f52d, client 0.2.0, 2026-10-16), MIT. the package is
 // unpublished and private, so a file: dependency would not resolve on GitHub Actions. local changes against upstream
 // (re-copy upstream and re-apply these when the client changes; everything else is upstream as is):
 //   - loadIndex() is exported by the client, reads only the columns the app needs (INDEX_COLUMNS) and leaves license,
 //     attribution, version and updated null on every row (a credit comes from the layer manifest by collection, not from
 //     14,734 copies of a sentence; so creditsFor() with a bare place id credits nothing here: pass layer slugs)
 //   - loadIndex() downloads the file with one GET (hyparquet's range reads cost ~140 sequential requests of 2.5 kB, 10 s)
+//   - loadIndex() reads only the INDEX_COLUMNS the file has (an index from before group_id still loads; group_id null)
 //   - search() takes `geomType`, so the picker can ask for polygons only before it slices to a limit
-import { asyncBufferFromUrl, parquetMetadataAsync, parquetReadObjects } from 'hyparquet'
+import { asyncBufferFromUrl, parquetMetadata, parquetMetadataAsync, parquetReadObjects } from 'hyparquet'
 import type { AsyncBuffer, FileMetaData } from 'hyparquet'
 import { compressors } from 'hyparquet-compressors'
 import { addLayerSpec, removeLayerSpec } from './map'
@@ -19,7 +20,7 @@ import type {
 export const DEFAULT_BASE = 'https://storage.oceanmetrics.io/gazetteer/'
 const FOOTER_GUESS = 16 * 1024
 /** the columns of places_index.parquet the app reads (the rest are never decoded) */
-export const INDEX_COLUMNS = ['place_id', 'name', 'authority', 'place_type', 'geom_type', 'collection', 'bbox', 'centroid_lon', 'centroid_lat', 'area_km2']
+export const INDEX_COLUMNS = ['place_id', 'name', 'authority', 'place_type', 'geom_type', 'collection', 'bbox', 'centroid_lon', 'centroid_lat', 'area_km2', 'group_id']
 const SUFFIX = /\s*Processed by Ocean Metrics\.?\s*$/i
 
 // helpers ----
@@ -60,7 +61,32 @@ export function bboxIntersects(a: BBox, b: BBox): boolean {
   return hit(b[0], b[2]) || (b[2] > 180 && hit(b[0] - 360, b[2] - 360))
 }
 
+/** a layer's display name: its title, plus ` (status_label)` when the layer has a status (e.g. "... (rescinded 2025-07-30)"). */
+export function layerLabel(layer: Pick<Layer, 'title'> & { status_label?: string | null }): string {
+  return layer.status_label ? `${layer.title} (${layer.status_label})` : layer.title
+}
+
 /** the credit line for attribution strings: deduped; the shared "Processed by Ocean Metrics." said once at the end. */
+/**
+ * collapse copies of one place (same `group_id`) into one hit at the position of its first copy: the copy with the
+ * lowest `rank` is shown (ties keep the search order) and the others go to its `also`, in rank order.
+ * hits without a group_id pass through. the input rows are not modified.
+ */
+export function groupHits(hits: IndexPlace[], rank: (p: IndexPlace) => number = () => 0): IndexPlace[] {
+  const groups = new Map<string, IndexPlace[]>()
+  const order: Array<IndexPlace | string> = []
+  for (const h of hits) {
+    if (!h.group_id) { order.push(h); continue }
+    if (!groups.has(h.group_id)) { groups.set(h.group_id, []); order.push(h.group_id) }
+    groups.get(h.group_id)!.push(h)
+  }
+  return order.map((o) => {
+    if (typeof o !== 'string') return o
+    const [best, ...rest] = groups.get(o)!.map((h, i) => [h, i] as const).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map((x) => x[0])
+    return rest.length ? { ...best, also: rest } : best
+  })
+}
+
 export function creditLine(parts: string[]): string {
   const seen = new Set<string>(), cores: string[] = []
   let processed = false
@@ -149,7 +175,11 @@ export function createClient(initial: ClientConfig = {}) {
           if (!r.ok) throw new Error(`places_index.parquet: ${r.status} ${r.statusText} (${url})`)
           return r.arrayBuffer()
         })
-        .then((file) => parquetReadObjects({ file, compressors, utf8: false, columns: INDEX_COLUMNS }))
+        .then((file) => {
+          // an index from before a column was added (e.g. group_id, 0.2.0) is read without it: hyparquet throws on a missing column
+          const have = new Set(parquetMetadata(file).schema.map((e) => e.name))
+          return parquetReadObjects({ file, compressors, utf8: false, columns: INDEX_COLUMNS.filter((c) => have.has(c)) })
+        })
         .then((rows) => rows.map((r: any): IndexPlace => ({
           place_id: String(r.place_id), name: String(r.name ?? ''), authority: String(r.authority ?? ''),
           place_type: String(r.place_type ?? ''), geom_type: r.geom_type == null ? null : String(r.geom_type),
@@ -158,6 +188,7 @@ export function createClient(initial: ClientConfig = {}) {
           centroid: r.centroid_lon != null && r.centroid_lat != null ? [Number(r.centroid_lon), Number(r.centroid_lat)] : toLonLat(r.centroid),
           area_km2: r.area_km2 == null ? null : Number(r.area_km2),
           license: null, attribution: null, version: null, updated: null,   // not read: see INDEX_COLUMNS
+          group_id: r.group_id == null ? null : String(r.group_id),
         })))
       indexP.catch(() => { indexP = null })
     }
@@ -172,12 +203,14 @@ export function createClient(initial: ClientConfig = {}) {
    */
   async function search(q: string, opts: SearchOptions = {}): Promise<IndexPlace[]> {
     const { bbox, limit = 20 } = opts
-    const types = arr(opts.type).map(norm), auths = arr(opts.authority).map(norm), geoms = arr(opts.geomType).map(norm)
+    const types = arr(opts.type).map(norm), auths = arr(opts.authority).map(norm), colls = new Set(arr(opts.collection))
+    const geoms = arr(opts.geomType).map(norm)
     const query = norm(q ?? ''), words = query.split(/\s+/).filter(Boolean)
     const scored: Array<[number, IndexPlace]> = []
     for (const p of await loadIndex()) {
       if (types.length && !types.includes(norm(p.place_type))) continue
       if (auths.length && !auths.includes(norm(p.authority))) continue
+      if (colls.size && !colls.has(p.collection)) continue
       if (geoms.length && !geoms.includes(norm(p.geom_type ?? ''))) continue
       if (bbox && p.bbox && !bboxIntersects(bbox, p.bbox)) continue
       let score = 0
@@ -191,7 +224,30 @@ export function createClient(initial: ClientConfig = {}) {
     }
     scored.sort((a, b) => a[0] - b[0] || (b[1].area_km2 ?? 0) - (a[1].area_km2 ?? 0) || a[1].name.localeCompare(b[1].name)
       || a[1].collection.localeCompare(b[1].collection))
-    return scored.slice(0, limit).map((s) => s[1])
+    const hits = scored.map((s) => s[1])
+    return (opts.group ? groupHits(hits, await copyRank(opts.prefer)) : hits).slice(0, limit)
+  }
+
+  /** a sort key for copies of one place: position in `prefer`, then the layer's `search_rank` (layers.json). */
+  async function copyRank(prefer: string[] = []): Promise<(p: IndexPlace) => number> {
+    let ranks = new Map<string, number>()
+    try { ranks = new Map((await listLayers()).map((l) => [l.collection, l.search_rank ?? 0])) } catch { /* no manifest: rank 0 */ }
+    return (p) => {
+      const i = prefer.indexOf(p.collection)
+      return (i < 0 ? prefer.length : i) * 100 + (ranks.get(p.collection) ?? 0)
+    }
+  }
+
+  /**
+   * the other copies of a place (same `group_id`, other rows), in preference order; [] when it has none.
+   * `slug` picks the row when the place_id is in several collections.
+   */
+  async function samePlace(placeId: string, opts: { slug?: string; prefer?: string[] } = {}): Promise<IndexPlace[]> {
+    const rows = await loadIndex()
+    const me = rows.find((r) => r.place_id === placeId && (!opts.slug || r.collection === opts.slug))
+    if (!me?.group_id) return []
+    const rank = await copyRank(opts.prefer)
+    return rows.filter((r) => r.group_id === me.group_id && r !== me).sort((a, b) => rank(a) - rank(b))
   }
 
   // places ----
@@ -229,7 +285,7 @@ export function createClient(initial: ClientConfig = {}) {
       if (opts.unwrap) geometry = unwrapAntimeridian(geometry)
       const properties = Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, plain(v)]))
       const bbox = opts.unwrap ? geometryBBox(geometry) : (toBBox(rawBox) ?? geometryBBox(geometry))
-      return { type: 'Feature', id, bbox, properties, geometry } as PlaceFeature
+      return { type: 'Feature', id, bbox, properties, geometry, collection: slug } as PlaceFeature
     }
     return null
   }
@@ -268,7 +324,7 @@ export function createClient(initial: ClientConfig = {}) {
     return creditLine(parts)
   }
 
-  return { configure, listLayers, getLayer, addLayer, removeLayer, loadIndex, search, getPlace, creditsFor }
+  return { configure, listLayers, getLayer, addLayer, removeLayer, loadIndex, search, samePlace, getPlace, creditsFor }
 }
 
 // the default client ----
@@ -280,5 +336,6 @@ export const addLayer = def.addLayer
 export const removeLayer = def.removeLayer
 export const loadIndex = def.loadIndex
 export const search = def.search
+export const samePlace = def.samePlace
 export const getPlace = def.getPlace
 export const creditsFor = def.creditsFor
