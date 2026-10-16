@@ -15,6 +15,9 @@ Built by [`catalog/build_places.R`](../../build_places.R).
 
 ## Changes
 
+- **1.2.1 (2026-10-16)**: the GeoParquet `geo` bbox and the STAC extent cross the antimeridian (west > east,
+  RFC 7946) instead of spanning -180..180, because NMS:PMNM is stored split at +/-180. The per-row `bbox`
+  struct, geometries and attributes are unchanged.
 - **1.2.0 (2026-10-08)**: `places.pmtiles` now carries tile metadata (`name` "places", a description and
   an HTML `attribution` crediting NOAA ONMS, MarineRegions.org and ProtectedSeas); `styles/default.json`
   points at the absolute published PMTiles URL; the builder writes the GeoParquet `bbox` struct itself.

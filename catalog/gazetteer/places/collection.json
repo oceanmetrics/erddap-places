@@ -95,7 +95,7 @@
       "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
     }
   ],
-  "updated": "2026-10-08T13:10:24Z",
+  "updated": "2026-10-16T08:08:48Z",
   "pmtiles:min_zoom": 0,
   "pmtiles:max_zoom": 12,
   "pmtiles:tile_type": "mvt",
@@ -112,10 +112,10 @@
     "spatial": {
       "bbox": [
         [
-          -180.0,
-          -28.424704,
-          180.0,
-          48.50589
+          177.84422,
+          -28.4247039,
+          -70.0350637,
+          48.5058899
         ]
       ]
     },
@@ -167,8 +167,8 @@
     "places": {
       "href": "./places.parquet",
       "type": "application/vnd.apache.parquet",
-      "file:size": 4185438,
-      "file:checksum": "1220869294c31b32aaf6244c14db429b534fa0d53083e2de83fc7abf44350762b6ac",
+      "file:size": 4471836,
+      "file:checksum": "12205cc76f7224e0ebf43dc19ab34c6d0d6d7d84ec33e50bb1e4860b43e67ba7628c",
       "roles": [
         "data"
       ]
@@ -206,8 +206,8 @@
     "documentation": {
       "href": "./README.md",
       "type": "text/markdown",
-      "file:size": 2945,
-      "file:checksum": "12202b603655d6631dac6d6e990ac3641aa18a6682255ff1f0d78f82dd2893e6f6e1",
+      "file:size": 3211,
+      "file:checksum": "12208749b6d11fd17b4fd1236da512477b97bf1eca7e0fe1154ea539f3ed1d3019e7",
       "roles": [
         "documentation"
       ]

@@ -4,10 +4,10 @@
   "created": "2026-09-15T13:51:05.458907+00:00",
   "collections": {
     "places": {
-      "current_version": "1.2.0",
-      "updated": "2026-10-08T13:10:25.379755+00:00",
+      "current_version": "1.2.1",
+      "updated": "2026-10-16T08:08:54.975761+00:00",
       "asset_count": 3,
-      "total_size_bytes": 6285032
+      "total_size_bytes": 6571430
     },
     "boem_wind_leases": {
       "current_version": "1.0.0",
@@ -46,5 +46,5 @@
       "total_size_bytes": 36649
     }
   },
-  "updated": "2026-10-08T14:58:55.923447+00:00"
+  "updated": "2026-10-16T08:08:54.975761+00:00"
 }
