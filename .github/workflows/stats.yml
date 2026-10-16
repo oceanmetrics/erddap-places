@@ -141,9 +141,13 @@ jobs:
           for d in catalog/gazetteer/*/; do
             name=$(basename "$d")
             case "$name" in stats|rasters|climatology|series) continue ;; esac
-            # h3/ is the place x H3 membership oceanmetrics/places builds from the published parquet: never --delete it
+            # h3/ is the place x H3 membership oceanmetrics/places builds from the published parquet: never --delete it.
+            # data files are git-ignored, so the runner's copies are whatever an earlier publish left in this workspace:
+            # never upload them here (a stale copy would replace a newer publish and break the ledger checksums, as on
+            # 2026-10-14). catalog/publish_places.sh and gazetteer-sync.yml upload the data they build
             aws s3 sync "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
-              --delete --exclude '.portolan/*' --exclude 'h3/*'
+              --delete --exclude '.portolan/*' --exclude 'h3/*' \
+              --exclude '*.parquet' --exclude '*.pmtiles' --exclude '*.thumb.jpg'
           done
           aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
             --exclude '.portolan/*'

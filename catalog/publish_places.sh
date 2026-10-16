@@ -9,8 +9,8 @@
 # - add:    portolan add places/             (adds the bbox covering metadata, refreshes STAC)
 # - bump:   portolan version bump places <new_version>
 # - check:  rashid check (a failure stops the script before anything is uploaded)
-# - upload: portolan push ... --collection places, then the root versions.json (overwrites places/
-#           in place; never deletes other objects in the bucket)
+# - upload: portolan push ... --collection places, then the places entry of the published root versions.json
+#           (overwrites places/ in place; never deletes other objects in the bucket)
 #
 # edit CHANGELOG-style notes in gazetteer/places/README.md ("Changes") before running, since
 # portolan checksums the README.
@@ -116,7 +116,20 @@ rashid check "$dir_gaz" --data-scope local
 # 6. upload ----
 if [[ $do_upload -eq 1 ]]; then
   portolan push "$s3_dest" --collection places --catalog "$dir_gaz"
-  # push does not upload the root versions.json summary
-  aws s3 cp "$dir_gaz/versions.json" "$s3_dest/versions.json" --content-type application/json
+  # push does not upload the root versions.json summary. the bucket has a second publisher (oceanmetrics/places), so
+  # the local root file is stale for its collections: update only the places entry of the published one
+  pub_root="$(mktemp)"
+  aws s3 cp "$s3_dest/versions.json" "$pub_root" --only-show-errors
+  python3 - "$pub_root" "$dir_gaz/versions.json" <<'PYEOF'
+import json, sys
+pub, mine = json.load(open(sys.argv[1])), json.load(open(sys.argv[2]))
+pub["collections"]["places"] = mine["collections"]["places"]
+pub["updated"] = max(pub.get("updated") or "", mine["collections"]["places"]["updated"])
+with open(sys.argv[1], "w") as f:
+    json.dump(pub, f, indent=2)
+    f.write("\n")
+PYEOF
+  aws s3 cp "$pub_root" "$s3_dest/versions.json" --content-type application/json
+  rm -f "$pub_root"
   echo "published: https://storage.oceanmetrics.io/gazetteer/places/collection.json"
 fi
