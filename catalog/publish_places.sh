@@ -115,7 +115,23 @@ rashid check "$dir_gaz" --data-scope local
 
 # 6. upload ----
 if [[ $do_upload -eq 1 ]]; then
+  # push also uploads the local root catalog.json, which lists only this repo's collections (it dropped the 15
+  # oceanmetrics/places children on 2026-10-16): keep the published one, adding a places link if it lacks one
+  pub_cat="$(mktemp)"
+  aws s3 cp "$s3_dest/catalog.json" "$pub_cat" --only-show-errors
   portolan push "$s3_dest" --collection places --catalog "$dir_gaz"
+  python3 - "$pub_cat" "$dir_gaz/catalog.json" <<'PYEOF'
+import json, sys
+pub, mine = json.load(open(sys.argv[1])), json.load(open(sys.argv[2]))
+have = {l.get("href") for l in pub["links"]}
+pub["links"] += [l for l in mine["links"] if l.get("rel") == "child" and l.get("href") == "./places/collection.json"
+                 and l["href"] not in have]
+with open(sys.argv[1], "w") as f:
+    json.dump(pub, f, indent=2, ensure_ascii=False)
+    f.write("\n")
+PYEOF
+  aws s3 cp "$pub_cat" "$s3_dest/catalog.json" --content-type application/json
+  rm -f "$pub_cat"
   # push does not upload the root versions.json summary. the bucket has a second publisher (oceanmetrics/places), so
   # the local root file is stale for its collections: update only the places entry of the published one
   pub_root="$(mktemp)"
