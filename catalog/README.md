@@ -132,23 +132,26 @@ incremental live on that host:
   chunks. A stats run starts no new work after 21 h. After the first full-record backfill, a daily run fetches only the new
   time steps.
 
-Status: `gh api repos/oceanmetrics/erddap-places/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
+The runner is registered to the **oceanmetrics org** (since 2026-10-16), in the Default group (public repos allowed;
+both repos require approval for every fork PR from an outside contributor), so erddap-places and oceanmetrics/places
+(its `sync.yml`, Mondays 07:43 UTC) share it, one job at a time. The folder is still `~/actions-runner/erddap-places`,
+which keeps the chunk store. Status: `gh api orgs/oceanmetrics/actions/runners --jq '.runners[] | "\(.name) \(.status)"'`.
 
 Register the Mac mini runner (by hand: Claude Code's auto mode will not install a runner service).
 `PATH` must include Homebrew when `config.sh` runs, because the runner keeps the `PATH` it was
 configured with:
 
 ```bash
-# on the laptop (repo admin): a registration token, valid one hour
-gh api -X POST repos/oceanmetrics/erddap-places/actions/runners/registration-token --jq .token
+# on the laptop (org admin; gh needs the admin:org scope): a registration token, valid one hour
+gh api -X POST orgs/oceanmetrics/actions/runners/registration-token --jq .token
 # on the mini
 export PATH=/opt/homebrew/bin:/opt/homebrew/sbin:$PATH
 mkdir -p ~/actions-runner/erddap-places && cd ~/actions-runner/erddap-places
 V=$(curl -s https://api.github.com/repos/actions/runner/releases/latest | sed -n 's/.*"tag_name": "v\(.*\)".*/\1/p')
 curl -sSLo runner.tgz https://github.com/actions/runner/releases/download/v$V/actions-runner-osx-arm64-$V.tar.gz
 tar xzf runner.tgz && rm runner.tgz
-./config.sh --unattended --url https://github.com/oceanmetrics/erddap-places --token <token> \
-  --name macmini --labels macmini --work _work
+./config.sh --unattended --url https://github.com/oceanmetrics --token <token> \
+  --name macmini --labels macmini --work _work --runnergroup Default
 ./svc.sh install && ./svc.sh start      # a LaunchAgent: it runs in bbest's desktop session
 ```
 

@@ -12,7 +12,7 @@
   uv run catalog/antimeridian.py join-extent <collection.json> ...  # portolan's two halves of a crossing extent -> one bbox
   uv run catalog/antimeridian.py join-extent <collection.json> --data <file.parquet> ...  # the extent measured from the data
 
-build_places.R runs geo-bbox on places.parquet; publish_places.sh and gazetteer-sync run join-extent after `portolan add`.
+build_places.R runs geo-bbox on places.parquet; publish_places.sh runs join-extent after `portolan add`.
 """
 import argparse
 import sys
