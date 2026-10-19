@@ -119,13 +119,13 @@ async function main() {
 
   const res = await schedule(todo, {
     deadline,
-    run: async (j, attempt) => {
+    run: async (j, attempt, progress) => {
       const tag = `[${j.host.split('.')[0]}] ${j.key}`
       const log = (s: string) => console.log(`${tag}${s.startsWith(' ') ? '' : ' '}${s}`)
       const ext = await extentOf(j.ds)
       log(` -- ${j.place.name}${attempt > 1 ? ` (try ${attempt})` : ''}; extent ${ext.start} .. ${ext.end}`)
       let prov: Provenance
-      try { prov = await computeOne(j.ds, j.v, j.place, ext, j.days, log, { shouldStop: () => Date.now() >= deadline }) }
+      try { prov = await computeOne(j.ds, j.v, j.place, ext, j.days, log, { shouldStop: () => Date.now() >= deadline, onChunk: progress }) }
       catch (e) { if (e instanceof StopRequested) { log(' stopped at the deadline; resumes next run'); return 'deferred' } throw e }
       provs.push(prov)
       const parquet = statsPath(prov.dataset_id, prov.variable, prov.place_id)

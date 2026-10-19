@@ -77,7 +77,8 @@ export const SLEEP_MS = 750
  * the back of that server's queue. Other servers keep working meanwhile (precompute.ts, schedule.ts).
  */
 export const REST_MS = [10, 30, 60, 120].map((m) => m * 60_000)
-/** tries per (dataset, variable, place) in one run; the chunks it finished stay for the next run. */
+/** tries in a row with no new chunk before a (dataset, variable, place) is given up for the run (a try that
+ *  finished chunks resets the count); the chunks it finished stay for the next run. */
 export const MAX_ATTEMPTS = 3
 /** stop starting new work after this many hours (the job's 24 h timeout must leave room to publish). */
 export const RUN_HOURS = 21

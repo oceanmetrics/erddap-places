@@ -334,7 +334,7 @@ export interface Provenance {
 
 export async function computeOne(
   ds: Dataset, v: CubeVariable, place: Place, ext: TimeExtent, days: number | 'all' = DAYS, log = console.log,
-  { shouldStop = () => false }: { shouldStop?: () => boolean } = {},
+  { shouldStop = () => false, onChunk = () => {} }: { shouldStop?: () => boolean; onChunk?: () => void } = {},
 ): Promise<Provenance> {
   const t0    = Date.now()
   const win   = window(ext, days)
@@ -389,6 +389,7 @@ export async function computeOne(
       // last run's short last chunk, now refetched from the same start to the new end
       if (plan.supersede && s === plan.supersede.slice(0, 10)) rmSync(join(dir, plan.supersede), { force: true })
       done++
+      onChunk()
       if (done % 25 === 0 || done === todo.length) log(`      ${done}/${todo.length} chunk(s) aggregated`)
     })
     agg = run.catch(() => {})

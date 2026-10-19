@@ -143,7 +143,8 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   into `catalog/gazetteer/stats/`, incrementally: each chunk's daily rows are kept in
   `PRECOMPUTE_CHUNKS` beside the checkout, so a run fetches only the chunks it has not done. Requests
   stay under 100k values (extractr's `n_max_vals_per_req`); `precompute/src/schedule.ts` runs one lane
-  per ERDDAP server and rests a failing server (10 min to 2 h) while the others go on; each finished item
+  per ERDDAP server and rests a failing server (10 min to 2 h) while the others go on; a place is given up for the
+  run only after 3 tries in a row that finish no chunk, so a backfill that keeps progressing retries until the cutoff; each finished item
   is uploaded at once (`publish.ts`), and a run starts no new work after `PRECOMPUTE_HOURS` (21). It runs `rashid check`, and syncs the gazetteer to
   `s3://oceanmetrics.io-public/gazetteer/` using the host's AWS profile (the repo has no secrets).
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.

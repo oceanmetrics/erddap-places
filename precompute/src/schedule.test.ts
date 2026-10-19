@@ -66,6 +66,42 @@ describe('schedule', () => {
     expect(res.done.map((x) => x.key).sort()).toEqual(['a1', 'a2', 'b1', 'b2'])
     expect(res.failed).toEqual([])
   })
+  it('keeps a unit that progresses before it fails going until the deadline, after the shortest rest', async () => {
+    const c = clock(), at: number[] = []
+    let left = 10                                                   // chunks to fetch; each try finishes 2, then a 503
+    const res = await schedule([u('pmnm', 'pacioos')], {
+      ...c, restMs: [10, 30, 60].map((m) => m * 60_000), maxAttempts: 2, log: () => {},
+      run: async (_x, _a, progress) => {
+        at.push(c.at() / 60_000)
+        for (let i = 0; i < 2 && left; i++) { left--; progress() }
+        if (left) throw new Error('503 Service Unavailable')
+        return 'done'
+      },
+    })
+    expect(at).toEqual([0, 10, 20, 30, 40])                         // 5 tries (> maxAttempts), 10 min apart: no back-off growth
+    expect(res.done.map((x) => x.key)).toEqual(['pmnm'])
+    expect(res.failed).toEqual([])
+  })
+  it('gives a unit up after MAX_ATTEMPTS tries in a row with no progress, counted from its last progress', async () => {
+    const c = clock()
+    let n = 0
+    const res = await schedule([u('a1', 'h')], {
+      ...c, restMs: [60_000], maxAttempts: 2, log: () => {},
+      run: async (_x, _a, progress) => { if (n++ === 1) progress(); throw new Error('fetch failed') },
+    })
+    expect(n).toBe(4)                                               // no progress, progress (resets), no progress, no progress
+    expect(res.failed.map((f) => f.unit.key)).toEqual(['a1'])
+  })
+  it('still stops a progressing unit at the deadline (deferred, not failed)', async () => {
+    const c = clock()
+    const res = await schedule([u('a1', 'h')], {
+      ...c, deadline: 35 * 60_000, restMs: [10 * 60_000], maxAttempts: 2, log: () => {},
+      run: async (_x, _a, progress) => { progress(); throw new Error('503') },
+    })
+    expect(c.at()).toBe(35 * 60_000)
+    expect(res.deferred.map((x) => x.key)).toEqual(['a1'])
+    expect(res.failed).toEqual([])
+  })
   it('backs off longer after consecutive failures, and gives a unit up after MAX_ATTEMPTS', async () => {
     const c = clock(), at: number[] = []
     const res = await schedule([u('a1', 'h'), u('a2', 'h')], {
