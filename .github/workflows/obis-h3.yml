@@ -115,6 +115,11 @@ jobs:
           [ "$IN_SKIP_UPLOAD" = true ] && args+=(--skip-upload)
           [ "$IN_DRY_RUN"     = true ] && args+=(--dry-run)
           [ -n "$IN_RELEASE" ] && args+=(--release "$IN_RELEASE")
+          # the exact point-in-polygon place layer (obisindicators 0.9.0, place_exact/coll=<slug>/), read by
+          # oceanmetrics/indicators: values only; the polygons are the internal Marine Regions copies on this host
+          # (rsynced 2026-10-19), mounted read-only into the container. v20261012 ran it by hand (peak 12.8 GB)
+          export OBIS_PLACE_EXACT_COLLECTIONS="mr_eez mr_high_seas"
+          export PLACES_INTERNAL="$HOME/data/oceanmetrics/places-internal"
           # exit 2 = not enough disk (prune old stores), 3 = another run, 4 = validation failed,
           # 5 = the drive is not mounted or Colima/Docker is missing
           # caffeinate: a run is hours long; macOS must not idle-sleep under it
