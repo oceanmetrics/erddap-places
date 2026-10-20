@@ -19,7 +19,7 @@
 // a REQUESTED run (oceanmetrics/indicators "Request an indicator"): one catalogued target for places of
 // ANY published vector collection. The request names the places; a target's own `places` rule is not
 // applied, and the checks of request.ts refuse anything else before geometry is fetched (exit code 2).
-//   npx tsx src/precompute.ts --gazetteer noaa_nerrs --place NERR:XYZ --dataset dhw_5km [--variable CRW_SST] [--days 30]
+//   npx tsx src/precompute.ts --gazetteer noaa_nerrs --place NERRS:WEL --dataset dhw_5km [--variable CRW_SST] [--days 30]
 // it writes the parquet, the provenance and the Item only (never collection.json, the thumbnail or the
 // catalog link, which describe the daily run's places); PRECOMPUTE_PUBLISH uploads exactly those.
 import { existsSync, readFileSync } from 'node:fs'
