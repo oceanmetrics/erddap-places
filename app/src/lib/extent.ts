@@ -153,14 +153,17 @@ const stripSlash = (s: string) => s.replace(/\/+$/, '')
 /**
  * `<base>/info/<datasetID>/index.json` -> the live extent, memoised per base+dataset. The fetch is
  * shared by every caller, so no caller's signal is passed to it (a superseded run must not cancel it
- * for the next one); fetchRetry bounds it instead (15 s per attempt, one retry). null on failure,
+ * for the next one); fetchRetry bounds it instead (`INFO_TIMEOUT_MS` per attempt, one retry). null on failure,
  * and a failure is forgotten, so the next call asks again.
  */
+/** per-attempt timeout of the info request (PacIOOS took 4–9 s on 2026-10-20, and 20 s on 2026-10-09) */
+export const INFO_TIMEOUT_MS = 30_000
+
 export function fetchTimeExtent(base: string, datasetId: string, axis = 'time', retry: Omit<RetryOpts, 'signal'> = {}): Promise<TimeExtent | null> {
   const url = `${stripSlash(base)}/info/${datasetId}/index.json`
   const hit = cache.get(url)
   if (hit) return hit
-  const p = fetchRetry(url, { timeoutMs: 15_000, ...retry }, async (res) => {
+  const p = fetchRetry(url, { timeoutMs: INFO_TIMEOUT_MS, ...retry }, async (res) => {
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
     return parseInfoExtent(await res.json(), axis)
   }).catch((e) => { cache.delete(url); console.warn('extent:', e); return null })

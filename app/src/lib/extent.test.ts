@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, parseInfoExtent, parseSpacing,
+  INFO_TIMEOUT_MS, addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, parseInfoExtent, parseSpacing,
   spanDays, stepLabel, timeInstant, type TimeExtent,
 } from './extent'
 import { noonZ } from './erddap'
@@ -132,4 +132,10 @@ describe('live info extent', () => {
     expect(e.stepLabel).toBe('8-day')
     expect(await fetchTimeExtent(BASE, 'noaa_aoml_seascapes_8day')).toBe(e)   // memoised
   }, 60_000)
+})
+
+describe('the info request outlasts a busy server (regression, 2026-10-09 and 2026-10-20)', () => {
+  it('waits at least 20 s per attempt (PacIOOS answered an info request in 20 s)', () => {
+    expect(INFO_TIMEOUT_MS).toBeGreaterThanOrEqual(20_000)
+  })
 })

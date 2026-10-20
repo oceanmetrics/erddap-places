@@ -101,6 +101,12 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.9** (2026-10-20): a busy ERDDAP is waited for, not given up on. PacIOOS answered `dhw_5km` axis requests
+in 13–19 s and 45 days of one pixel in 27–31 s, so the 15 s axis timeout failed every live run of a place that is not
+precomputed (Jobos Bay NERR × bleaching alert: "pae-paha.pacioos.hawaii.edu did not answer (no response within 15 s, 2
+tries)"). Axes and the map slice now wait 45 s per attempt, the info request 30 s, and the status line names the host
+while it waits.
+
 **app 0.3.8** (2026-10-20): the precomputed places are the 18 NOAA sanctuaries only. The picker heading is
 "National Marine Sanctuaries (precomputed)" (it was "Sanctuaries & places"), the `places` rows sort A–Z, and the
 map credits NOAA ONMS alone. `places` 2.0.0 dropped the Pitcairn EEZ (`MRGID:8439`, Marine Regions geometry its
@@ -416,7 +422,9 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
     the axes as before. Reproduce lists the provenance as the axes' source.
   - **Timeouts** (`src/lib/fetchRetry.ts`): every ERDDAP fetch (extent, axes, slab) has a per-attempt
     timeout and one retry on a network error, a timeout or a 5xx; a 4xx is the server's answer and is
-    not retried. Extent and axes 15 s, the map slice 20 s, a whole live window 120 s. A timeout is
+    not retried. Extent 30 s, axes 45 s, the map slice 45 s, a whole live window 120 s (`INFO_TIMEOUT_MS`,
+    `AXIS_TIMEOUT_MS`, `SLICE_TIMEOUT_MS`: PacIOOS was up but answered axes in 13–19 s and one pixel's 45 days in
+    27–31 s on 2026-10-20, so the old 15 s failed every live run). A timeout is
     never reported as an abort (`isAbort()` would swallow it); the caller's own abort passes through.
   - **strip `live`, map `window`**: a window that starts before the file or after its end, an empty file
     (`NMS:MNMS`), a missing file, a tabledap target, or a slow host (6 s) takes the full live path

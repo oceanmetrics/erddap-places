@@ -144,14 +144,23 @@ export function tabledapPlaceConstraints(o: {
 
 // ── axis vectors ──────────────────────────────────────────────────────────────
 /**
- * `dataset.json?latitude[(min):1:(max)]` -> the axis values, in the server's own order. A small
- * request: 15 s per attempt and one retry by default (`retry` overrides them; the precompute waits longer).
+ * per-attempt timeout of an axis request. small, but a busy server is slow whatever the size: PacIOOS answered
+ * `dhw_5km` latitude requests in 13–19 s on 2026-10-20, past the old 15 s, so a live run failed while the server
+ * was up ("did not answer (no response within 15 s, 2 tries)").
+ */
+export const AXIS_TIMEOUT_MS = 45_000
+/** per-attempt timeout of the map's one-step slice: as small, and as slow on a busy server (PacIOOS took 27–31 s for 45 days of one pixel) */
+export const SLICE_TIMEOUT_MS = 45_000
+
+/**
+ * `dataset.json?latitude[(min):1:(max)]` -> the axis values, in the server's own order. `AXIS_TIMEOUT_MS` per
+ * attempt and one retry by default (`retry` overrides them; the precompute waits longer).
  */
 export async function fetchAxis(base: string, datasetId: string, axis: string, min: number, max: number, descending = false,
                                 signal?: AbortSignal, retry: Omit<RetryOpts, 'signal'> = {}): Promise<number[]> {
   const c   = descending ? constraint(max, min) : constraint(min, max)
   const url = `${stripSlash(base)}/griddap/${datasetId}.json?${axis}${c}`
-  return fetchRetry(url, { timeoutMs: 15_000, ...retry, signal }, async (res) => {
+  return fetchRetry(url, { timeoutMs: AXIS_TIMEOUT_MS, ...retry, signal }, async (res) => {
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
     const j: { table: { columnNames: string[]; rows: number[][] } } = await res.json()
     return j.table.rows.map((r) => Number(r[0]))

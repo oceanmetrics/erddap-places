@@ -4,7 +4,7 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { constraint, fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, griddapUrls, noonZ, parseCsvp, pickFormat } from './erddap'
+import { AXIS_TIMEOUT_MS, SLICE_TIMEOUT_MS, constraint, fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, griddapUrls, noonZ, parseCsvp, pickFormat } from './erddap'
 import { gridMask, polygonParts } from './gridMask'
 import type { FeatureCollection } from 'geojson'
 
@@ -63,6 +63,15 @@ describe('griddapUrl', () => {
     expect(constraint(1, 2)).toBe('%5B(1):1:(2)%5D')
     expect(noonZ('2026-09-10')).toBe('2026-09-10T12:00:00Z')
     expect(noonZ(new Date('2026-09-10T03:00:00Z'))).toBe('2026-09-10T12:00:00Z')
+  })
+})
+
+describe('timeouts outlast a busy server (regression, 2026-10-20)', () => {
+  // PacIOOS was up but slow: dhw_5km latitude axes in 13–19 s and 45 days of one pixel in 27–31 s, so a 15 s axis
+  // timeout failed every live run ("pae-paha.pacioos.hawaii.edu did not answer (no response within 15 s, 2 tries)")
+  it('waits at least 30 s for an axis request and for the map slice', () => {
+    expect(AXIS_TIMEOUT_MS).toBeGreaterThanOrEqual(30_000)
+    expect(SLICE_TIMEOUT_MS).toBeGreaterThanOrEqual(30_000)
   })
 })
 

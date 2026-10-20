@@ -8,7 +8,7 @@
   import * as Plot from '@observablehq/plot'
   import { Button, Chip, Controls, Legend, Menu, Notice, Picker, Select, Sentence, TimeStrip, type BrushRange, type PickerItem } from '@marinebon/ui'
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
-  import { fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
+  import { SLICE_TIMEOUT_MS, fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
   import { buildIndex, cachedPlace, loadReferenceLayers, referenceName, collectionAttribution, collForHash, collectionParquet, loadIndex, loadLayers, loadPlaces, PLACES_COLLECTION, placeAsRow,
            placeGeometry, placeKey, placeLobes, placesPmtilesUrl, plainPlace, polygonStatus, resolvePlace, type GazIndex, type Place } from './lib/gazetteer'
@@ -45,7 +45,7 @@
   const LAG_DAYS     = 2      // most near-real-time grids are a couple of days behind
   const EXTENT_GATE_MS = 2500 // runs start without the extent after this long (precomputed strip first)
   const EXTENT_WAIT_MS = 4000 // how long the precomputed path waits for a pending extent before the strip
-  const SLICE_RETRY  = { timeoutMs: 20_000, attempts: 2 }   // the one-step map slice: small, so a stall is a failure
+  const SLICE_RETRY  = { timeoutMs: SLICE_TIMEOUT_MS, attempts: 2 }   // the one-step map slice: small, but a busy server takes 30 s whatever the size
   const WINDOW_RETRY = { timeoutMs: 120_000, attempts: 2 }  // a whole live window can take 15–30 s and more
   const MIN_STEPS    = 8      // a coarse product (8-day Seascapes) still gets this many time steps
   const WIN          = { days: DEFAULT_DAYS, minSteps: MIN_STEPS, maxDays: MAX_DAYS }
@@ -614,7 +614,7 @@
           continue
         }
         const [lo, hi] = lobeLonSpan(lobe.bbox, ds.lonRange)
-        if (!axes) status = `lobe ${i + 1}/${lobes.length}: ERDDAP axis vectors…`
+        if (!axes) status = `lobe ${i + 1}/${lobes.length}: asking ${new URL(ds.baseUrl).host} for the grid axes (a busy server can take 30 s)…`
         const [lonSrv, lat] = axes
           ? [axes[i].lon, axes[i].lat]
           : await Promise.all([
