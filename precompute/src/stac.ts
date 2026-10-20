@@ -4,7 +4,7 @@ import { deflateSync }                    from 'node:zlib'
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync, readdirSync } from 'node:fs'
 import { join, dirname }                  from 'node:path'
 import type { Place }                     from '../../app/src/lib/gazetteer'
-import { placeBbox, placeLobes, plainPlace, unionBbox } from '../../app/src/lib/gazetteer'
+import { placeBbox, placeLobes, plainPlace, unionBbox, PLACES_COLLECTION } from '../../app/src/lib/gazetteer'
 import type { Provenance }                from './stats'
 import { itemId, statsHref, statsPath }   from './stats'
 import { GAZETTEER, STATS }               from './paths'
@@ -145,6 +145,15 @@ export function existingItems(dir = join(STATS, 'items')): ItemRef[] {
   }).filter((r) => r.place_id && r.dataset_id && r.variable)
 }
 
+/** the `gazetteer:collection` of every Item in stats/items/ for a place id ('places' for an Item written before the property). */
+export function itemCollections(placeId: string, dir = join(STATS, 'items')): string[] {
+  if (!existsSync(dir)) return []
+  return [...new Set(readdirSync(dir).filter((f) => f.endsWith('.json')).flatMap((f) => {
+    const pr = JSON.parse(readFileSync(join(dir, f), 'utf8')).properties ?? {}
+    return pr['erddap-places:place_id'] === placeId ? [String(pr['gazetteer:collection'] ?? PLACES_COLLECTION)] : []
+  }))]
+}
+
 /** this run's items, plus the earlier items it did not recompute that `keep` accepts. */
 export function mergeItems(fresh: ItemRef[], earlier: ItemRef[], keep: (dataset: string, variable: string) => boolean): ItemRef[] {
   const key  = (r: ItemRef) => itemId(r.dataset_id, r.variable, r.place_id)
@@ -224,6 +233,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
   const rel     = (h: string) => h.replace(/^\.\//, '../../')      // items/ is two levels under stats/
   const status  = itemStatus(p)
   const first   = recordStart(p.dataset_id, p.record_start)
+  const coll    = place.collection ?? PLACES_COLLECTION
   const assets: Record<string, any> = {
     data: {
       href : rel(href),
@@ -259,6 +269,9 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
       end_datetime  : p.end_datetime,
       created       : p.generated,
       'table:row_count': p.rows,
+      // the gazetteer collection the place came from ('places' for the local one): stats files are keyed by
+      // place id, so this is what tells a consumer which collection's place_id it is
+      'gazetteer:collection'      : place.collection ?? PLACES_COLLECTION,
       'erddap-places:place_id'    : p.place_id,
       'erddap-places:dataset_id'  : p.dataset_id,
       'erddap-places:variable'    : p.variable,
@@ -280,7 +293,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
       { rel: 'collection', href: '../collection.json',    type: 'application/json' },
       { rel: 'related',    href: `../../erddap/${p.dataset_id}/collection.json`, type: 'application/json',
         title: datasetTitle },
-      { rel: 'related',    href: '../../places/collection.json', type: 'application/json', title: 'Places' },
+      { rel: 'related',    href: `../../${coll}/collection.json`, type: 'application/json', title: coll === PLACES_COLLECTION ? 'Places' : coll },
       ...(datasetVia(p.dataset_id) ? [{ ...datasetVia(p.dataset_id)!, rel: 'via', type: 'text/html' }] : []),
     ],
   }
@@ -315,7 +328,9 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>, pl
       'polygon masks the dataset\'s own grid (cell centre inside, partial-area weight on the ' +
       'boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a ' +
       'precomputed row and a live in-browser row agree. Use these when you want the answer now; run ' +
-      'the live query when you want today.',
+      'the live query when you want today. An Item\'s gazetteer:collection names the gazetteer ' +
+      'collection its place came from (places for the 20 listed here); places of other collections ' +
+      'are precomputed on request and have an Item and a file, but no entry in this collection.',
     license     : 'CC-BY-4.0',
     keywords    : ['statistics', 'time series', 'marine protected areas', 'ERDDAP', 'griddap', 'zonal statistics'],
     extent: {
@@ -375,6 +390,20 @@ const writeJson = (path: string, o: unknown) => {
 }
 
 /**
+ * write only the Items of `provs`, no collection, thumbnail or catalog link: a requested run's places
+ * (precompute.ts --gazetteer) are not in the checkout's collection.json, and a collection rebuilt from
+ * the checkout would drop the Items already published. Returns the files written.
+ */
+export function writeItems(provs: Provenance[], places: Map<string, Place>, titles: Map<string, string>): string[] {
+  return provs.map((p) => {
+    const item = buildItem(p, places.get(p.place_id)!, titles.get(p.dataset_id) ?? p.dataset_id)
+    const f = join(STATS, 'items', `${item.id}.json`)
+    writeJson(f, item)
+    return f
+  })
+}
+
+/**
  * write the Items of `only` (default: every one of `provs`), then the thumbnail and the collection over
  * `provs` plus the earlier items in stats/items/ that `keep` accepts; the `planned` targets without an
  * Item are listed as pending. Returns the files written, Items first and collection.json last (the
@@ -388,13 +417,7 @@ export function writeStac(
 ): string[] {
   // the items written now, then the earlier ones a partial run (--dataset / --place) did not touch
   const all = mergeItems(provs, existingItems(), keep).filter((r) => places.has(r.place_id))
-  const written: string[] = []
-  for (const p of only) {
-    const item = buildItem(p, places.get(p.place_id)!, titles.get(p.dataset_id) ?? p.dataset_id)
-    const f = join(STATS, 'items', `${item.id}.json`)
-    writeJson(f, item)
-    written.push(f)
-  }
+  const written = writeItems(only, places, titles)
   // the thumbnail before the collection: the collection records its size and checksum
   writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))
   writeJson(join(STATS, 'collection.json'), buildCollection(all, places, planned))

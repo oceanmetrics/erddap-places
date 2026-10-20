@@ -51,6 +51,47 @@ The `*.parquet` / `*.provenance.json` files are **not in git** (see
 therefore has Items whose data asset is missing until the precompute has run; run it before
 `rashid check` if you want a clean asset verification.
 
+## Requested places
+
+The 20 places above are the daily run's. A place of ANY other published vector collection can be
+precomputed on request, one catalogued target (a dataset and variable of `precompute/src/targets.ts`)
+at a time. The request workflow of [oceanmetrics/indicators](https://github.com/oceanmetrics/indicators)
+("Request an indicator", a public GitHub issue) calls, on the `macmini` runner:
+
+```bash
+cd precompute
+PRECOMPUTE_PUBLISH=s3://oceanmetrics.io-public/gazetteer \
+  npx tsx src/precompute.ts --gazetteer noaa_nerrs --place NERRS:WEL --dataset dhw_5km [--variable CRW_SST] [--days 30]
+```
+
+The places are read from `https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/<slug>/places.parquet`
+with the app's own loader (`placeGeometry()`), and the request names them, so a target's own `places`
+rule (`all`, `nms`, a list) is not applied. Each `--place` is one id of that collection; `--dataset` is
+required. Without `--gazetteer` nothing changes. The run is **refused** (exit code 2, a one-line reason,
+no geometry fetched) when:
+
+- the slug or a place id does not match `^[a-z0-9_]+$` / `^[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_.\-]+$`
+  (the values come from public issues and end up in file names and URLs);
+- no `--place` or no `--dataset` is given, the dataset is not in `TARGETS`, or a `--variable` is not one
+  of that dataset's targets (`--variable` needs exactly one `--dataset`);
+- the slug is not a `kind: "vector"` polygon layer in
+  `https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/index/layers.json`: reference
+  collections (`mr_*`) publish no geometry and are never fetched as geometry, and point or line layers
+  cannot mask a grid;
+- a `--place` id is not in the collection;
+- the id is also a place of the `places` collection, or already has a stats file from another
+  collection: files are keyed `stats/<dataset>/<variable>/<place_id>.parquet`, so the second would
+  overwrite the first.
+
+The window is the target's own (the full record unless `--days`), incremental per chunk like the daily
+run. A requested run writes the Parquet, the provenance JSON and the Item (`properties.gazetteer:collection`
+names the collection), and **not** `collection.json`, the thumbnail or the catalog link: those describe
+the daily run's places, and a collection rebuilt from a checkout would drop the Items already
+published. Set `PRECOMPUTE_PUBLISH` to upload each finished file at once (`aws s3 cp`, the host's AWS
+profile, never `--delete`); the Item is then at
+`https://storage.oceanmetrics.io/gazetteer/stats/items/<dataset>_<variable>_<place-with-dashes>.json`.
+The daily workflow's `aws s3 sync` of `stats/` has no `--delete`, so it leaves these files alone.
+
 ## Then vs Now data (`gazetteer/rasters/`, `gazetteer/climatology/`, `gazetteer/series/`)
 
 `build_then_now.py` converts the sanctuary SST archive of the NOAA ONMS climate-dashboard-app
