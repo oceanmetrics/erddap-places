@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # publish the places collection: build -> copy -> portolan add -> version bump -> check -> upload
 #
-# usage: catalog/publish_places.sh <new_version> [-m "release note"] [--no-build] [--no-upload]
+# usage: catalog/publish_places.sh <new_version> [-m "release note"] [--no-build] [--no-upload] [--upload-only]
 #   e.g. catalog/publish_places.sh 1.2.0 -m "tile metadata + attribution"
+#   --upload-only: steps 1-4 were already done and committed (places/versions.json already at <new_version>,
+#   as after a --no-upload dry run); run only the check and the upload
 #
 # - build:  Rscript catalog/build_places.R   (reuses catalog/cache/; --no-build skips it)
 # - copy:   catalog/places/places.{parquet,pmtiles} -> catalog/gazetteer/places/
@@ -21,21 +23,24 @@ version=""
 note="places rebuilt"
 do_build=1
 do_upload=1
+upload_only=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -m)          note="$2"; shift 2 ;;
     --no-build)  do_build=0; shift ;;
     --no-upload) do_upload=0; shift ;;
+    --upload-only) upload_only=1; shift ;;
     *)           version="$1"; shift ;;
   esac
 done
-[[ -n "$version" ]] || { echo "usage: $0 <new_version> [-m note] [--no-build] [--no-upload]" >&2; exit 1; }
+[[ -n "$version" ]] || { echo "usage: $0 <new_version> [-m note] [--no-build] [--no-upload] [--upload-only]" >&2; exit 1; }
 
 dir_catalog="$(cd "$(dirname "$0")" && pwd)"
 dir_repo="$(dirname "$dir_catalog")"
 dir_gaz="$dir_catalog/gazetteer"
 s3_dest="s3://oceanmetrics.io-public/gazetteer"
 
+if [[ $upload_only -eq 0 ]]; then
 # 1. build ----
 if [[ $do_build -eq 1 ]]; then
   (cd "$dir_repo" && Rscript catalog/build_places.R)
@@ -108,6 +113,8 @@ PYEOF
 # the extent from the data: portolan writes a crossing extent as two halves (STAC reads the first bbox as the
 # whole extent) and unions it with the old -180..180 extent; one bbox with west > east instead (PMNM)
 uv run "$dir_catalog/antimeridian.py" join-extent "$dir_gaz/places/collection.json" --data "$dir_gaz/places/places.parquet"
+
+fi   # upload_only skips steps 1-4
 
 # 5. check: rashid check is the gate (hard stop; portolan check also lists pre-existing warnings
 #    for other collections) ----

@@ -7,7 +7,8 @@
   `attribution` (NOAA ONMS) in their metadata. Run with
   `Rscript catalog/build_places.R`, or do the whole release (build, copy to `gazetteer/places/`,
   `portolan add`, `portolan version bump`, `rashid check`, upload) with `publish_places.sh`.
-- `publish_places.sh` — `catalog/publish_places.sh <new_version> -m "note" [--no-build] [--no-upload]`.
+- `publish_places.sh` — `catalog/publish_places.sh <new_version> -m "note" [--no-build] [--no-upload] [--upload-only]`
+  (`--upload-only` after a committed `--no-upload` dry run: only `rashid check` and the upload).
   Edit the "Changes" list in `gazetteer/places/README.md` first. Leaves the other collections'
   STAC untouched, stops if `rashid check` fails, and uploads only `places/` and the root
   `versions.json` (no deletes).
