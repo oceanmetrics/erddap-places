@@ -13,7 +13,9 @@ export interface CiteDataset { collection: any; title: string; baseUrl: string; 
  * the collection a place comes from, as the gazetteer's layers.json describes it (a `Layer` has all of
  * it). The `places` collection is the gazetteer itself and is cited by `gazetteerCitation()`.
  */
-export interface PlaceLayer { slug: string; title: string; citation: string; license?: string | null; license_url?: string | null; n?: number | null }
+export interface PlaceLayer { slug: string; title: string; citation: string; license?: string | null; license_url?: string | null; n?: number | null
+                              /** a reference collection (Marine Regions): its boundary comes from the publisher's WFS */
+                              raster?: { feature_url?: string | null } | null }
 
 /** the citation of a place's collection: its own credit line and citation, then its licence */
 export function placeLayerCitation(l: PlaceLayer): string {

@@ -5,6 +5,7 @@ import { parquetReadObjects } from 'hyparquet'
 import { compressors } from 'hyparquet-compressors'
 import { wkbToGeoJSON, polygonCoordinates } from './wkb'
 import { configure, getPlace, listLayers, loadIndex as clientIndex, type ClientConfig, type IndexPlace, type Layer } from './places'
+import { fetchRetry, hostOf, type RetryOpts } from './fetchRetry'
 import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson'
 
 /** primary base URL for the published catalog (trailing slash). */
@@ -76,6 +77,8 @@ export interface Place {
   geometry : Geometry                                 // MULTIPOLYGON, already split at ±180
   /** the gazetteer collection the geometry came from; absent = `places` */
   collection?: string
+  /** where the geometry was read, when it is not the collection's places.parquet: a reference collection's WFS request */
+  sourceUrl?: string
 }
 
 // hyparquet's column parsers. it does ship a WKB decoder of its own, but we pass ours so the app and
@@ -269,6 +272,39 @@ export const rewriteLayers = (layers: Layer[]): Layer[] =>
 /** the collection's geometry file */
 export const collectionParquet = (slug: string) => `${GAZETTEER_FALLBACK}${slug}/places.parquet`
 
+// ── reference collections (Marine Regions): geometry from the publisher, one feature per selection ──
+//
+// VLIZ asked us not to republish the Marine Regions geometry (2026-10-16): the bucket holds `mr_*` metadata only, so
+// `<slug>/places.parquet` answers 403. layers.json lists such a collection as `kind: "raster"` with
+// `raster.feature_url`, the publisher's WFS request for ONE feature (`{source_id}` = the MRGID), and VLIZ agreed to
+// single-feature WFS on demand. The geometry is drawn by the publisher's own tiles and masked from that request.
+
+/** the manifest rows whose places are read from the publisher: `kind: "raster"` with a `raster.feature_url`. */
+export const referenceLayers = (layers: Layer[]): Layer[] =>
+  layers.filter((l) => l.kind === 'raster' && !!l.raster?.feature_url)
+
+/** the publisher's request for one feature: `{source_id}` replaced by the (percent-encoded) id. */
+export const featureUrl = (template: string, sourceId: string): string =>
+  template.replace(/\{source_id\}/g, encodeURIComponent(sourceId))
+
+/** a place's id at its publisher: the index row's `source_id`, else `place_id` without its authority prefix (`MRGID:5670` -> `5670`). */
+export const sourceIdOf = (ref: { place_id: string; source_id?: string | null }): string =>
+  (ref.source_id ?? '').trim() || String(ref.place_id).replace(/^[^:]*:/, '')
+
+/** who to name while a reference polygon loads: "Marine Regions" for the Marine Regions collections, else the publisher's host. */
+export const referenceName = (layer: Pick<Layer, 'title' | 'raster'>): string =>
+  /^marine ?regions/i.test(layer.title) ? 'Marine Regions' : hostOf(layer.raster?.feature_url ?? '') || layer.title
+
+let referenceMemo: { src: Layer[]; out: Layer[] } | null = null
+/** the reference collections of the manifest (cached per manifest); [] when the manifest does not load. */
+export async function loadReferenceLayers(): Promise<Layer[]> {
+  try {
+    const src = await listLayers()
+    if (referenceMemo?.src !== src) referenceMemo = { src, out: referenceLayers(src) }
+    return referenceMemo.out
+  } catch { return [] }
+}
+
 // every request the client makes goes through here: it keeps the byte count of the polygon being
 // loaded (for the status line) and stops reading when that run has been superseded
 interface Load { url: string; bytes: number; total: number; signal?: AbortSignal; onProgress?: (bytes: number, total: number) => void }
@@ -314,7 +350,7 @@ export async function meteredFetch(input: RequestInfo | URL, init?: RequestInit)
 export function configureGazetteer(next: Partial<ClientConfig> = {}) {
   innerFetch = next.fetch ?? null
   parquetOf = next.parquetUrl ?? collectionParquet
-  placeCache.clear(); totals.clear(); layersMemo = null
+  placeCache.clear(); totals.clear(); layersMemo = null; referenceMemo = null
   configure({ base: GAZETTEER_FALLBACK, layersUrl: undefined, indexUrl: undefined, ...next, parquetUrl: parquetOf, fetch: meteredFetch })
 }
 
@@ -379,6 +415,56 @@ export interface GeometryOptions {
   signal?    : AbortSignal
   /** called as the collection file is read: bytes so far, and the file size when the HEAD gave it (else 0) */
   onProgress?: (bytes: number, total: number) => void
+  /** retry policy of a reference collection's WFS request (tests shorten the pause) */
+  retry?     : Pick<RetryOpts, 'timeoutMs' | 'attempts' | 'backoffMs' | 'wait'>
+}
+
+/** the smallest [xmin, ymin, xmax, ymax] of every ring of a geometry's polygons */
+export function geometryBbox(g: Geometry): [number, number, number, number] {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity
+  for (const rings of polygonCoordinates(g)) {
+    const [a, b, c, d] = partBbox(rings)
+    if (a < x0) x0 = a; if (b < y0) y0 = b; if (c > x1) x1 = c; if (d > y1) y1 = d
+  }
+  return [x0, y0, x1, y1]
+}
+
+/**
+ * One place of a reference collection from the publisher's single-feature WFS (`GeometryOptions.retry` for tests).
+ * Goes through `fetchRetry()`: a timeout per attempt, one retry, an error that names the host. The answer is a GeoJSON
+ * FeatureCollection with the one feature for the id; its polygons are joined into one MultiPolygon. Marine Regions
+ * already cuts its geometries at +-180 (Fiji's EEZ arrives as parts at -180..-176 and 172..180, checked 2026-10-20),
+ * so `placeLobes()` takes them as they are, the way it takes our own parquet.
+ */
+async function referenceGeometry(
+  ref: PlaceKey & Partial<Pick<IndexPlace, 'name' | 'authority' | 'area_km2'>> & { source_id?: string | null },
+  layer: Layer, opts: GeometryOptions,
+): Promise<Place> {
+  const url = featureUrl(layer.raster!.feature_url!, sourceIdOf(ref))
+  const who = ref.name ?? ref.place_id, from = referenceName(layer)
+  const fc = await fetchRetry(url, { timeoutMs: 30_000, ...opts.retry, signal: opts.signal, fetchFn: innerFetch ?? globalThis.fetch.bind(globalThis) },
+    async (res) => {
+      if (!res.ok) throw new Error(`${hostOf(url)} answered HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ''} for ${who} (${ref.place_id})`)
+      const text = await res.text()
+      opts.onProgress?.(text.length, text.length)
+      try { return JSON.parse(text) as FeatureCollection }
+      catch { throw new Error(`${hostOf(url)} did not answer with GeoJSON for ${who} (${ref.place_id})`) }
+    })
+  if (opts.signal?.aborted) throw abortError()
+  const feats = (fc.features ?? []).filter((f) => f?.geometry)
+  if (!feats.length) throw new Error(`no place ${ref.place_id} at ${from}: its feature request returned no feature`)
+  const parts = feats.flatMap((f) => polygonCoordinates(f.geometry))
+  if (!parts.length) throw new Error(`${who} is a ${feats[0].geometry.type}: only polygon places can be masked`)
+  const geometry: Geometry = { type: 'MultiPolygon', coordinates: parts }
+  const props = (feats[0].properties ?? {}) as Record<string, unknown>
+  const area = Number(props.area_km2)
+  return {
+    place_id: ref.place_id, collection: ref.collection,
+    gazetteer: ref.authority ?? String(ref.place_id).split(':')[0],
+    name: ref.name ?? String(props.geoname ?? props.name ?? ref.place_id),
+    area_km2: ref.area_km2 && ref.area_km2 > 0 ? ref.area_km2 : Number.isFinite(area) && area > 0 ? area : 0,
+    bbox: geometryBbox(geometry), geometry, sourceUrl: url,
+  }
 }
 
 /**
@@ -390,10 +476,12 @@ export interface GeometryOptions {
  * depends on how the file was written: a collection written as one row group (noaa_sanctuaries, 5.5 MB)
  * costs the whole file, mpa_inventory's overlapping Morton row groups can cost 25–30 MB, and a small
  * collection costs a few kB. The geometry is NOT unwrapped: the parts stay split at ±180 for `placeLobes()`.
+ * A place of a reference collection (Marine Regions, layers.json `kind: "raster"` with `raster.feature_url`) is not in the
+ * bucket: its one feature is requested from the publisher's WFS (`referenceGeometry`).
  * Results are cached by (collection, place_id).
  */
 export async function placeGeometry(
-  ref: PlaceKey & Partial<Pick<IndexPlace, 'name' | 'authority' | 'area_km2' | 'geom_type'>>,
+  ref: PlaceKey & Partial<Pick<IndexPlace, 'name' | 'authority' | 'area_km2' | 'geom_type'>> & { source_id?: string | null },
   opts: GeometryOptions = {},
 ): Promise<Place> {
   const key = placeKey(ref)
@@ -401,9 +489,13 @@ export async function placeGeometry(
   if (hit) return hit
   if (ref.geom_type && !isPolygonal(ref.geom_type)) throw new Error(`${ref.name ?? ref.place_id} is a ${ref.geom_type}: only polygon places can be masked`)
   let place: Place | undefined
+  const reference = ref.collection === PLACES_COLLECTION ? undefined : (await loadReferenceLayers()).find((l) => l.slug === ref.collection)
+  if (opts.signal?.aborted) throw abortError()
   if (ref.collection === PLACES_COLLECTION) {
     place = (await loadPlaces()).find((p) => p.place_id === ref.place_id)
     if (!place) throw new Error(`no place ${ref.place_id} in the places collection`)
+  } else if (reference) {
+    place = await referenceGeometry(ref, reference, opts)
   } else {
     const url = parquetOf(ref.collection)
     const mine: Load = { url, bytes: 0, total: totals.get(url) ?? 0, signal: opts.signal, onProgress: opts.onProgress }
@@ -431,8 +523,12 @@ export async function placeGeometry(
 /** "12.3 MB" / "840 kB": the status line's byte counts */
 export const fmtBytes = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1e3))} kB`)
 
-/** the status line while a polygon loads: "loading X polygon from mpa_inventory (12.3 of 29.8 MB so far)…" */
-export function polygonStatus(name: string, collection: string, bytes: number, total: number): string {
+/**
+ * the status line while a polygon loads: "loading X polygon from mpa_inventory (12.3 of 29.8 MB so far)…", or, for a
+ * reference collection (`publisher` = referenceName()), "loading X polygon from Marine Regions (one feature, 338 kB)…".
+ */
+export function polygonStatus(name: string, collection: string, bytes: number, total: number, publisher?: string): string {
+  if (publisher) return `loading ${name} polygon from ${publisher} (one feature${bytes > 0 ? `, ${fmtBytes(bytes)}` : ''})…`
   const so = total > 0 ? `${fmtBytes(bytes)} of ${fmtBytes(total)}` : fmtBytes(bytes)
   return `loading ${name} polygon from ${collection} (${so} so far)…`
 }

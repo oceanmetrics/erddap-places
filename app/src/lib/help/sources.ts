@@ -52,7 +52,10 @@ export function placeLayerSource(l: PlaceLayer | null | undefined): Source[] {
   if (!l || l.slug === 'places') return []
   return [{
     name: l.title, href: `https://storage.oceanmetrics.io/gazetteer/${l.slug}/collection.json`,
-    role: `The place on screen is from this gazetteer collection${l.n ? ` (${l.n.toLocaleString('en-US')} places)` : ''}: its boundary is read from the collection's GeoParquet and drawn from its PMTiles.`,
+    role: `The place on screen is from this gazetteer collection${l.n ? ` (${l.n.toLocaleString('en-US')} places)` : ''}: ` +
+      (l.raster?.feature_url
+        ? "its publisher asked that the boundaries are not republished, so this one boundary was requested from the publisher's own web feature service when you selected it (one feature, nothing stored)."
+        : "its boundary is read from the collection's GeoParquet and drawn from its PMTiles."),
     citation: l.citation ? placeLayerCitation({ ...l, license: null }) : undefined,
     licence: l.license || undefined, licenceHref: l.license_url || undefined,
   }]
@@ -73,7 +76,7 @@ export function fixedSources(year: string): Source[] {
     },
     {
       name: 'MarineRegions.org', href: 'https://www.marineregions.org',
-      role: 'Marine regions by MRGID (seas, EEZs, IHO areas).',
+      role: 'Marine regions by MRGID (seas, EEZs, IHO areas). A region that is not one of the 20 precomputed places is requested one boundary at a time from the Marine Regions web feature service, which is how its publisher asked us to use it.',
       citation: `Flanders Marine Institute (${year}). MarineRegions.org. https://www.marineregions.org`,
       provider: 'Flanders Marine Institute (VLIZ)', licence: 'CC-BY-4.0', licenceHref: 'https://creativecommons.org/licenses/by/4.0/',
     },

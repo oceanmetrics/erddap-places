@@ -218,7 +218,8 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
 - the layers manifest (`index/layers.json`, canonical, falling back to `layers.json`; 37 kB, 22 layers: slug == collection == PMTiles source-layer; top-level `base_direct` is the redirect-free S3 host): title, credit, citation,
   licence, paint. Its `pmtiles` URLs name the storage host; `loadLayers()` rewrites each to
   `<bucket>/<slug>/places.pmtiles` (the path-style bucket URL the rest of the app uses; same bucket as `base_direct`).
-  Reference raster rows (`kind: 'raster'`, places client 0.3.0; none published yet) are dropped there: they have no places.
+  Reference raster rows (`kind: 'raster'`, places client 0.3.0: the Marine Regions `mr_*` collections) are dropped there: no PMTiles, no parquet.
+  `loadReferenceLayers()` returns the ones with a `raster.feature_url` (credit, citation, and the geometry source below).
 - `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 11 of its columns (`group_id` only when the file has it) and leaves
   `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
   through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads
@@ -234,6 +235,18 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
   whole-file fast path (`loadPlaces()`). The run's status says "loading X polygon from <collection> (1.0 MB of 70.8 MB so far)…"
   (bytes counted as the response streams, the file size from the HEAD hyparquet makes); the polygon's request is listed under
   Share → Reproduce and its bytes are in the footer's kB.
+- **Reference collections (Marine Regions, `mr_*`: EEZs and the rest): geometry from the publisher, one feature per selection** (2026-10-20).
+  VLIZ asked us not to republish the geometry, so the bucket holds metadata only and `mr_eez/places.parquet` answers **403**
+  (the run used to fail with "fetch with range failed 403"). `placeGeometry()` sees the collection's layers.json row
+  (`kind: "raster"`, `raster.feature_url`), builds the request with `featureUrl()` (`{source_id}` = the index row's `source_id`, else
+  `place_id` without `MRGID:`), and reads the answer (a GeoJSON FeatureCollection, `application/json`, CORS `*`; Albania 338 kB in 0.3 s,
+  Fiji's EEZ 365 kB) through `fetchRetry()`: 30 s per attempt, one retry, errors that name `geo.vliz.be`. Name and area come from the index
+  row (else `geoname`, `area_km2`), the bbox from the geometry, and the Place carries `sourceUrl` so Share → Reproduce lists the WFS request.
+  The status line says "loading X polygon from Marine Regions (one feature, 338 kB)…". Nothing is stored or republished; one request per
+  selection, then the in-memory cache. Marine Regions already cuts its geometries at ±180 (Fiji arrives as parts at -180..-176 and 172..180),
+  so `placeLobes()` and `placeBbox()` work unchanged; `referenceGeometry.test.ts` pins that and has a live test (skipped offline) on MRGID:5670.
+  The credit is the collection's `attribution_html` (CC BY 4.0, VLIZ) in *Cite this data* and Help → Data sources; the map draws no outline for such a place
+  (the publisher's tiles are not a source of ours), only its cells.
 - **Dateline**: the index unwraps places cut at ±180 (bbox and `centroid_lon` may exceed 180: NMS:PMNM is 177.8..199.0,
   centroid 188), so `indexBounds()` fits that bbox directly. The 10–15 rows that still read -180..180 (upstream's list) get
   null until their geometry is loaded, and then `placeMapBounds()` walks it. The polygon itself stays split at ±180 for the lobes.

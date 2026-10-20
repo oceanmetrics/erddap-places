@@ -10,7 +10,7 @@
   import { gridMask, pointMask, type MaskCell } from './lib/gridMask'
   import { fetchAxis, fetchSlab, griddapSliceUrl, griddapUrl, isParquet, noonZ, tabledapPlaceConstraints, tabledapUrl } from './lib/erddap'
   import { engine } from './lib/engine'
-  import { buildIndex, cachedPlace, collectionAttribution, collForHash, collectionParquet, loadIndex, loadLayers, loadPlaces, PLACES_COLLECTION, placeAsRow,
+  import { buildIndex, cachedPlace, loadReferenceLayers, referenceName, collectionAttribution, collForHash, collectionParquet, loadIndex, loadLayers, loadPlaces, PLACES_COLLECTION, placeAsRow,
            placeGeometry, placeKey, placeLobes, placesPmtilesUrl, plainPlace, polygonStatus, resolvePlace, type GazIndex, type Place } from './lib/gazetteer'
   import { search as gazSearch, type IndexPlace, type Layer } from './lib/places'
   import PlacePicker from './lib/PlacePicker.svelte'
@@ -64,6 +64,7 @@
   // ever replaced wholesale, so raw state loses nothing.
   let places    = $state.raw<Place[]>([])        // the 18 precomputed places, with geometry (places.parquet)
   let layers    = $state.raw<Layer[]>([])        // the manifest: 22 collections (layers.json)
+  let refLayers = $state.raw<Layer[]>([])        // its reference collections (Marine Regions): credit and citation only, read from the publisher's WFS
   let gaz       = $state.raw<GazIndex | null>(null)   // every place of every collection (places_index.parquet), no geometry
   let gazError  = $state('')
   let loadedPlace = $state.raw<Place | null>(null)    // the polygon the last run loaded: only an antimeridian place needs it for the map fit
@@ -143,7 +144,7 @@
   const resolved  = $derived(resolvePlace(byId, placeId, coll))
   const selected  = $derived<IndexPlace | null>(resolved.row)
   const selKey    = $derived(selected ? placeKey(selected) : '')
-  const layerOf   = (slug: string | undefined) => layers.find((l) => l.slug === slug) ?? null
+  const layerOf   = (slug: string | undefined) => layers.find((l) => l.slug === slug) ?? refLayers.find((l) => l.slug === slug) ?? null
   const selLayer  = $derived(layerOf(selected?.collection))
   const polygons  = $derived(gaz?.polygons ?? places.map(placeAsRow))
   /** pick a place (from the picker, or a click on the map) */
@@ -225,7 +226,7 @@
     return (lastBounds = b)
   })
   // the selected place's own collection, when it is not `places`: one more tile source on the map
-  const extra = $derived(selected && selected.collection !== PLACES_COLLECTION && selLayer
+  const extra = $derived(selected && selected.collection !== PLACES_COLLECTION && selLayer?.pmtiles
     ? { slug: selLayer.slug, url: selLayer.pmtiles, attribution: collectionAttribution(selLayer) } : null)
   // a sequential ramp for a measurement, the chart's own class colours for a categorical grid
   const layer     = $derived(squares ?? points)
@@ -354,7 +355,7 @@
       try {
         void precomputedIndex()          // which stats files are published: cached for the runs
         // the index and the manifest (1.1 MB + 37 kB) load alongside the 18 places and the datasets, not after them
-        const gazP = Promise.all([loadIndex(), loadLayers()])
+        const gazP = Promise.all([loadIndex(), loadLayers(), loadReferenceLayers()])
         gazP.catch(() => {})
         // the 18 precomputed places (4 MB, with geometry) are the fast path: a run on one of them starts at
         // once. every other place waits for the index (1.1 MB) and reads its polygon when it runs
@@ -368,13 +369,13 @@
     })
   })
   /** the manifest and the index: every place of every collection (no geometry). a failure leaves the 18 places usable. */
-  async function useGazetteer(loading: Promise<[IndexPlace[], Layer[]]>) {
+  async function useGazetteer(loading: Promise<[IndexPlace[], Layer[], Layer[]]>) {
     try {
-      const [rows, ls] = await loading
+      const [rows, ls, refs] = await loading
       // the 18 places are always selectable, whatever the index holds
       const have = new Set(rows.filter((r) => r.collection === PLACES_COLLECTION).map((r) => r.place_id))
       const all = [...rows, ...places.filter((p) => !have.has(p.place_id)).map(placeAsRow)]
-      layers = ls; gaz = buildIndex(all, ls)
+      layers = ls; refLayers = refs; gaz = buildIndex(all, ls)
       status = `gazetteer: ${gaz.polygons.length.toLocaleString('en-US')} polygon places of ${all.length.toLocaleString('en-US')} in ${ls.length} collections, ${datasets.length} ERDDAP datasets`
       if (!resolvePlace(gaz.byId, placeId, coll).row) { busy = false; error = `no place ${placeId} in the gazetteer` }
     } catch (e) {
@@ -563,15 +564,16 @@
       const cached = ref.collection === PLACES_COLLECTION || !!cachedPlace(ref)
       let polyBytes = 0
       const tGeom = performance.now()
-      if (!cached) status = polygonStatus(ref.name, ref.collection, 0, 0)
+      const publisher = layerOf(ref.collection)?.raster?.feature_url ? referenceName(layerOf(ref.collection)!) : undefined
+      if (!cached) status = polygonStatus(ref.name, ref.collection, 0, 0, publisher)
       const p: Place = await placeGeometry(ref, {
         signal: h.signal,
-        onProgress: (bytes, total) => { polyBytes = bytes; if (!h.stale()) status = polygonStatus(ref.name, ref.collection, bytes, total) },
+        onProgress: (bytes, total) => { polyBytes = bytes; if (!h.stale()) status = polygonStatus(ref.name, ref.collection, bytes, total, publisher) },
       })
       if (h.stale()) return
       loadedPlace = p
-      if (!cached) urls = [...urls, { url: collectionParquet(ref.collection), kb: Math.round(polyBytes / 1024), ms: Math.round(performance.now() - tGeom),
-                                      label: `polygon of ${ref.name}: range reads of the row groups that can hold ${ref.place_id}` }]
+      if (!cached) urls = [...urls, { url: p.sourceUrl ?? collectionParquet(ref.collection), kb: Math.round(polyBytes / 1024), ms: Math.round(performance.now() - tGeom),
+                                      label: p.sourceUrl ? `polygon of ${ref.name}: one feature from ${publisher}'s WFS` : `polygon of ${ref.name}: range reads of the row groups that can hold ${ref.place_id}` }]
 
       // the mask works on a plain copy: nothing reactive, and no geometry work happens before a run
       const lobes   = placeLobes(plainPlace(p))

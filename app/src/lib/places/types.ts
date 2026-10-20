@@ -65,6 +65,10 @@ export interface Layer {
   /** URL of `<slug>/h3/membership.json`: the place x H3 membership (res 1-7, the share of each cell inside each
    *  place), set only while it was built from this `parquet_sha256`; null for points, lines and stale builds. */
   h3?             : string | null
+  /** 'vector' (default) or 'raster': a reference collection (Marine Regions) has tiles from the publisher and no pmtiles/parquet. */
+  kind?           : string | null
+  /** a reference collection's publisher services: WMTS `tiles`, and `feature_url`, the single-feature WFS with `{source_id}`. */
+  raster?         : { tiles?: string[]; feature_url?: string | null; info_url?: string | null; link?: string | null } | null
 }
 
 export interface ClientConfig {

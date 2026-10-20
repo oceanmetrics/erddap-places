@@ -87,15 +87,16 @@ describe('published gazetteer', () => {
     expect(meta.attribution).toBe(PLACES_ATTRIBUTION)
   }, 60_000)
 
-  it('reads the live manifest and index: 22 layers on the bucket host, more than 14,000 places', async () => {
+  it('reads the live manifest and index: every vector layer on the bucket host, more than 14,000 places', async () => {
     if (!(await online())) return
     configureGazetteer()                                  // the bucket, no fakes (an earlier test may have configured one)
     const layers = await loadLayers()
-    expect(layers).toHaveLength(22)
+    expect(layers.length).toBeGreaterThanOrEqual(22)         // 42 on 2026-10-20, with the Marine Regions reference collections left out
     expect(layers.every((l) => l.pmtiles === `${GAZETTEER_FALLBACK}${l.slug}/places.pmtiles`)).toBe(true)
     const rows = await loadIndex()
     expect(rows.length).toBeGreaterThan(14_000)
-    expect(new Set(rows.map((r) => r.collection)).size).toBe(22)
+    const have = new Set(rows.map((r) => r.collection))
+    expect(layers.every((l) => have.has(l.slug))).toBe(true)
     expect(rows.every((r) => r.attribution === null)).toBe(true)
     expect(rows.filter((r) => r.collection === 'places')).toHaveLength(18)
     // the index unwraps places cut at the antimeridian (xmax may exceed 180); NMS:PMNM is ~177.8..199
