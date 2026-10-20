@@ -15,18 +15,26 @@
 //   npx tsx src/precompute.ts --days 30           # override every target's window (a quick smoke test)
 //   npx tsx src/precompute.ts --hours 6           # start no new work after 6 h (default RUN_HOURS, or PRECOMPUTE_HOURS)
 //   npx tsx src/precompute.ts --items-only        # rebuild the STAC from the existing provenance
+//
+// a REQUESTED run (oceanmetrics/indicators "Request an indicator"): one catalogued target for places of
+// ANY published vector collection. The request names the places; a target's own `places` rule is not
+// applied, and the checks of request.ts refuse anything else before geometry is fetched (exit code 2).
+//   npx tsx src/precompute.ts --gazetteer noaa_nerrs --place NERRS:WEL --dataset dhw_5km [--variable CRW_SST] [--days 30]
+// it writes the parquet, the provenance and the Item only (never collection.json, the thumbnail or the
+// catalog link, which describe the daily run's places); PRECOMPUTE_PUBLISH uploads exactly those.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { DAYS, RUN_HOURS, TARGETS, placesFor } from './targets'
+import { TARGETS, placesFor } from './targets'
 import { STATS } from './paths'
 import {
   computeOne, liveExtent, loadDataset, loadLocalPlaces, statsPath, variableOf, StopRequested,
   type Provenance,
 } from './stats'
+import { RequestRefusal, LAYERS_URL, daysOf, parseArgs, resolveRequest, selectTargets, validateArgs } from './request'
 import type { TimeExtent } from '../../app/src/lib/extent'
 import type { Dataset, CubeVariable } from '../../app/src/lib/catalog'
-import type { Place } from '../../app/src/lib/gazetteer'
-import { writeStac } from './stac'
+import { configureGazetteer, placeGeometry, PLACES_COLLECTION, type Place } from '../../app/src/lib/gazetteer'
+import { itemCollections, writeItems, writeStac } from './stac'
 import { schedule, hostOf, type Unit } from './schedule'
 import { publisher } from './publish'
 import { Agent, setGlobalDispatcher } from 'undici'
@@ -34,23 +42,6 @@ import { Agent, setGlobalDispatcher } from 'undici'
 // undici's default 10 s connect timeout is what every PacIOOS "fetch failed" in CI and on msens was
 // (2026-10-07/08); give a slow handshake 30 s before the retry logic in stats.ts takes over
 setGlobalDispatcher(new Agent({ connect: { timeout: 30_000 } }))
-
-// ── args ──────────────────────────────────────────────────────────────────────
-function parseArgs(argv: string[]) {
-  const o = { datasets: [] as string[], places: [] as string[], days: undefined as number | undefined, itemsOnly: false, resume: false,
-             hours: Number(process.env.PRECOMPUTE_HOURS || RUN_HOURS) }
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i]
-    if      (a === '--dataset')    o.datasets.push(argv[++i])
-    else if (a === '--place')      o.places.push(argv[++i])
-    else if (a === '--days')       o.days = Number(argv[++i])
-    else if (a === '--items-only') o.itemsOnly = true
-    else if (a === '--resume')     o.resume = true
-    else if (a === '--hours')      o.hours = Number(argv[++i])
-    else throw new Error(`unknown argument ${a}`)
-  }
-  return o
-}
 
 const hhmmss = (ms: number) => {
   const s = Math.round(ms / 1000)
@@ -60,10 +51,36 @@ const hhmmss = (ms: number) => {
 // ── main ──────────────────────────────────────────────────────────────────────
 interface Job extends Unit { ds: Dataset; v: CubeVariable; place: Place; days: number | 'all' }
 
+/** a requested run's places: the manifest check, then each place's geometry through the app's loader. */
+async function requestedPlaces(opts: ReturnType<typeof parseArgs>, localPlaces: Place[]): Promise<Place[]> {
+  configureGazetteer()                         // the bucket, as the app does at start-up
+  const local = new Map(localPlaces.map((p) => [p.place_id, p]))
+  return resolveRequest(opts, {
+    fetchLayers: async () => {
+      const res = await fetch(LAYERS_URL, { signal: AbortSignal.timeout(60_000) })
+      if (!res.ok) throw new Error(`${LAYERS_URL}: ${res.status} ${res.statusText}`)
+      return (await res.json()).layers
+    },
+    loadPlace: async (slug, id) => {
+      if (slug === PLACES_COLLECTION) {
+        const p = local.get(id)
+        if (!p) throw new Error(`no place ${id} in the ${slug} collection`)
+        return { ...p, collection: PLACES_COLLECTION }
+      }
+      return placeGeometry({ collection: slug, place_id: id })
+    },
+    localIds: localPlaces.map((p) => p.place_id),
+    existing: (id) => itemCollections(id),
+  })
+}
+
 async function main() {
   const t0   = Date.now()
   const opts = parseArgs(process.argv.slice(2))
-  const places = await loadLocalPlaces()
+  validateArgs(opts)                           // before anything is read or fetched
+  const requested = opts.gazetteer !== undefined
+  const localPlaces = await loadLocalPlaces()
+  const places = requested ? await requestedPlaces(opts, localPlaces) : localPlaces
   const byId   = new Map(places.map((p) => [p.place_id, p]))
   const titles = new Map<string, string>()
   const provs: Provenance[] = []
@@ -72,7 +89,7 @@ async function main() {
   const keep = (d: string, v: string) => inTargets.has(`${d}/${v}`)
 
   // every (dataset, variable, place) the targets ask for, whatever --dataset / --place pick: the
-  // collection lists those without an Item yet as pending
+  // collection lists those without an Item yet as pending (the daily run only)
   const planned = TARGETS.flatMap((t) => {
     const ds = loadDataset(t.dataset), v = variableOf(ds, t.variable)
     return placesFor(t, places.map((p) => p.place_id)).map((place_id) => ({ dataset_id: ds.datasetId, variable: v.name, place_id }))
@@ -80,12 +97,12 @@ async function main() {
 
   // every (dataset, variable, place) of the targets, in target order
   const jobs: Job[] = []
-  for (const t of TARGETS.filter((t) => !opts.datasets.length || opts.datasets.includes(t.dataset))) {
+  for (const { target: t, placeIds } of selectTargets(opts, places.map((p) => p.place_id))) {
     const ds = loadDataset(t.dataset)
     titles.set(ds.datasetId, ds.title)
     const v  = variableOf(ds, t.variable)
-    const days = opts.days ?? t.days ?? DAYS
-    for (const id of placesFor(t, places.map((p) => p.place_id)).filter((id) => !opts.places.length || opts.places.includes(id))) {
+    const days = daysOf(opts, t)
+    for (const id of placeIds) {
       const key = `${ds.datasetId}/${v.name}/${id}`
       const place = byId.get(id)
       if (!place) { console.warn(`   !! no place ${id} in places.parquet; skipped`); failed.push(key); continue }
@@ -129,7 +146,8 @@ async function main() {
       catch (e) { if (e instanceof StopRequested) { log(' stopped at the deadline; resumes next run'); return 'deferred' } throw e }
       provs.push(prov)
       const parquet = statsPath(prov.dataset_id, prov.variable, prov.place_id)
-      const stac = writeStac(provs, byId, titles, keep, [prov], planned)
+      // a requested run writes its Item only: the collection describes the daily run's places
+      const stac = requested ? writeItems([prov], byId, titles) : writeStac(provs, byId, titles, keep, [prov], planned)
       void pub.publish([parquet, parquet.replace(/\.parquet$/, '.provenance.json'), ...stac])
       return 'done'
     },
@@ -139,8 +157,8 @@ async function main() {
 
   if (!provs.length && !failed.length && !res.deferred.length) throw new Error('nothing computed')
   // the whole collection once more (also the --items-only path)
-  if (provs.length) writeStac(provs, byId, titles, keep, provs, planned)
-  console.log(`\n${res.done.length} item(s) computed, ${provs.length} in ${join(STATS, 'items')} + collection.json` +
+  if (provs.length && !requested) writeStac(provs, byId, titles, keep, provs, planned)
+  console.log(`\n${res.done.length} item(s) computed, ${provs.length} in ${join(STATS, 'items')}${requested ? '' : ' + collection.json'}` +
               (pub.enabled ? `; ${pub.stats.files} file(s) uploaded, ${pub.stats.failures} upload failure(s)` : ''))
   console.log(`parquet: ${(provs.reduce((s, p) => s + p.bytes, 0) / 1e6).toFixed(1)} MB, ${provs.reduce((s, p) => s + p.rows, 0)} rows`)
   if (res.deferred.length) console.log(`deferred to the next run (deadline): ${res.deferred.length}\n  ${res.deferred.map((u) => u.key).join('\n  ')}`)
@@ -149,4 +167,7 @@ async function main() {
   if (failed.length || pub.stats.failures) process.exitCode = 1
 }
 
-main().then(() => process.exit(process.exitCode ?? 0), (e) => { console.error(e); process.exit(1) })
+main().then(() => process.exit(process.exitCode ?? 0), (e) => {
+  if (e instanceof RequestRefusal) { console.error(`refused: ${e.message}`); process.exit(2) }
+  console.error(e); process.exit(1)
+})

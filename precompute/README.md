@@ -8,6 +8,7 @@ npm ci
 npm run stats                                  # every target in src/targets.ts (~25 min)
 npx tsx src/precompute.ts --place NMS:PMNM     # one place
 npx tsx src/precompute.ts --dataset dhw_5km --days 30   # a quick smoke test
+npx tsx src/precompute.ts --gazetteer noaa_nerrs --place NERRS:WEL --dataset dhw_5km   # a requested place of any collection
 npx tsx src/precompute.ts --items-only         # rebuild the STAC from the existing provenance JSON
 npx tsx src/precompute.ts --resume             # skip whatever already has a provenance JSON
 ```

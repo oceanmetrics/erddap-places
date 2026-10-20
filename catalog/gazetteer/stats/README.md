@@ -152,6 +152,10 @@ run after 3 tries (its finished chunks stay), and a run starts no new work after
 (21 h in CI), stopping a large place at its next chunk. With `PRECOMPUTE_PUBLISH` set, every finished
 file, its Item and the updated `collection.json` are uploaded at once.
 
+Places of other collections are precomputed on request (`precompute.ts --gazetteer <slug> --place <id>
+--dataset <id>`, see [`../../README.md`](../../README.md) "Requested places"): their Items carry
+`properties.gazetteer:collection` (`places` for the 20 above) and are not listed in this `collection.json`.
+
 CI does exactly this daily — see `.github/workflows/stats.yml`.
 
 ## License

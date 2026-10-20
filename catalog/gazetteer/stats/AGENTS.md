@@ -39,6 +39,9 @@ under `items/`. An Item gives you:
 
 - `assets.data.href` — the Parquet file (relative to `stats/`), plus `table:columns`, `file:size`
 - `properties.erddap-places:place_id` / `:dataset_id` / `:variable`
+- `properties.gazetteer:collection` — the gazetteer collection the place came from (`places` for the 20
+  places above; another slug, e.g. `noaa_nerrs`, for a place that was requested). A place id is
+  unique within a collection, not across them, so read this before looking the geometry up
 - `properties.erddap-places:griddap_url_templates` / `erddap-places:griddap_requests` — the ERDDAP
   requests behind the file (one template per lobe; `griddap_urls` too when there are ≤ 24). The
   provenance JSON's `griddap_chunks` fills `{t0}` / `{t1}` for every request
@@ -47,7 +50,8 @@ under `items/`. An Item gives you:
   the whole record up to `end_datetime`) or `partial` (it starts later: an older 365-day window, or a
   backfill still under way); `erddap-places:record_start` is that first time step
 - `geometry` — the place's **lobe bounding boxes**, not its outline (the outlines run to ~40,000
-  vertices; get the real polygon from [`../places/places.parquet`](../places/collection.json))
+  vertices; get the real polygon from `../<gazetteer:collection>/places.parquet`, for the 20 places
+  [`../places/places.parquet`](../places/collection.json))
 - `bbox` — the union of those lobes; for a place across ±180 it crosses with west > east
   (RFC 7946 §5): `NMS:PMNM` is about `[177.8, 19.2, -161.0, 31.8]`, not `[-180, …, 180, …]`.
   The collection extent follows the same rule
