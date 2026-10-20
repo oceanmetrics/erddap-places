@@ -62,9 +62,9 @@ credentials, from a real glob: `read_parquet('s3://oceanmetrics.io-public/gazett
 
 | dataset | variable | kind | places |
 |---------|----------|------|--------|
-| `dhw_5km` | `CRW_SST` | continuous (daily) | all 20 |
-| `dhw_5km` | `CRW_BAA` | categorical (bleaching alert area 0–4) | all 20 |
-| `noaa_aoml_seascapes_8day` | `CLASS` | categorical (seascape class 1–33) | the 5 reef/tropical places: `NMS:FKNMS`, `PSGID:939`, `NMS:HIHWNMS`, `NMS:NMSAS`, `NMS:PMNM` |
+| `dhw_5km` | `CRW_SST` | continuous (daily) | all 18 |
+| `dhw_5km` | `CRW_BAA` | categorical (bleaching alert area 0–4) | all 18 |
+| `noaa_aoml_seascapes_8day` | `CLASS` | categorical (seascape class 1–33) | the 4 reef/tropical sanctuaries: `NMS:FKNMS`, `NMS:HIHWNMS`, `NMS:NMSAS`, `NMS:PMNM` |
 
 `NMS:PMNM` crosses the antimeridian, so it is fetched as **two lobes** (one each side of ±180) and
 the two masks are unioned before aggregating. Its Item `bbox` crosses ±180 with west > east
@@ -104,8 +104,8 @@ Categorical variables (`sql/stats_categorical.sql`):
   inside it, so its mask is empty and its files have 0 rows. That is the same answer the live app
   gives; a finer dataset (`jplMURSST41`, 0.01°) would resolve it.
 - The Great Lakes sanctuaries (`NMS:TBNMS`, `NMS:LONMS`, `NMS:WSCNMS`) mask cells fine, but
-  `dhw_5km` is an ocean product and is all-null there, so those files are 0 rows too. 4 of the 20
-  `dhw_5km` places are empty for this reason; the other 16 have a full 364-day series.
+  `dhw_5km` is an ocean product and is all-null there, so those files are 0 rows too. 4 of the 18
+  `dhw_5km` places are empty for this reason; the other 14 have a series.
 - `rashid check` reports one warning on this collection, **PTL-CAT-001** ("45 children with no
   subcatalog grouping them"). Grouping the items into per-dataset subcatalogs would break the flat
   `stats/{dataset}/{variable}/{place_id}.parquet` path convention that makes the data guessable from
@@ -154,7 +154,9 @@ file, its Item and the updated `collection.json` are uploaded at once.
 
 Places of other collections are precomputed on request (`precompute.ts --gazetteer <slug> --place <id>
 --dataset <id>`, see [`../../README.md`](../../README.md) "Requested places"): their Items carry
-`properties.gazetteer:collection` (`places` for the 20 above) and are not listed in this `collection.json`.
+`properties.gazetteer:collection` (`places` for the 18 above) and are not listed in this `collection.json`. The same holds for a place that was once one of the daily
+run's and left it: `MRGID:8439` (the Pitcairn EEZ) and `PSGID:939` were removed from `places` on 2026-10-20; their
+Items and files from earlier runs may still be in the bucket, but this `collection.json` no longer lists them.
 
 CI does exactly this daily — see `.github/workflows/stats.yml`.
 

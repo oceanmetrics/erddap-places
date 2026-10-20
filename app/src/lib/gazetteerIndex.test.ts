@@ -76,15 +76,14 @@ describe('the layers manifest', () => {
   })
 
   // issue #6: the map credited all three gazetteers with only Florida Keys NMS on screen
-  it('credits only the gazetteers of the places on screen, in the published order', () => {
-    const [nms, mrgid, psgid] = PLACES_ATTRIBUTION.split(' | ')
-    expect(nms).toMatch(/NOAA ONMS/)
-    expect(mrgid).toMatch(/MarineRegions/)
-    expect(psgid).toMatch(/ProtectedSeas/)
-    expect(placesAttribution(['NMS:FKNMS', 'NMS:FKNMS'])).toBe(nms)
-    expect(placesAttribution(['PSGID:1234', 'NMS:CINMS'])).toBe(`${nms} | ${psgid}`)
-    expect(placesAttribution(['MRGID:8456'])).toBe(mrgid)
-    expect(placesAttribution(['PSGID:1', 'MRGID:2', 'NMS:3'])).toBe(PLACES_ATTRIBUTION)
+  // places 2.0.0 (2026-10-20): the source holds the 18 NMS sanctuaries only, so NOAA ONMS is the one credit;
+  // the MarineRegions and ProtectedSeas credits left with their places
+  it('credits NOAA ONMS for a sanctuary on screen, and nothing for any other id', () => {
+    expect(PLACES_ATTRIBUTION).toMatch(/NOAA ONMS/)
+    expect(PLACES_ATTRIBUTION).not.toMatch(/MarineRegions|ProtectedSeas|\|/)
+    expect(placesAttribution(['NMS:FKNMS', 'NMS:FKNMS'])).toBe(PLACES_ATTRIBUTION)
+    expect(placesAttribution(['PSGID:1234', 'NMS:CINMS'])).toBe(PLACES_ATTRIBUTION)
+    expect(placesAttribution(['MRGID:8456', 'PSGID:1'])).toBe('')
     expect(placesAttribution([])).toBe('')
     expect(placesAttribution(['', 'BOEM:OCS-A 0506'])).toBe('')     // not a gazetteer of the places source
   })

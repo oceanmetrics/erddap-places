@@ -2,7 +2,7 @@
   "type": "Collection",
   "id": "places",
   "stac_version": "1.1.0",
-  "description": "20 marine place polygons (18 NOAA National Marine Sanctuaries, 1 MarineRegions EEZ, 1 ProtectedSeas MPA) as GeoParquet and PMTiles, for computing place statistics against the erddap/ collections. Provenance: the 18 sanctuary boundaries are the official NOAA ONMS shapefile downloads listed at https://sanctuaries.noaa.gov/library/imast_gis.html (zones unioned to one multipolygon per site, made valid, transformed to EPSG:4326 from NAD83 or, for Florida Keys, NAD27); the EEZ is MarineRegions MRGID 8439 and the MPA is ProtectedSeas PSGID 939. Each row records its download in source_url and source_date. Built by catalog/build_places.R.",
+  "description": "The 18 NOAA National Marine Sanctuaries and Marine National Monuments (NMS:<code> place ids) as GeoParquet and PMTiles, for computing place statistics against the erddap/ collections. Provenance: the sanctuary boundaries are the official NOAA ONMS shapefile downloads listed at https://sanctuaries.noaa.gov/library/imast_gis.html (zones unioned to one multipolygon per site, made valid, transformed to EPSG:4326 from NAD83 or, for Florida Keys, NAD27). Each row records its download in source_url and source_date. Built by catalog/build_places.R.",
   "links": [
     {
       "rel": "root",
@@ -40,7 +40,7 @@
       "rel": "via",
       "href": "https://sanctuaries.noaa.gov/library/imast_gis.html",
       "type": "text/html",
-      "title": "Upstream sources: official NOAA ONMS sanctuary boundary downloads (also MarineRegions.org, ProtectedSeas)"
+      "title": "Upstream source: official NOAA ONMS sanctuary boundary downloads"
     }
   ],
   "stac_extensions": [
@@ -50,19 +50,19 @@
     "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
   ],
   "geoparquet:geometry_type": "MultiPolygon",
-  "geoparquet:feature_count": 20,
-  "table:row_count": 20,
+  "geoparquet:feature_count": 18,
+  "table:row_count": 18,
   "table:primary_geometry": "geometry",
   "table:columns": [
     {
       "name": "place_id",
       "type": "string",
-      "description": "prefixed id, e.g. NMS:CINMS, MRGID:8439, PSGID:939"
+      "description": "prefixed id, e.g. NMS:CINMS, NMS:HIHWNMS, NMS:PMNM"
     },
     {
       "name": "gazetteer",
       "type": "string",
-      "description": "source gazetteer: NMS (NOAA sanctuary), MRGID (MarineRegions), PSGID (ProtectedSeas)"
+      "description": "source gazetteer: NMS (NOAA ONMS sanctuaries and monuments)"
     },
     {
       "name": "name",
@@ -77,7 +77,7 @@
     {
       "name": "source_url",
       "type": "string",
-      "description": "URL the boundary was downloaded from (official NOAA ONMS zip, MarineRegions gazetteer record or ProtectedSeas API)"
+      "description": "URL the boundary was downloaded from (the official NOAA ONMS zip)"
     },
     {
       "name": "source_date",
@@ -95,25 +95,25 @@
       "description": "MULTIPOLYGON, EPSG:4326, split at +/-180 antimeridian"
     }
   ],
-  "updated": "2026-10-16T08:08:48Z",
+  "updated": "2026-10-20T11:49:52Z",
   "pmtiles:min_zoom": 0,
-  "pmtiles:max_zoom": 12,
+  "pmtiles:max_zoom": 13,
   "pmtiles:tile_type": "mvt",
   "pmtiles:center": [
-    -83.2763669,
-    45.057993,
-    12
+    -83.29834,
+    45.073519,
+    13
   ],
   "pmtiles:layers": [
     "places"
   ],
-  "title": "Places",
+  "title": "National Marine Sanctuaries (NMS codes)",
   "extent": {
     "spatial": {
       "bbox": [
         [
           177.84422,
-          -28.4247039,
+          -15.3861496,
           -70.0350637,
           48.5058899
         ]
@@ -139,22 +139,6 @@
       "url": "https://sanctuaries.noaa.gov"
     },
     {
-      "name": "MarineRegions.org (Flanders Marine Institute)",
-      "roles": [
-        "producer",
-        "licensor"
-      ],
-      "url": "https://www.marineregions.org"
-    },
-    {
-      "name": "ProtectedSeas",
-      "roles": [
-        "producer",
-        "licensor"
-      ],
-      "url": "https://protectedseas.net"
-    },
-    {
       "name": "Ocean Metrics LLC",
       "roles": [
         "processor",
@@ -167,8 +151,8 @@
     "places": {
       "href": "./places.parquet",
       "type": "application/vnd.apache.parquet",
-      "file:size": 4471836,
-      "file:checksum": "12205cc76f7224e0ebf43dc19ab34c6d0d6d7d84ec33e50bb1e4860b43e67ba7628c",
+      "file:size": 4358632,
+      "file:checksum": "12208043b4ffae2d67ae5255b2d96804aa6776a21cc69854a9ff9f92d1f9e00c5e97",
       "roles": [
         "data"
       ]
@@ -177,8 +161,8 @@
       "href": "./places.pmtiles",
       "type": "application/vnd.pmtiles",
       "title": "places (vector tiles)",
-      "file:size": 2097271,
-      "file:checksum": "1220a4b74819476e1fdff7f1097e3205abbf75413ea47fd34c7ec77476fd52e95e4a",
+      "file:size": 3197152,
+      "file:checksum": "12204fdeadf37e563f81fc5174eea85927661169f738f9c7524dde11662beadd1e74",
       "roles": [
         "visual"
       ]
@@ -206,8 +190,8 @@
     "documentation": {
       "href": "./README.md",
       "type": "text/markdown",
-      "file:size": 3211,
-      "file:checksum": "12208749b6d11fd17b4fd1236da512477b97bf1eca7e0fe1154ea539f3ed1d3019e7",
+      "file:size": 4260,
+      "file:checksum": "12207c7555a536e548655894166a2be0fd5e80c3f4e3a5532053b2a1363d0404e3d9",
       "roles": [
         "documentation"
       ]

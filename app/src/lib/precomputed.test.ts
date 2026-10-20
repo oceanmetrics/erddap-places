@@ -24,8 +24,8 @@ describe('names', () => {
     expect(precomputedPath('dhw_5km', 'CRW_SST', 'NMS:FKNMS')).toBe('stats/dhw_5km/CRW_SST/NMS:FKNMS.parquet')
     expect(precomputedUrl('dhw_5km', 'CRW_SST', 'NMS:FKNMS'))      // the bucket: the storage host's 302 has no CORS
       .toBe('https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/stats/dhw_5km/CRW_SST/NMS:FKNMS.parquet')
-    expect(precomputedUrl('noaa_aoml_seascapes_8day', 'CLASS', 'PSGID:939', 'https://x/g/'))
-      .toBe('https://x/g/stats/noaa_aoml_seascapes_8day/CLASS/PSGID:939.parquet')
+    expect(precomputedUrl('noaa_aoml_seascapes_8day', 'CLASS', 'NMS:HIHWNMS', 'https://x/g/'))
+      .toBe('https://x/g/stats/noaa_aoml_seascapes_8day/CLASS/NMS:HIHWNMS.parquet')
   })
   it('names the provenance sibling and the STAC item like stats.ts', () => {
     expect(provenanceUrl('https://x/stats/a/b/NMS:C.parquet')).toBe('https://x/stats/a/b/NMS:C.provenance.json')
@@ -41,9 +41,9 @@ describe('what exists', () => {
   })
   it('answers per (dataset, variable, place), not per list of ids', () => {
     expect(hasPrecomputed(index, 'dhw_5km', 'CRW_SST', 'NMS:FKNMS')).toBe(true)
-    expect(hasPrecomputed(index, 'noaa_aoml_seascapes_8day', 'CLASS', 'PSGID:939')).toBe(true)
+    expect(hasPrecomputed(index, 'noaa_aoml_seascapes_8day', 'CLASS', 'NMS:HIHWNMS')).toBe(true)
     expect(hasPrecomputed(index, 'dhw_5km', 'CRW_BAA', 'NMS:FKNMS')).toBe(false)     // variable not published for it
-    expect(hasPrecomputed(index, 'dhw_5km', 'CRW_SST', 'MRGID:8439')).toBe(false)    // place not listed
+    expect(hasPrecomputed(index, 'dhw_5km', 'CRW_SST', 'NMS:CBNMS')).toBe(false)     // place not listed
     expect(hasPrecomputed(null, 'dhw_5km', 'CRW_SST', 'NMS:FKNMS')).toBe(false)
   })
   it('ignores a malformed collection', () => {

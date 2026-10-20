@@ -1,6 +1,6 @@
 {
   "spec_version": "1.0.0",
-  "current_version": "1.2.1",
+  "current_version": "2.0.0",
   "versions": [
     {
       "version": "1.0.0",
@@ -163,6 +163,43 @@
         }
       },
       "message": "geo bbox and STAC extent cross the antimeridian (NMS:PMNM)"
+    },
+    {
+      "version": "2.0.0",
+      "created": "2026-10-20T11:49:53.685162Z",
+      "breaking": false,
+      "assets": {
+        "places.parquet": {
+          "sha256": "8043b4ffae2d67ae5255b2d96804aa6776a21cc69854a9ff9f92d1f9e00c5e97",
+          "size_bytes": 4358632,
+          "href": "places/places.parquet",
+          "mtime": 1792496993.1165643
+        },
+        "places.pmtiles": {
+          "sha256": "4fdeadf37e563f81fc5174eea85927661169f738f9c7524dde11662beadd1e74",
+          "size_bytes": 3197152,
+          "href": "places/places.pmtiles",
+          "mtime": 1792496990.0920105
+        },
+        "places.thumb.jpg": {
+          "sha256": "2d4a3ed8d6262fbc25720066a082b493fb281be66f84864cbfb64d689a6e9d4a",
+          "size_bytes": 2323,
+          "href": "places/places.thumb.jpg",
+          "mtime": 1789480341.935538
+        }
+      },
+      "changes": [
+        "places.parquet",
+        "places.pmtiles"
+      ],
+      "schema": {
+        "type": "unknown",
+        "fingerprint": {
+          "columns": [],
+          "types": {}
+        }
+      },
+      "message": "places 2.0.0: only the 18 NMS sanctuaries; MRGID:8439 (Pitcairn EEZ) and PSGID:939 removed"
     }
   ]
 }

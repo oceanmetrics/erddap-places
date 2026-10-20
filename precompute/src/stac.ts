@@ -10,6 +10,8 @@ import { itemId, statsHref, statsPath }   from './stats'
 import { GAZETTEER, STATS }               from './paths'
 
 const STAC_VERSION = '1.1.0'
+/** the title of the `places` collection (catalog/gazetteer/places/collection.json), for the links that point at it. */
+export const PLACES_COLLECTION_TITLE = 'National Marine Sanctuaries (NMS codes)'
 const EXT = {
   table : 'https://stac-extensions.github.io/table/v1.2.0/schema.json',
   file  : 'https://stac-extensions.github.io/file/v2.1.0/schema.json',
@@ -163,6 +165,15 @@ export function mergeItems(fresh: ItemRef[], earlier: ItemRef[], keep: (dataset:
   return [...fresh, ...kept]
 }
 
+/**
+ * the Items the daily collection.json lists: only those of the places the daily run covers (the `places`
+ * collection). An Item of any other place stays on S3 (the sync never deletes) but is not listed: a requested
+ * place (NERRS:WEL), or a place removed from `places` (MRGID:8439 and PSGID:939, 2026-10-20).
+ */
+export function listedItems(items: ItemRef[], places: Map<string, unknown>): ItemRef[] {
+  return items.filter((r) => places.has(r.place_id))
+}
+
 // ── thumbnail ─────────────────────────────────────────────────────────────────
 /**
  * A 480x240 equirectangular PNG of the covered places: the collection's "default styling" is the
@@ -293,7 +304,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
       { rel: 'collection', href: '../collection.json',    type: 'application/json' },
       { rel: 'related',    href: `../../erddap/${p.dataset_id}/collection.json`, type: 'application/json',
         title: datasetTitle },
-      { rel: 'related',    href: `../../${coll}/collection.json`, type: 'application/json', title: coll === PLACES_COLLECTION ? 'Places' : coll },
+      { rel: 'related',    href: `../../${coll}/collection.json`, type: 'application/json', title: coll === PLACES_COLLECTION ? PLACES_COLLECTION_TITLE : coll },
       ...(datasetVia(p.dataset_id) ? [{ ...datasetVia(p.dataset_id)!, rel: 'via', type: 'text/html' }] : []),
     ],
   }
@@ -329,7 +340,7 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>, pl
       'boundary) and sql/stats_daily.sql or sql/stats_categorical.sql aggregates per day — so a ' +
       'precomputed row and a live in-browser row agree. Use these when you want the answer now; run ' +
       'the live query when you want today. An Item\'s gazetteer:collection names the gazetteer ' +
-      'collection its place came from (places for the 20 listed here); places of other collections ' +
+      'collection its place came from (places for the 18 sanctuaries listed here); places of other collections ' +
       'are precomputed on request and have an Item and a file, but no entry in this collection.',
     license     : 'CC-BY-4.0',
     keywords    : ['statistics', 'time series', 'marine protected areas', 'ERDDAP', 'griddap', 'zonal statistics'],
@@ -369,7 +380,7 @@ export function buildCollection(provs: ItemRef[], places: Map<string, Place>, pl
         rel: 'related', href: `../erddap/${d}/collection.json`, type: 'application/json',
         title: `source dataset: ${d}`,
       })),
-      { rel: 'related', href: '../places/collection.json', type: 'application/json', title: 'Places' },
+      { rel: 'related', href: '../places/collection.json', type: 'application/json', title: PLACES_COLLECTION_TITLE },
       // rel:'via' must point at a human-readable source page (PTL-PRO-001)
       ...datasets.flatMap((d) => { const v = datasetVia(d); return v ? [{ ...v, rel: 'via', type: 'text/html' }] : [] }),
       ...provs.map((p) => ({
@@ -416,7 +427,7 @@ export function writeStac(
   planned: PlannedRef[] = [],
 ): string[] {
   // the items written now, then the earlier ones a partial run (--dataset / --place) did not touch
-  const all = mergeItems(provs, existingItems(), keep).filter((r) => places.has(r.place_id))
+  const all = listedItems(mergeItems(provs, existingItems(), keep), places)
   const written = writeItems(only, places, titles)
   // the thumbnail before the collection: the collection records its size and checksum
   writeThumbnail(join(STATS, THUMB), [...new Set(all.map((p) => p.place_id))].map((id) => places.get(id)!))

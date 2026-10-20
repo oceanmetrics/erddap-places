@@ -6,10 +6,9 @@ Published at `https://storage.oceanmetrics.io/gazetteer/`.
 
 ## Collections
 
-- [`places/`](places/collection.json) — 20 marine place polygons as GeoParquet (`places.parquet`)
-  and PMTiles (`places.pmtiles`). License: CC-BY-4.0 (our derived files). Upstream sources: NOAA
-  Office of National Marine Sanctuaries (public domain), MarineRegions.org (CC-BY 4.0), ProtectedSeas
-  (see their terms).
+- [`places/`](places/collection.json) — the 18 NOAA National Marine Sanctuaries (`NMS:<code>`) as GeoParquet
+  (`places.parquet`) and PMTiles (`places.pmtiles`). License: CC-BY-4.0 (our derived files). Upstream
+  source: NOAA Office of National Marine Sanctuaries (public domain).
 - [`erddap/dhw_5km/`](erddap/dhw_5km/collection.json) — NOAA Coral Reef Watch daily 5km SST + DHW
   (live, PacIOOS ERDDAP).
 - [`erddap/jplMURSST41/`](erddap/jplMURSST41/collection.json) — JPL MUR SST v4.1, 0.01° daily

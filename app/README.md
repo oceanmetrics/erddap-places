@@ -20,7 +20,7 @@ ERDDAP axes  ──┘
 ```
 
 `src/App.svelte` picks a place from the whole published gazetteer (the place index and the layers
-manifest; the 20 `places` rows also come with their geometry in `places.parquet`, read with hyparquet,
+manifest; the 18 `places` rows also come with their geometry in `places.parquet`, read with hyparquet,
 WKB decoded by `src/lib/wkb.ts`), reads the polygon of any other place when the run needs it, splits it
 into lobes (one griddap request each, grouped by side of the antimeridian so PMNM works), and
 computes daily `CRW_SST` from PacIOOS `dhw_5km`.
@@ -100,6 +100,12 @@ in the status line), the map draws its outline from that collection's PMTiles, a
 Data sources row and *Cite this data* carry the collection's own credit, citation and licence. The 20
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
+
+**app 0.3.8** (2026-10-20): the precomputed places are the 18 NOAA sanctuaries only. The picker heading is
+"National Marine Sanctuaries (precomputed)" (it was "Sanctuaries & places"), the `places` rows sort A–Z, and the
+map credits NOAA ONMS alone. `places` 2.0.0 dropped the Pitcairn EEZ (`MRGID:8439`, Marine Regions geometry its
+publisher asked us not to republish) and `PSGID:939` (a Navigator gid mislabelled "Tortugas Ecological Reserve";
+the reserve is `PSGID:AIFL11` in `protectedseas_mpa`), so both now run live like any other gazetteer place.
 
 **app 0.3.7** (2026-10-16): a search lists each place once. The same place in several layers (Florida
 Keys NMS is in `places`, `noaa_sanctuaries`, `mpa_inventory` and twice in `noaa_hapc`) shares a `group_id` in
@@ -184,7 +190,7 @@ items it is given and has no hook for a query, so it cannot sit on that many row
   area, so lines and points (CalCOFI lines and stations, maritime limits, state lateral boundaries, most of
   GEBCO) are not listed, and the Place tab says "Polygon places only; lines and points are not maskable".
   A link to a line or point place shows that error instead of masking.
-- **No query**: a curated list of collections in this order: `places` ("Sanctuaries & places
+- **No query**: a curated list of collections in this order: `places` ("National Marine Sanctuaries
   (precomputed)", each row marked "✓ precomputed"), `noaa_marine_monuments`, `noaa_nerrs`,
   `mpa_inventory`, `noaa_hapc`, `fws_critical_habitat_proposed`, `boem_wind_leases`,
   `boem_pacific_og_leases`, `boem_ocs_planning`, `boem_program_11_draft`, `noaa_aoa_socal`,
@@ -216,7 +222,7 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
 - `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 11 of its columns (`group_id` only when the file has it) and leaves
   `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
   through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads
-  the file whole (0.8 s). The index loads alongside the datasets and the 20 places, and a failure leaves the 20
+  the file whole (0.8 s). The index loads alongside the datasets and the 18 places, and a failure leaves the 18
   places working.
 - `<collection>/places.parquet` (WKB, split at ±180): `placeGeometry()` reads ONE place with the client's
   `getPlace(id, { slug, unwrap: false })` (the slug pins the collection exactly), a row-group filtered range read,
@@ -224,16 +230,16 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
   First measured 2026-10-08 on the 1.0.0 files: `boem_wind_leases` 2.7 MB, `noaa_hapc` 22 MB, `mpa_inventory` ~26–30 MB of
   its 69 MB (overlapping Morton row groups). The 15 wave-1 collections were then republished as 1.0.1 with tiny row groups:
   `MPAINV:CA136` is 1.1 MB (a footer read once, ~1 MB, plus its row groups), `noaa_sanctuaries` is 47 one-row groups
-  (a sanctuary ~141 kB in all). `places/places.parquet` is still ONE 4.2 MB row group, so the 20 precomputed ids keep the
+  (a sanctuary ~141 kB in all). `places/places.parquet` is still ONE 4.5 MB row group, so the 18 precomputed ids keep the
   whole-file fast path (`loadPlaces()`). The run's status says "loading X polygon from <collection> (1.0 MB of 70.8 MB so far)…"
   (bytes counted as the response streams, the file size from the HEAD hyparquet makes); the polygon's request is listed under
   Share → Reproduce and its bytes are in the footer's kB.
 - **Dateline**: the index unwraps places cut at ±180 (bbox and `centroid_lon` may exceed 180: NMS:PMNM is 177.8..199.0,
   centroid 188), so `indexBounds()` fits that bbox directly. The 10–15 rows that still read -180..180 (upstream's list) get
   null until their geometry is loaded, and then `placeMapBounds()` walks it. The polygon itself stays split at ±180 for the lobes.
-- The 20 `places` ids come from `loadPlaces()` (4.2 MB, already in memory) and are the only ones with
+- The 18 `places` ids (the `NMS:*` sanctuaries; since places 2.0.0 not the Pitcairn EEZ or `PSGID:939`) come from `loadPlaces()` (4.5 MB, already in memory) and are the only ones with
   precomputed statistics and Then vs Now rasters (`hasPrecomputed()` is asked only for the `places` collection).
-- **Map**: the `places` source (all 20 faint, click to select) is always there. A selected place of another
+- **Map**: the `places` source (all 18 faint, click to select) is always there. A selected place of another
   collection adds ONE extra `VectorTileSource` (that collection's PMTiles from the bucket, source-layer = slug)
   with its selected fill and outline, replacing the `places` source's selected layers; it is swapped when the
   collection changes (`{#key}` in `MapView.svelte`). Its other features get a near-transparent fill so a click
@@ -343,8 +349,8 @@ Parquet; Then vs Now first view: 6 range requests, 56 kB).
 
 - **Pickers**: place (the whole gazetteer, grouped by collection), ERDDAP dataset, variable, date window
   (clamped to the dataset's live time extent).
-- **Map** (`src/lib/MapView.svelte`, the whole stage): the 20 gazetteer
-  places as vector tiles from `places.pmtiles` (plus the selected place's own collection, "Data from the gazetteer"), outlined, with the selected one filled and a click
+- **Map** (`src/lib/MapView.svelte`, the whole stage): the 18 gazetteer
+  sanctuaries as vector tiles from `places.pmtiles` (plus the selected place's own collection, "Data from the gazetteer"), outlined, with the selected one filled and a click
   anywhere in a place selecting it; after a run, the **last time step** of the slab as one square per
   masked grid cell, hover showing the value and the area weight. Fits the place bbox on selection,
   padded so the Controls pane and the Time strip do not cover it (`fitPadding()`).

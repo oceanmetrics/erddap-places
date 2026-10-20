@@ -4,11 +4,11 @@
   "created": "2026-09-15T13:51:05.458907+00:00",
   "collections": {
     "places": {
-      "current_version": "1.2.1",
-      "updated": "2026-10-16T08:08:54.975761+00:00",
+      "current_version": "2.0.0",
+      "updated": "2026-10-20T11:49:53.771339+00:00",
       "asset_count": 3,
-      "total_size_bytes": 6571430
+      "total_size_bytes": 7558107
     }
   },
-  "updated": "2026-10-16T08:08:54.975761+00:00"
+  "updated": "2026-10-20T11:49:53.771339+00:00"
 }

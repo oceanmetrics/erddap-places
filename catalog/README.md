@@ -1,10 +1,10 @@
 # catalog/
 
-- `build_places.R` — builds `places/places.parquet` and `places/places.pmtiles` (20 marine place
-  polygons: NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas PSGID). Sanctuary boundaries are the
+- `build_places.R` — builds `places/places.parquet` and `places/places.pmtiles` (the 18 NOAA
+  national marine sanctuaries, `NMS:<code>`; the Pitcairn EEZ and `PSGID:939` were removed in places 2.0.0). Sanctuary boundaries are the
   official NOAA ONMS shapefile downloads (urls in onmsR `sanctuaries.csv`, cached in `cache/imast/`,
   git-ignored; delete a zip to re-download). The PMTiles carry `name`, `description` and an HTML
-  `attribution` (NOAA ONMS, MarineRegions.org, ProtectedSeas) in their metadata. Run with
+  `attribution` (NOAA ONMS) in their metadata. Run with
   `Rscript catalog/build_places.R`, or do the whole release (build, copy to `gazetteer/places/`,
   `portolan add`, `portolan version bump`, `rashid check`, upload) with `publish_places.sh`.
 - `publish_places.sh` — `catalog/publish_places.sh <new_version> -m "note" [--no-build] [--no-upload]`.
@@ -53,7 +53,7 @@ therefore has Items whose data asset is missing until the precompute has run; ru
 
 ## Requested places
 
-The 20 places above are the daily run's. A place of ANY other published vector collection can be
+The 18 places above are the daily run's. A place of ANY other published vector collection can be
 precomputed on request, one catalogued target (a dataset and variable of `precompute/src/targets.ts`)
 at a time. The request workflow of [oceanmetrics/indicators](https://github.com/oceanmetrics/indicators)
 ("Request an indicator", a public GitHub issue) calls, on the `macmini` runner:

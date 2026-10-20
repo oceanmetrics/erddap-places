@@ -17,17 +17,15 @@ export const PLACES_SOURCE_LAYER = 'places'
 
 /**
  * credit for the places source; the map shows only the parts for the places on screen (placesAttribution).
- * the same string is the `attribution` field of the published PMTiles metadata (places 1.2.0); `gazetteer.test.ts` reads
+ * the same string is the `attribution` field of the published PMTiles metadata (places 2.0.0: NOAA ONMS only); `gazetteer.test.ts` reads
  * that metadata live and fails if the two drift.
  */
 export const PLACES_ATTRIBUTION =
-  '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a> | ' +
-  '<a href="https://www.marineregions.org" target="_blank">MarineRegions.org</a> (CC-BY-4.0) | ' +
-  '<a href="https://protectedseas.net" target="_blank">ProtectedSeas</a>'
+  '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a>'
 
 /** each gazetteer of the places source (the `place_id` prefix) and its part of PLACES_ATTRIBUTION, in that order. */
 export const PLACES_CREDITS: [prefix: string, credit: string][] =
-  PLACES_ATTRIBUTION.split(' | ').map((c, i) => [['NMS', 'MRGID', 'PSGID'][i], c])
+  PLACES_ATTRIBUTION.split(' | ').map((c, i) => [['NMS'][i], c])
 
 /**
  * the map's credit for the places source: only the gazetteers of the places on screen (their `place_id`s),
@@ -71,7 +69,7 @@ export async function gazetteerFetch(path: string, init?: RequestInit): Promise<
 // ── places ────────────────────────────────────────────────────────────────────
 export interface Place {
   place_id : string                                   // e.g. NMS:HIHWNMS
-  gazetteer: string                                   // NMS | MRGID | PSGID (the authority, for other collections)
+  gazetteer: string                                   // NMS (the authority; other collections have their own)
   name     : string
   area_km2 : number
   bbox     : [number, number, number, number]         // [xmin, ymin, xmax, ymax]
@@ -98,7 +96,7 @@ const parsers = {
 
 let placesP: Promise<Place[]> | null = null
 /**
- * rows of places.parquet (the 20 precomputed places), geometry decoded to GeoJSON. A call without a
+ * rows of places.parquet (the 18 precomputed places), geometry decoded to GeoJSON. A call without a
  * buffer is read once and shared, so `placeGeometry()` for one of these ids costs nothing extra.
  */
 export function loadPlaces(buffer?: ArrayBuffer): Promise<Place[]> {
@@ -250,7 +248,7 @@ export function placeBbox(place: Place): [number, number, number, number] {
 //   <collection>/places.parquet      the geometry (WKB), read for ONE place with a row-group filtered range read
 // the picker lists the index, the map draws a collection's PMTiles, and only the mask needs the polygon.
 
-/** the collection of the 20 precomputed places: its geometry is already in memory (`loadPlaces`). */
+/** the collection of the 18 precomputed places: its geometry is already in memory (`loadPlaces`). */
 export const PLACES_COLLECTION = 'places'
 /** the geometry types a grid mask can use */
 export const isPolygonal = (geomType: string | null | undefined) => !!geomType && /^(multi)?polygon$/i.test(geomType)
@@ -331,7 +329,7 @@ export async function loadLayers(): Promise<Layer[]> {
 /** every place of every collection (no geometry), only the columns the app uses; cached. */
 export const loadIndex = (): Promise<IndexPlace[]> => clientIndex()
 
-/** the 20 precomputed places as index rows, for the first paint (before the index is in). */
+/** the 18 precomputed places as index rows, for the first paint (before the index is in). */
 export function placeAsRow(p: Place): IndexPlace {
   return {
     place_id: p.place_id, name: p.name, authority: p.gazetteer, place_type: '', geom_type: 'MultiPolygon',
@@ -386,7 +384,7 @@ export interface GeometryOptions {
 /**
  * The polygon of one place, ready for `placeLobes()`/`gridMask()`.
  *
- * The 20 `places` ids come from `loadPlaces()` (already in memory). Any other place is read from its
+ * The 18 `places` ids come from `loadPlaces()` (already in memory). Any other place is read from its
  * collection's `places.parquet` with the client's `getPlace(id, { slug, unwrap: false })`: a range read of
  * the footer and of the row group(s) whose `place_id` statistics can hold the id. How much that costs
  * depends on how the file was written: a collection written as one row group (noaa_sanctuaries, 5.5 MB)

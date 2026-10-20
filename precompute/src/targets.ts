@@ -1,5 +1,6 @@
 // what gets precomputed. one entry per (dataset, variable).
-//   places: 'all', 'nms' (every NMS:* place, the 18 NOAA sanctuaries / monuments) or an explicit list
+//   places: 'all' (every place of the `places` collection, which is the 18 NMS:* sanctuaries / monuments),
+//           'nms' (every NMS:* place) or an explicit list
 //   days  : the window, in days ending at the dataset's last time step, or 'all' for the full record
 //           (default DAYS = 'all').
 export interface Target {
@@ -10,8 +11,8 @@ export interface Target {
   note   ?: string
 }
 
-/** the 5 reef / tropical places the categorical seascape classes are worth precomputing for. */
-export const REEF_PLACES = ['NMS:FKNMS', 'PSGID:939', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM']
+/** the 4 reef / tropical sanctuaries the categorical seascape classes are worth precomputing for. */
+export const REEF_PLACES = ['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM']
 
 /** the "sanctuaries series": full-record climate variables (re-served USF IMaRS datasets) for every NMS place. */
 const SANCTUARY_SERIES: Array<[string, string, string?]> = [
@@ -39,7 +40,7 @@ export const TARGETS: Target[] = [
   { dataset: 'dhw_5km',                  variable: 'CRW_BAA', places: 'all',
     note: 'categorical bleaching alert area, 0-4' },
   { dataset: 'noaa_aoml_seascapes_8day', variable: 'CLASS',   places: REEF_PLACES,
-    note: 'categorical seascape class, 1-33; reef / tropical places only' },
+    note: 'categorical seascape class, 1-33; reef / tropical sanctuaries only' },
   ...SANCTUARY_SERIES.map(([dataset, variable, note]): Target =>
     ({ dataset, variable, places: 'nms', days: 'all', note: ['sanctuaries series, full record', note].filter(Boolean).join('; ') })),
 ]

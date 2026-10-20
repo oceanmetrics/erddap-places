@@ -4,9 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { chunkDaysFor, chunks, extentOrSkip, fileSafe, itemId, liveExtent, loadDataset, provenanceAxes, statsHref, window, EXTENT_ATTEMPTS } from './stats'
 import { lobeAxes, parseProvenance } from '../../app/src/lib/precomputed'
 import { placeLobes, plainPlace } from '../../app/src/lib/gazetteer'
-import { buildCollection, buildItem, datasetProviders, itemStatus, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
+import { buildCollection, buildItem, datasetProviders, itemStatus, listedItems, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
-import { TARGETS, placesFor } from './targets'
+import { REEF_PLACES, TARGETS, placesFor } from './targets'
 import { readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -57,7 +57,7 @@ describe('chunkDaysFor', () => {
   })
   it("shrinks so one request stays under extractr's 100k values", () => {
     expect(chunkDaysFor(1_200)).toBe(83)                            // a Monterey-sized box: 83 days
-    expect(chunkDaysFor(39_026)).toBe(2)                            // Pitcairn EEZ bbox
+    expect(chunkDaysFor(39_026)).toBe(2)                            // a 39 k-cell bbox
     expect(chunkDaysFor(39_026) * 39_026).toBeLessThanOrEqual(MAX_REQUEST_VALUES)
   })
   it('never goes below a single step, however big the bbox', () => {
@@ -79,11 +79,21 @@ describe('chunkDaysFor: monthly', () => {
 })
 
 describe('targets', () => {
-  const ids = ['MRGID:8439', 'NMS:CBNMS', 'NMS:PMNM', 'PSGID:939']
+  const ids = ['MRGID:8439', 'NMS:CBNMS', 'NMS:PMNM', 'PSGID:939']      // a mixed list, to prove the rule
   it("'nms' picks the NMS:* places only", () => {
     expect(placesFor({ places: 'nms' }, ids)).toEqual(['NMS:CBNMS', 'NMS:PMNM'])
     expect(placesFor({ places: 'all' }, ids)).toEqual(ids)
-    expect(placesFor({ places: ['PSGID:939'] }, ids)).toEqual(['PSGID:939'])
+    expect(placesFor({ places: ['NMS:PMNM'] }, ids)).toEqual(['NMS:PMNM'])
+  })
+  // regression (2026-10-20): the precompute set is the 18 NMS sanctuaries. The Pitcairn EEZ (MRGID:8439) and
+  // PSGID:939 (a Navigator gid, not a ProtectedSeas site id) were experiment leftovers and must not return
+  it('names only NMS:* places in any explicit target list, and never MRGID:8439 or PSGID:939', () => {
+    expect(REEF_PLACES).toEqual(['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])
+    for (const t of TARGETS) {
+      if (Array.isArray(t.places)) for (const id of t.places) expect(id, `${t.dataset}/${t.variable}`).toMatch(/^NMS:/)
+    }
+    expect(TARGETS.flatMap((t) => (Array.isArray(t.places) ? t.places : []))).not.toContain('PSGID:939')
+    expect(TARGETS.flatMap((t) => (Array.isArray(t.places) ? t.places : []))).not.toContain('MRGID:8439')
   })
   it('keeps the daily targets on the default window and runs the sanctuaries series over the full record', () => {
     expect(TARGETS.find((t) => t.variable === 'CRW_SST')!.days).toBeUndefined()
@@ -156,7 +166,7 @@ describe('naming', () => {
   it('keeps the colon in the object key and drops it from the item id', () => {
     expect(fileSafe('NMS:HIHWNMS')).toBe('NMS:HIHWNMS')
     expect(itemId('dhw_5km', 'CRW_SST', 'NMS:HIHWNMS')).toBe('dhw_5km_CRW_SST_NMS-HIHWNMS')
-    expect(itemId('dhw_5km', 'CRW_SST', 'PSGID:939')).toBe('dhw_5km_CRW_SST_PSGID-939')
+    expect(itemId('dhw_5km', 'CRW_SST', 'NMS:PMNM')).toBe('dhw_5km_CRW_SST_NMS-PMNM')
   })
   it('builds the documented path', () => {
     expect(statsHref('dhw_5km', 'CRW_SST', 'NMS:HIHWNMS')).toBe('./dhw_5km/CRW_SST/NMS:HIHWNMS.parquet')
@@ -338,6 +348,18 @@ describe('partial runs keep the other items', () => {
     const earlier = [r('cmems_biogeochem_phyto', 'chl', 'NMS:CBNMS'), r('dhw_5km', 'CRW_SST', 'NMS:CBNMS'), r('gone', 'x', 'NMS:CBNMS')]
     const all = mergeItems(fresh, earlier, (d) => d !== 'gone')
     expect(all.map((x) => `${x.dataset_id}/${x.variable}`)).toEqual(['cmems_biogeochem_phyto/chl', 'dhw_5km/CRW_SST'])
+  })
+  // regression (2026-10-20): MRGID:8439 and PSGID:939 left the `places` collection. Their Items are still on S3
+  // (stats.yml syncs stats/ without --delete) and come back through the fetched items/, so the daily collection
+  // must drop them, and also a requested place's Item (NERRS:WEL), which was never listed
+  it('lists only the Items of the daily run\'s places: not a removed place, not a requested one', () => {
+    const places = new Map<string, unknown>([['NMS:CBNMS', {}], ['NMS:PMNM', {}]])
+    const earlier = [
+      r('dhw_5km', 'CRW_SST', 'NMS:CBNMS'), r('dhw_5km', 'CRW_SST', 'MRGID:8439'), r('dhw_5km', 'CRW_BAA', 'PSGID:939'),
+      r('noaa_aoml_seascapes_8day', 'CLASS', 'PSGID:939'), r('IMERG_monthly_global_precip', 'precipitation', 'NERRS:WEL'),
+      r('dhw_5km', 'CRW_SST', 'NMS:PMNM')]
+    const all = listedItems(mergeItems([], earlier, () => true), places)
+    expect(all.map((x) => x.place_id).sort()).toEqual(['NMS:CBNMS', 'NMS:PMNM'])
   })
   it('credits every source dataset producer, Ocean Metrics last as host', () => {
     const p = datasetProviders(['dhw_5km', 'cmems_biogeochem_phyto', 'cmems_biogeochem_pp'])

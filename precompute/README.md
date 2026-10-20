@@ -37,8 +37,8 @@ the `render()` / `lit()` rules are character-for-character the app's.
 - one place at a time, per dataset; at most **2 concurrent** griddap requests, with a 750 ms pause
   between starts (`src/targets.ts`)
 - the window is chunked to **≤ 90 days**, and shrunk further so a single request never asks for more
-  than ~2 M grid rows (Pitcairn's EEZ bbox is 39 k cells per time step, so it gets 51-day chunks;
-  PMNM's western lobe is bigger still)
+  than 100 k values (`MAX_REQUEST_VALUES`; a 39 k-cell bbox gets 2-day chunks; PMNM's main lobe, 101 k cells a step, gets
+  one day per request)
 - one retry, after 5 s, then the place is reported as failed and the run continues
 - every download is cached under `.cache/`, so a re-run or a crash costs nothing at the server
 

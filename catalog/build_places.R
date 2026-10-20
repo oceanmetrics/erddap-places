@@ -1,9 +1,11 @@
-# build a gazetteer of 20 marine places (18 noaa sanctuaries from the official onms boundary downloads
-# + 1 marineregions eez + 1 protectedseas mpa), each with source_url and source_date
+# build the `places` gazetteer collection: the 18 noaa national marine sanctuaries (NMS:<code>) from the
+# official onms boundary downloads, each with source_url and source_date
+# (until places 1.2.1 it also held the pitcairn eez, MRGID:8439, and a tortugas reserve as PSGID:939, a
+# navigator gid that is not a protectedseas site id; both were removed in 2.0.0, see the README "Changes")
 # run with: Rscript catalog/build_places.R
 
 librarian::shelf(
-  sf, dplyr, purrr, mregions2, sfarrow, jsonlite, glue, geojsonsf, here, fs, stringr, units, readr,
+  sf, dplyr, purrr, glue, here, fs, stringr, units, readr,
   quiet = TRUE)
 
 sf::sf_use_s2(TRUE)
@@ -13,14 +15,6 @@ dir_cache  <- fs::path(dir_repo, "catalog", "cache")
 dir_places <- fs::path(dir_repo, "catalog", "places")
 fs::dir_create(dir_cache)
 fs::dir_create(dir_places)
-
-# helper: pick the first available column (case-insensitive) from a set of candidate names ----
-pick_col <- function(df, candidates) {
-  nms <- names(df)
-  hit <- candidates[tolower(candidates) %in% tolower(nms)]
-  if (length(hit) == 0) return(NA_character_)
-  nms[match(tolower(hit[1]), tolower(nms))]
-}
 
 # helper: finalize geometry per spec (valid, 4326, dateline-wrapped, multipolygon) ----
 finalize_geom <- function(x) {
@@ -89,54 +83,12 @@ places_nms <- purrr::pmap(
   read_sanctuary) |>
   bind_rows()
 
-# 2. marineregions mrgid 8439 (pitcairn eez) ------------------------------------------------
+# finalize geometry, compute area and bbox --------------------------------------
 
-mrgid <- 8439
-geom_mrgid <- tryCatch(
-  mregions2::gaz_geometry(mrgid),
-  error = function(e) mregions2::gaz_search(mrgid) |> mregions2::gaz_geometry())
-name_mrgid <- mregions2::gaz_search(mrgid)$preferredGazetteerName
+# the 18 sanctuaries and nothing else: every row is an NMS:<code> place
+stopifnot(nrow(places_nms) == 18, all(startsWith(places_nms$place_id, "NMS:")))
 
-place_mrgid <- sf::st_sf(
-  place_id    = glue::glue("MRGID:{mrgid}"),
-  gazetteer   = "MRGID",
-  name        = name_mrgid,
-  source_url  = glue::glue("https://marineregions.org/gazetteer.php?p=details&id={mrgid}"),
-  source_date = format(Sys.Date()),
-  geometry    = sf::st_geometry(geom_mrgid))
-
-# 3. protectedseas psgid 939 (tortugas ecological reserve) --------------------------------
-
-psgid    <- 939
-# note: the site's api is actually served under /v2/ (the bare /api/ path 404s)
-url_ps   <- glue::glue("https://map.navigatormap.org/v2/api/boundary/area/?gid={psgid}")
-f_cache  <- fs::path(dir_cache, glue::glue("psgid_{psgid}.json"))
-
-if (!fs::file_exists(f_cache)) {
-  download.file(url_ps, f_cache, quiet = TRUE)
-}
-
-body_ps <- readLines(f_cache, warn = FALSE) |>
-  paste(collapse = "") |>
-  stringr::str_replace('\\{"bounds":(.*)\\}', '\\1')
-
-x_ps <- geojsonsf::geojson_sf(body_ps) |>
-  sf::st_zm(drop = TRUE)
-
-col_name_ps <- pick_col(x_ps, c("site_name", "SITE_NAME", "name", "NAME"))
-name_ps <- if (is.na(col_name_ps)) "Tortugas Ecological Reserve" else as.character(x_ps[[col_name_ps]][1])
-
-place_psgid <- sf::st_sf(
-  place_id    = glue::glue("PSGID:{psgid}"),
-  gazetteer   = "PSGID",
-  name        = name_ps,
-  source_url  = as.character(url_ps),
-  source_date = format(as.Date(fs::file_info(f_cache)$modification_time)),
-  geometry    = sf::st_union(sf::st_geometry(x_ps)))
-
-# combine, finalize geometry, compute area and bbox --------------------------------------
-
-places <- bind_rows(places_nms, place_mrgid, place_psgid) |>
+places <- places_nms |>
   mutate(geometry = finalize_geom(geometry))
 
 places <- places |>
@@ -183,12 +135,9 @@ sf::st_write(places, f_geojson, delete_dsn = TRUE, quiet = TRUE)
 # tile metadata: name, description and attribution (shown by maplibre's attribution control)
 tile_name <- "places"
 tile_desc <- paste(
-  "Ocean Metrics gazetteer: 20 marine place polygons (18 NOAA National Marine Sanctuaries,",
-  "1 MarineRegions EEZ, 1 ProtectedSeas MPA); layer 'places', keyed by place_id.")
-tile_attr <- paste0(
-  '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a> | ',
-  '<a href="https://www.marineregions.org" target="_blank">MarineRegions.org</a> (CC-BY-4.0) | ',
-  '<a href="https://protectedseas.net" target="_blank">ProtectedSeas</a>')
+  "Ocean Metrics gazetteer: 18 NOAA National Marine Sanctuaries and Marine National Monuments",
+  "(NMS:<code> ids); layer 'places', keyed by place_id.")
+tile_attr <- '<a href="https://sanctuaries.noaa.gov" target="_blank">NOAA ONMS</a>'
 
 system2(
   "/opt/homebrew/bin/tippecanoe",

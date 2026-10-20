@@ -62,7 +62,7 @@
   // $state.raw, not $state: deep reactive proxies make every vertex read go through a proxy trap,
   // which turned the FKNMS mask (39,645 vertices) into 67 s of blocked main thread. these are only
   // ever replaced wholesale, so raw state loses nothing.
-  let places    = $state.raw<Place[]>([])        // the 20 precomputed places, with geometry (places.parquet)
+  let places    = $state.raw<Place[]>([])        // the 18 precomputed places, with geometry (places.parquet)
   let layers    = $state.raw<Layer[]>([])        // the manifest: 22 collections (layers.json)
   let gaz       = $state.raw<GazIndex | null>(null)   // every place of every collection (places_index.parquet), no geometry
   let gazError  = $state('')
@@ -137,7 +137,7 @@
   let exporting = $state('')
   let map: any  = null
 
-  // the places the app can name: the whole index once it is in, the 20 `places` rows before that
+  // the places the app can name: the whole index once it is in, the 18 `places` rows before that
   const quickById = $derived(new Map(places.map((p) => [p.place_id, [placeAsRow(p)]])))
   const byId      = $derived(gaz?.byId ?? quickById)
   const resolved  = $derived(resolvePlace(byId, placeId, coll))
@@ -353,10 +353,10 @@
     untrack(async () => {
       try {
         void precomputedIndex()          // which stats files are published: cached for the runs
-        // the index and the manifest (1.1 MB + 37 kB) load alongside the 20 places and the datasets, not after them
+        // the index and the manifest (1.1 MB + 37 kB) load alongside the 18 places and the datasets, not after them
         const gazP = Promise.all([loadIndex(), loadLayers()])
         gazP.catch(() => {})
-        // the 20 precomputed places (4 MB, with geometry) are the fast path: a run on one of them starts at
+        // the 18 precomputed places (4 MB, with geometry) are the fast path: a run on one of them starts at
         // once. every other place waits for the index (1.1 MB) and reads its polygon when it runs
         const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
         places = ps; datasets = ds
@@ -367,11 +367,11 @@
       } catch (e) { fail(e); busy = false }
     })
   })
-  /** the manifest and the index: every place of every collection (no geometry). a failure leaves the 20 places usable. */
+  /** the manifest and the index: every place of every collection (no geometry). a failure leaves the 18 places usable. */
   async function useGazetteer(loading: Promise<[IndexPlace[], Layer[]]>) {
     try {
       const [rows, ls] = await loading
-      // the 20 places are always selectable, whatever the index holds
+      // the 18 places are always selectable, whatever the index holds
       const have = new Set(rows.filter((r) => r.collection === PLACES_COLLECTION).map((r) => r.place_id))
       const all = [...rows, ...places.filter((p) => !have.has(p.place_id)).map(placeAsRow)]
       layers = ls; gaz = buildIndex(all, ls)
@@ -474,7 +474,7 @@
       const extP: Promise<TimeExtent | null> = extentFor === ds.id ? Promise.resolve(extent) : loadExtent(ds)
       const listed = await Promise.race([precomputedIndex(), new Promise<null>((r) => setTimeout(r, 4000, null))])
       if (h.stale()) return
-      // the weekly statistics exist only for the 20 places of the `places` collection
+      // the weekly statistics exist only for the 18 places of the `places` collection
       const has = ref.collection === PLACES_COLLECTION && hasPrecomputed(listed, ds.datasetId, v.name, ref.place_id)
       status = 'reading the dataset time extent…'
       let ext = usePrecomputed({ protocol: ds.protocol, has })
@@ -557,7 +557,7 @@
       // a precomputed place's axes come with its provenance: the map then needs only the slice from ERDDAP
       const pubAxes = plan.map === 'slice' && preMem?.url === preUrl ? preMem.prov.axes : null
 
-      // the polygon: already in memory for the 20 places, otherwise a row-group filtered range read of the
+      // the polygon: already in memory for the 18 places, otherwise a row-group filtered range read of the
       // collection's places.parquet (how many bytes depends on how the collection was written; see
       // placeGeometry). the status counts the bytes as they arrive
       const cached = ref.collection === PLACES_COLLECTION || !!cachedPlace(ref)

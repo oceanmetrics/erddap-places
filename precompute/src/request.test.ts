@@ -9,7 +9,7 @@ import {
   type Args, type RequestDeps,
 } from './request'
 import { TARGETS, DAYS, placesFor } from './targets'
-import { buildItem, itemCollections } from './stac'
+import { PLACES_COLLECTION_TITLE, buildItem, itemCollections } from './stac'
 import type { Place } from '../../app/src/lib/gazetteer'
 import type { Provenance } from './stats'
 
@@ -40,7 +40,7 @@ describe('parseArgs', () => {
 describe('slug and place id patterns', () => {
   it('accepts the bucket\'s slugs and gazetteer ids', () => {
     for (const s of ['noaa_nerrs', 'places', 'protectedseas_mpa', 'mr_eez']) expect(SLUG_RE.test(s)).toBe(true)
-    for (const id of ['NERR:XYZ', 'NMS:PMNM', 'MRGID:8439', 'PSGID:939', 'BOEM:OCS-P0562', 'A_b:x.y-z']) expect(PLACE_ID_RE.test(id)).toBe(true)
+    for (const id of ['NERR:XYZ', 'NMS:PMNM', 'MRGID:8439', 'PSGID:AIFL11', 'BOEM:OCS-P0562', 'A_b:x.y-z']) expect(PLACE_ID_RE.test(id)).toBe(true)
   })
   it('rejects anything a path, a URL or a shell would read', () => {
     for (const s of ['', 'NOAA', 'a-b', 'a/b', '../places', 'a b', 'a.b', 'a\nb', 'a;rm']) expect(SLUG_RE.test(s), JSON.stringify(s)).toBe(false)
@@ -80,7 +80,7 @@ describe('validateArgs: what a request must name', () => {
   })
   it('does not apply the request rules to the daily run', () => {
     expect(refusal(() => validateArgs(args([])))).toBeNull()
-    expect(refusal(() => validateArgs(args(['--dataset', 'dhw_5km', '--place', 'MRGID:8439'])))).toBeNull()
+    expect(refusal(() => validateArgs(args(['--dataset', 'dhw_5km', '--place', 'NMS:PMNM'])))).toBeNull()
   })
 })
 
@@ -105,14 +105,14 @@ describe('checkLayer: only polygon vector layers are fetched as geometry', () =>
 })
 
 describe('target selection', () => {
-  const local = ['MRGID:8439', 'NMS:CBNMS', 'NMS:PMNM', 'PSGID:939']
+  const local = ['NMS:CBNMS', 'NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM']
   const none = { datasets: [], variables: [], places: [], gazetteer: undefined }
   it('the daily run expands every target by its own places rule, exactly as before', () => {
     const sel = selectTargets(none, local)
     expect(sel.map((s) => s.target)).toEqual(TARGETS)
     expect(sel.map((s) => s.placeIds)).toEqual(TARGETS.map((t) => placesFor(t, local)))
-    expect(sel.find((s) => s.target.variable === 'chl')!.placeIds).toEqual(['NMS:CBNMS', 'NMS:PMNM'])
-    expect(sel.find((s) => s.target.variable === 'CLASS')!.placeIds).toEqual(['NMS:FKNMS', 'PSGID:939', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])   // REEF_PLACES, a list
+    expect(sel.find((s) => s.target.variable === 'chl')!.placeIds).toEqual(local)
+    expect(sel.find((s) => s.target.variable === 'CLASS')!.placeIds).toEqual(['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])   // REEF_PLACES, a list
   })
   it('the daily run\'s --dataset and --place only filter', () => {
     const sel = selectTargets({ ...none, datasets: ['dhw_5km'], places: ['NMS:PMNM', 'NMS:XXX'] }, local)
@@ -230,7 +230,7 @@ describe('gazetteer:collection on the Item', () => {
     for (const p of [local, { ...local, collection: 'places' }]) {
       const item = buildItem(prov(p), p, 'CRW 5km') as any
       expect(item.properties['gazetteer:collection']).toBe('places')
-      expect(item.links.find((l: any) => l.rel === 'related' && l.title === 'Places').href).toBe('../../places/collection.json')
+      expect(item.links.find((l: any) => l.rel === 'related' && l.title === PLACES_COLLECTION_TITLE).href).toBe('../../places/collection.json')
     }
   })
   it('keeps every other property of the Item', () => {

@@ -4,8 +4,9 @@ Guidance for AI agents and LLMs working with this collection.
 
 ## Overview
 
-20 marine place polygons (18 NOAA National Marine Sanctuaries, 1 MarineRegions EEZ, 1
-ProtectedSeas MPA) as GeoParquet (`places.parquet`) and PMTiles (`places.pmtiles`).
+18 NOAA National Marine Sanctuaries and Marine National Monuments (`NMS:<code>` place ids) as
+GeoParquet (`places.parquet`) and PMTiles (`places.pmtiles`). Before 2.0.0 the collection also held two
+non-sanctuary places; Marine Regions and ProtectedSeas places are in their own collections.
 
 ## Find a place
 

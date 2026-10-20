@@ -20,9 +20,9 @@
   },
   {
    "rel": "item",
-   "href": "./items/noaa_aoml_seascapes_8day_CLASS_PSGID-939.json",
+   "href": "./items/noaa_aoml_seascapes_8day_CLASS_NMS-HIHWNMS.json",
    "type": "application/geo+json",
-   "title": "PSGID:939 \u2014 CLASS"
+   "title": "NMS:HIHWNMS \u2014 CLASS"
   },
   {
    "rel": "item",

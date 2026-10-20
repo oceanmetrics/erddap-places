@@ -13,7 +13,7 @@ ORDER BY date;
 ```
 
 The path is `stats/{dataset_id}/{variable}/{place_id}.parquet` and **`place_id` keeps its colon**
-(`NMS:HIHWNMS`, `PSGID:939`, `MRGID:8439`). That is legal in an S3 key and in a URL path segment, so
+(`NMS:HIHWNMS`, `NMS:PMNM`; a requested place such as `NERRS:WEL` keeps it too). That is legal in an S3 key and in a URL path segment, so
 no escaping is needed; if some client of yours chokes on the colon, percent-encode it as `%3A` — the
 object key itself never changes.
 
@@ -39,8 +39,8 @@ under `items/`. An Item gives you:
 
 - `assets.data.href` — the Parquet file (relative to `stats/`), plus `table:columns`, `file:size`
 - `properties.erddap-places:place_id` / `:dataset_id` / `:variable`
-- `properties.gazetteer:collection` — the gazetteer collection the place came from (`places` for the 20
-  places above; another slug, e.g. `noaa_nerrs`, for a place that was requested). A place id is
+- `properties.gazetteer:collection` — the gazetteer collection the place came from (`places` for the 18
+  sanctuaries above; another slug, e.g. `noaa_nerrs`, for a place that was requested). A place id is
   unique within a collection, not across them, so read this before looking the geometry up
 - `properties.erddap-places:griddap_url_templates` / `erddap-places:griddap_requests` — the ERDDAP
   requests behind the file (one template per lobe; `griddap_urls` too when there are ≤ 24). The
@@ -50,7 +50,7 @@ under `items/`. An Item gives you:
   the whole record up to `end_datetime`) or `partial` (it starts later: an older 365-day window, or a
   backfill still under way); `erddap-places:record_start` is that first time step
 - `geometry` — the place's **lobe bounding boxes**, not its outline (the outlines run to ~40,000
-  vertices; get the real polygon from `../<gazetteer:collection>/places.parquet`, for the 20 places
+  vertices; get the real polygon from `../<gazetteer:collection>/places.parquet`, for the 18 sanctuaries
   [`../places/places.parquet`](../places/collection.json))
 - `bbox` — the union of those lobes; for a place across ±180 it crosses with west > east
   (RFC 7946 §5): `NMS:PMNM` is about `[177.8, 19.2, -161.0, 31.8]`, not `[-180, …, 180, …]`.

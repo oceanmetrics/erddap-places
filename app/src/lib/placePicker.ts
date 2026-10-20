@@ -13,8 +13,8 @@ import type { IndexPlace, Layer } from './places'
 
 export const GROUP_CAP    = 50
 export const SEARCH_LIMIT = 200
-/** the heading of the 20 places whose statistics are precomputed (the manifest calls the collection "Places") */
-export const PLACES_TITLE = 'Sanctuaries & places (precomputed)'
+/** the heading of the 18 sanctuaries whose statistics are precomputed (the `places` collection, NMS:<code> ids) */
+export const PLACES_TITLE = 'National Marine Sanctuaries (precomputed)'
 
 /** the collections listed without a query, in this order; `places` first */
 export const CURATED = [
@@ -50,11 +50,7 @@ export const sectionTitle = (slug: string, layers: Pick<Layer, 'slug' | 'title'>
 
 const pickRow = (row: IndexPlace): PickRow => ({ key: placeKey(row), row, precomputed: row.collection === PLACES_COLLECTION })
 
-// sanctuaries, then marine regions, then protected areas, as the picker always listed the 20 places
-const AUTH = ['NMS', 'MRGID', 'PSGID']
-const authRank = (a: string) => { const i = AUTH.indexOf(a); return i < 0 ? AUTH.length : i }
 const byName = (a: IndexPlace, b: IndexPlace) => a.name.localeCompare(b.name) || a.place_id.localeCompare(b.place_id)
-const byPlaces = (a: IndexPlace, b: IndexPlace) => authRank(a.authority) - authRank(b.authority) || byName(a, b)
 
 export interface DefaultView {
   sections      : PickSection[]
@@ -77,7 +73,7 @@ export function defaultView(polygons: IndexPlace[], layers: Pick<Layer, 'slug' |
   const shown = order.filter((s) => expanded || !folded(s))
   const hidden = order.filter((s) => !shown.includes(s))
   const sections = shown.map((slug): PickSection => {
-    const rows = [...by.get(slug)!].sort(slug === PLACES_COLLECTION ? byPlaces : byName)
+    const rows = [...by.get(slug)!].sort(byName)
     return { slug, title: sectionTitle(slug, layers), rows: rows.slice(0, cap).map(pickRow), more: Math.max(0, rows.length - cap) }
   })
   return { sections, hiddenGroups: hidden.length, hiddenPlaces: hidden.reduce((n, s) => n + by.get(s)!.length, 0) }

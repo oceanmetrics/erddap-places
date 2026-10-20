@@ -27,9 +27,11 @@ describe('places.parquet (local copy)', () => {
   let places: Place[]
   beforeAll(async () => { places = await loadPlaces(fs.readFileSync(LOCAL).buffer as ArrayBuffer) })
 
-  it('lists the 20 gazetteer places with decoded geometry', () => {
-    expect(places).toHaveLength(20)
-    expect(new Set(places.map((p) => p.gazetteer))).toEqual(new Set(['NMS', 'MRGID', 'PSGID']))
+  // places 2.0.0 (2026-10-20): the 18 NMS sanctuaries only; the Pitcairn EEZ (MRGID:8439) and PSGID:939 were removed
+  it('lists the 18 sanctuaries with decoded geometry, and nothing else', () => {
+    expect(places).toHaveLength(18)
+    expect(new Set(places.map((p) => p.gazetteer))).toEqual(new Set(['NMS']))
+    expect(places.every((p) => p.place_id.startsWith('NMS:'))).toBe(true)
     const hi = places.find((p) => p.place_id === 'NMS:HIHWNMS')!
     expect(hi.name).toMatch(/Humpback/)
     expect(hi.geometry.type).toBe('MultiPolygon')
@@ -74,7 +76,7 @@ describe('published gazetteer', () => {
     const buf    = await res.arrayBuffer()
     const places = await loadPlaces(buf)
     expect(buf.byteLength).toBeGreaterThan(1e6)
-    expect(places.length).toBe(20)
+    expect(places.length).toBe(18)
     expect(placeLobes(places.find((p) => p.place_id === 'NMS:PMNM')!)).toHaveLength(2)
     expect([GAZETTEER_BASE, GAZETTEER_FALLBACK]).toContain(gazetteerBase())
   }, 120_000)
@@ -95,7 +97,7 @@ describe('published gazetteer', () => {
     expect(rows.length).toBeGreaterThan(14_000)
     expect(new Set(rows.map((r) => r.collection)).size).toBe(22)
     expect(rows.every((r) => r.attribution === null)).toBe(true)
-    expect(rows.filter((r) => r.collection === 'places')).toHaveLength(20)
+    expect(rows.filter((r) => r.collection === 'places')).toHaveLength(18)
     // the index unwraps places cut at the antimeridian (xmax may exceed 180); NMS:PMNM is ~177.8..199
     expect(rows.find((r) => r.place_id === 'NMS:PMNM')!.bbox[2]).toBeGreaterThan(180)
     // collections republished with small row groups: one MPA of the 69 MB mpa_inventory is a few MB at most, not 30

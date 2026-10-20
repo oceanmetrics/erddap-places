@@ -35,7 +35,7 @@ describe('group order', () => {
 describe('the list with no query', () => {
   const polygons = [
     ...many('boem_wind_planning_rescinded', 70), ...many('noaa_submarine_cables', 60), ...many('mpa_inventory', 120),
-    ...many('noaa_nerrs', 30), ...many('gebco_undersea', 90), ...many('noaa_sanctuaries', 5), ...many('places', 20),
+    ...many('noaa_nerrs', 30), ...many('gebco_undersea', 90), ...many('noaa_sanctuaries', 5), ...many('places', 18),
     ...many('noaa_marine_monuments', 3),
   ]
 
@@ -55,7 +55,7 @@ describe('the list with no query', () => {
     expect(mpa.rows).toHaveLength(50)
     expect(mpa.more).toBe(70)
     expect(v.sections.find((s) => s.slug === 'noaa_nerrs')!.more).toBe(0)
-    expect(v.sections.find((s) => s.slug === 'places')!.rows).toHaveLength(20)
+    expect(v.sections.find((s) => s.slug === 'places')!.rows).toHaveLength(18)
     expect(v.sections.reduce((n, s) => n + s.rows.length, 0)).toBeLessThanOrEqual(CURATED.length * GROUP_CAP)
     expect(defaultView(polygons, LAYERS, false, 10).sections.find((s) => s.slug === 'mpa_inventory')!.rows).toHaveLength(10)
     // sorted by name inside a group
@@ -84,10 +84,12 @@ describe('the list with no query', () => {
     expect(v.sections[1].title).toBe('brand_new')
   })
 
-  it('keeps the 20 places in the order the picker always had: sanctuaries, then regions, then protected areas', () => {
-    const rows = [row('places', 1, { authority: 'PSGID', name: 'Tortugas' }), row('places', 2, { authority: 'NMS', name: 'Zed Sanctuary' }),
-                  row('places', 3, { authority: 'MRGID', name: 'British EEZ' }), row('places', 4, { authority: 'NMS', name: 'Alpha Sanctuary' })]
-    expect(defaultView(rows, LAYERS).sections[0].rows.map((r) => r.row.name)).toEqual(['Alpha Sanctuary', 'Zed Sanctuary', 'British EEZ', 'Tortugas'])
+  it('lists the 18 sanctuaries of `places` A–Z, under their own heading', () => {
+    const rows = [row('places', 1, { authority: 'NMS', name: 'Zed Sanctuary' }), row('places', 2, { authority: 'NMS', name: 'Alpha Sanctuary' }),
+                  row('places', 3, { authority: 'NMS', name: 'Mid Sanctuary' })]
+    const s = defaultView(rows, LAYERS).sections[0]
+    expect(s.title).toBe('National Marine Sanctuaries (precomputed)')
+    expect(s.rows.map((r) => r.row.name)).toEqual(['Alpha Sanctuary', 'Mid Sanctuary', 'Zed Sanctuary'])
   })
 
   it('flattens to A–Z by name', () => {
