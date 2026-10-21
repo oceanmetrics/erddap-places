@@ -125,6 +125,37 @@ export function toDataset(c: any): Dataset {
   }
 }
 
+/**
+ * The dataset a link names. The app writes the STAC collection id (`erddap/dhw_5km`), but links written elsewhere name
+ * ERDDAP's own dataset id (`dhw_5km`, `IMERG_monthly_global_precip`), and one collection id differs from its dataset id
+ * in case (`erddap/imerg_monthly_global_precip`). Tried in turn, each ignoring case: the collection id, the collection
+ * id with `erddap/` before it, ERDDAP's dataset id. A pending dataset is never picked; null when nothing matches.
+ */
+export function resolveDataset<D extends Pick<Dataset, 'id' | 'datasetId' | 'status'>>(datasets: D[], wanted: string): D | null {
+  const w = String(wanted ?? '').trim().toLowerCase()
+  if (!w) return null
+  const live = datasets.filter((d) => d.status !== 'pending')
+  const eq = (a: string | undefined, b: string) => (a ?? '').toLowerCase() === b
+  return live.find((d) => d.id === wanted)
+    ?? live.find((d) => eq(d.id, w))
+    ?? live.find((d) => eq(d.id, `erddap/${w}`))
+    ?? live.find((d) => eq(d.datasetId, w.replace(/^erddap\//, '')))
+    ?? null
+}
+
+/** what a link asked for and what the app shows instead, in words; null when the link is shown as asked. */
+export function linkMismatch(
+  wanted: { dataset?: string; variable?: string },
+  shown: Pick<Dataset, 'title' | 'variables'> | null,
+  resolved: boolean,
+): string | null {
+  if (wanted.dataset && !resolved)
+    return `This link asks for the dataset “${wanted.dataset}”, which erddap-places does not have${shown ? `; it shows ${shown.title} instead` : ''}.`
+  if (wanted.variable && shown && !shown.variables.some((v) => v.name === wanted.variable))
+    return `This link asks for the variable “${wanted.variable}”, which ${shown.title} does not have; it shows ${shown.variables[0]?.name ?? 'another'} instead.`
+  return null
+}
+
 /** every `erddap/*` child Collection of the published catalog. */
 export async function loadDatasets(): Promise<Dataset[]> {
   const cat: any = await (await gazetteerFetch('catalog.json')).json()

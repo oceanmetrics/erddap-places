@@ -14,7 +14,7 @@
            placeGeometry, placeKey, placeLobes, placesPmtilesUrl, plainPlace, polygonStatus, resolvePlace, type GazIndex, type Place } from './lib/gazetteer'
   import { search as gazSearch, type IndexPlace, type Layer } from './lib/places'
   import PlacePicker from './lib/PlacePicker.svelte'
-  import { loadDatasets, lobeLonSpan, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
+  import { linkMismatch, loadDatasets, lobeLonSpan, resolveDataset, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
   import { classColors, rampStops, VIRIDIS_9 } from './lib/palette'
   import MapView from './lib/MapView.svelte'
@@ -98,6 +98,8 @@
   let error     = $state('')
   let busy      = $state(true)
   let note      = $state('')
+  // a link that names a dataset or variable the app cannot show says so, rather than showing CRW SST without a word
+  let linkNote  = $state('')
   let urls      = $state.raw<{ url: string; kb: number; ms: number; label?: string }[]>([])
   // `rows` are the rows of the WINDOW (the table, the exports and the sentence describe these); on a
   // precomputed target `series` is the whole file, which is what the Time strip draws (`plotRows`)
@@ -361,7 +363,10 @@
         // once. every other place waits for the index (1.1 MB) and reads its polygon when it runs
         const [ps, ds] = await Promise.all([loadPlaces(), loadDatasets()])
         places = ps; datasets = ds
-        if (!datasets.some((d) => d.id === dsId && d.status !== 'pending')) dsId = datasets.find((d) => d.status !== 'pending')?.id ?? ''
+        // a link may name ERDDAP's dataset id or differ in case (resolveDataset); one that names nothing here falls back
+        const hit = resolveDataset(datasets, dsId)
+        dsId = hit?.id ?? datasets.find((d) => d.status !== 'pending')?.id ?? ''
+        linkNote = linkMismatch({ dataset: HASH.dataset, variable: HASH.variable }, datasets.find((d) => d.id === dsId) ?? null, !!hit) ?? ''
         pmtiles = placesPmtilesUrl()      // whichever gazetteer base answered
         status = `gazetteer: ${places.length} precomputed places, ${datasets.length} ERDDAP datasets; reading the index…`
         void useGazetteer(gazP)
@@ -970,6 +975,8 @@
 
     {#if error}
       <div class="toast"><Notice kind="error" ondismiss={() => { error = '' }}>{error}</Notice></div>
+    {:else if linkNote}
+      <div class="toast"><Notice kind="warn" ondismiss={() => { linkNote = '' }}>{linkNote}</Notice></div>
     {/if}
 
     <Controls id="ep-controls" title="controls" width={390} fill bind:active={tab} bind:collapsed={controlsFolded}

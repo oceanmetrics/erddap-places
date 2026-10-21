@@ -101,6 +101,15 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.10** (2026-10-21): a link opens the dataset it names, or says why not. The indicators viewer's "Compute it
+now" link named ERDDAP's dataset id (`dataset=noaa_aoml_seascapes_8day`), not the STAC collection id the app writes
+(`erddap/noaa_aoml_seascapes_8day`), and the app replaced any dataset it did not recognise with CRW SST without a word
+(Channel Islands × Seascapes and Albania × IMERG both opened SST). `resolveDataset()` (`catalog.ts`) now takes the
+collection id, the id without `erddap/`, or ERDDAP's dataset id, each ignoring case (the IMERG collection id is
+`erddap/imerg_monthly_global_precip`, its dataset id `IMERG_monthly_global_precip`), never a pending dataset; a dataset or
+variable the link names and the app cannot show raises a dismissible notice saying what it shows instead
+(`linkMismatch()`).
+
 **app 0.3.9** (2026-10-20): a busy ERDDAP is waited for, not given up on. PacIOOS answered `dhw_5km` axis requests
 in 13–19 s and 45 days of one pixel in 27–31 s, so the 15 s axis timeout failed every live run of a place that is not
 precomputed (Jobos Bay NERR × bleaching alert: "pae-paha.pacioos.hawaii.edu did not answer (no response within 15 s, 2

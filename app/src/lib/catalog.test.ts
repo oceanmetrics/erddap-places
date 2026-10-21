@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isCategorical, lobeLonSpan, loadDatasets, statsTemplate, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
+import { isCategorical, linkMismatch, lobeLonSpan, loadDatasets, resolveDataset, statsTemplate, toDataset, toDatasetLon, valueExpr, valueLabel, type CubeVariable } from './catalog'
 
 const DIR = path.dirname(fileURLToPath(import.meta.url))
 const collection = (id: string) =>
@@ -109,6 +109,49 @@ describe('toDatasetLon', () => {
     expect(toDatasetLon(-160, [0, 360])).toBe(200)
     expect(toDatasetLon(200, [-180, 180])).toBe(-160)
     expect(toDatasetLon(-160, [-180, 180])).toBe(-160)
+  })
+})
+
+describe('resolveDataset: the dataset a link names', () => {
+  const all = ['dhw_5km', 'noaa_aoml_seascapes_8day', 'IMERG_monthly_global_precip', 'jplMURSST41mday'].map((id) => toDataset(collection(id)))
+  const id = (w: string) => resolveDataset(all, w)?.id ?? null
+  it('takes the collection id the app writes', () => {
+    expect(id('erddap/dhw_5km')).toBe('erddap/dhw_5km')
+    expect(id('erddap/noaa_aoml_seascapes_8day')).toBe('erddap/noaa_aoml_seascapes_8day')
+  })
+  // the indicators viewer's "Compute it now" link wrote ERDDAP's dataset id, and every dataset but the default fell
+  // back to CRW SST without a word (Channel Islands x Seascapes, Albania x IMERG, 2026-10-20)
+  it('takes ERDDAP\'s own dataset id without erddap/ (the indicators link, 2026-10-20)', () => {
+    expect(id('noaa_aoml_seascapes_8day')).toBe('erddap/noaa_aoml_seascapes_8day')
+    expect(id('dhw_5km')).toBe('erddap/dhw_5km')
+  })
+  it('ignores case: the IMERG collection id is lower case, its dataset id is not', () => {
+    expect(all.find((d) => d.datasetId === 'IMERG_monthly_global_precip')!.id).toBe('erddap/imerg_monthly_global_precip')
+    expect(id('IMERG_monthly_global_precip')).toBe('erddap/imerg_monthly_global_precip')
+    expect(id('erddap/IMERG_monthly_global_precip')).toBe('erddap/imerg_monthly_global_precip')
+  })
+  it('never picks a pending dataset, and says null for an unknown one', () => {
+    expect(id('erddap/jplMURSST41mday')).toBeNull()
+    expect(id('jplMURSST41mday')).toBeNull()
+    expect(id('no_such_dataset')).toBeNull()
+    expect(id('')).toBeNull()
+  })
+})
+
+describe('linkMismatch: a link the app cannot show as asked says so', () => {
+  const dhw = toDataset(collection('dhw_5km'))
+  const sea = toDataset(collection('noaa_aoml_seascapes_8day'))
+  it('names an unknown dataset and what is shown instead', () => {
+    expect(linkMismatch({ dataset: 'no_such_dataset', variable: 'X' }, dhw, false))
+      .toBe('This link asks for the dataset “no_such_dataset”, which erddap-places does not have; it shows NOAA Coral Reef Watch — Daily Global 5km SST + DHW instead.')
+  })
+  it('names a variable the dataset does not have', () => {
+    expect(linkMismatch({ dataset: 'noaa_aoml_seascapes_8day', variable: 'CRW_SST' }, sea, true))
+      .toBe(`This link asks for the variable “CRW_SST”, which ${sea.title} does not have; it shows CLASS instead.`)
+  })
+  it('is null when the link is shown as asked, or names nothing', () => {
+    expect(linkMismatch({ dataset: 'noaa_aoml_seascapes_8day', variable: 'CLASS' }, sea, true)).toBeNull()
+    expect(linkMismatch({}, dhw, false)).toBeNull()
   })
 })
 
