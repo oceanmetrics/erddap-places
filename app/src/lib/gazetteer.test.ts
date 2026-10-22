@@ -5,7 +5,7 @@ import { describe, expect, it, beforeAll } from 'vitest'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, loadPlaces, placeBbox, placeLobes, placesPmtilesUrl, unionBbox, type Place } from './gazetteer'
+import { GAZETTEER_BASE, GAZETTEER_FALLBACK, PLACES_ATTRIBUTION, gazetteerBase, gazetteerFetch, idGroups, loadPlaces, readParquetPlace, placeBbox, placeLobes, placesPmtilesUrl, unionBbox, type Place } from './gazetteer'
 import { PMTiles } from 'pmtiles'
 import { configureGazetteer, loadIndex, loadLayers, placeGeometry } from './gazetteer'
 
@@ -66,6 +66,27 @@ describe('places.parquet (local copy)', () => {
     expect(fk).toHaveLength(1)
     expect(fk[0].nParts).toBeGreaterThan(0)
     expect(fk[0].bbox[2]).toBeLessThan(-80)
+  })
+
+  // the precompute reads a reference collection's private parquet this way (Marine Regions, indicators#3)
+  it('readParquetPlace reads one place of a parquet on disk, the same as loadPlaces', async () => {
+    const one = await readParquetPlace(fs.readFileSync(LOCAL).buffer as ArrayBuffer, 'places', 'NMS:FKNMS')
+    const all = places.find((p) => p.place_id === 'NMS:FKNMS')!
+    expect(one).toEqual({ ...all, collection: 'places' })
+  })
+
+  // one place per group (the gazetteer's writer): a place read touches one group, not a scan of every place_id
+  it('idGroups keeps the groups whose place_id statistics admit the id, and any group without statistics', () => {
+    const group = (n: number, min?: string, max?: string) => ({ num_rows: BigInt(n), columns: [{ meta_data: {
+      path_in_schema: ['place_id'], statistics: min === undefined ? undefined : { min_value: min, max_value: max } } }] })
+    const md = { row_groups: [group(2, 'MRGID:3293', 'MRGID:5668'), group(2, 'MRGID:5669', 'MRGID:5670'), group(1), group(2, 'MRGID:8403', 'MRGID:8439')] } as any
+    expect(idGroups(md, 'MRGID:5670')).toEqual([{ rowStart: 2, rowEnd: 4 }, { rowStart: 4, rowEnd: 5 }])
+    expect(idGroups(md, 'MRGID:9999')).toEqual([{ rowStart: 4, rowEnd: 5 }])
+  })
+
+  it('readParquetPlace rejects an id that is not in the file with "no place …"', async () => {
+    await expect(readParquetPlace(fs.readFileSync(LOCAL).buffer as ArrayBuffer, 'mr_eez', 'MRGID:0'))
+      .rejects.toThrow('no place MRGID:0 in the mr_eez collection')
   })
 })
 

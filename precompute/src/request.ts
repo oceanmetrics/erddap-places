@@ -80,11 +80,16 @@ export function validateArgs(o: Args, targets: Target[] = TARGETS): void {
   if (!o.datasets.length) refuse('--gazetteer needs a --dataset (one catalogued target)')
 }
 
-/** the layer row of layers.json that `slug` names, or a refusal: it must carry geometry we may fetch. */
-export function checkLayer(layers: Array<{ slug: string; kind?: string; geom_type?: string }>, slug: string) {
+/**
+ * the layer row of layers.json that `slug` names, or a refusal: it must carry geometry we may fetch. A reference
+ * (`raster`) collection qualifies when `internal(slug)`: this machine holds its private full-resolution parquet.
+ */
+export function checkLayer(layers: Array<{ slug: string; kind?: string; geom_type?: string }>, slug: string,
+                           internal: (slug: string) => boolean = () => false) {
   const l = layers.find((x) => x.slug === slug)
   if (!l) return refuse(`no collection ${JSON.stringify(slug)} in ${LAYERS_URL}`)
-  if (l.kind !== 'vector') return refuse(`collection ${slug} is ${JSON.stringify(l.kind ?? 'not vector')}, not a vector layer: it publishes no geometry to mask a grid with`)
+  if (l.kind === 'raster' && !internal(slug)) return refuse(`collection ${slug} is a reference ("raster") layer and this runner holds no private copy of its geometry to mask a grid with`)
+  if (l.kind !== 'vector' && l.kind !== 'raster') return refuse(`collection ${slug} is ${JSON.stringify(l.kind ?? 'not vector')}, not a vector layer: it publishes no geometry to mask a grid with`)
   if (!isPolygonal(l.geom_type)) return refuse(`collection ${slug} holds ${l.geom_type ?? 'unknown'} geometry: only polygon places can be masked`)
   return l
 }
@@ -127,6 +132,8 @@ export interface RequestDeps {
   /** one place's geometry from the collection (the app's placeGeometry); rejects when the id is not in it */
   loadPlace  : (slug: string, id: string) => Promise<import('../../app/src/lib/gazetteer').Place>
   localIds   : string[]
+  /** true when this machine holds the private parquet of a reference collection (paths.ts internalParquet) */
+  internal?  : (slug: string) => boolean
   /** the `gazetteer:collection` of every Item already written for this place id */
   existing   : (id: string) => string[]
 }
@@ -139,7 +146,7 @@ export interface RequestDeps {
 export async function resolveRequest(o: Args, d: RequestDeps, targets: Target[] = TARGETS) {
   validateArgs(o, targets)
   const slug = o.gazetteer!
-  checkLayer(await d.fetchLayers(), slug)
+  checkLayer(await d.fetchLayers(), slug, d.internal)
   const ids = [...new Set(o.places)]
   for (const id of ids) {
     const clash = collisionOf(slug, id, d.localIds, d.existing(id))

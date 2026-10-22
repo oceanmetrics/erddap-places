@@ -25,7 +25,8 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { TARGETS, placesFor } from './targets'
-import { STATS } from './paths'
+import { STATS, internalParquet } from './paths'
+import { asyncBufferFromFile } from 'hyparquet'
 import {
   computeOne, liveExtent, loadDataset, loadLocalPlaces, statsPath, variableOf, StopRequested,
   type Provenance,
@@ -33,7 +34,7 @@ import {
 import { RequestRefusal, LAYERS_URL, daysOf, parseArgs, resolveRequest, selectTargets, validateArgs } from './request'
 import type { TimeExtent } from '../../app/src/lib/extent'
 import type { Dataset, CubeVariable } from '../../app/src/lib/catalog'
-import { configureGazetteer, placeGeometry, PLACES_COLLECTION, type Place } from '../../app/src/lib/gazetteer'
+import { configureGazetteer, placeGeometry, readParquetPlace, PLACES_COLLECTION, type Place } from '../../app/src/lib/gazetteer'
 import { itemCollections, writeItems, writeStac } from './stac'
 import { schedule, hostOf, type Unit } from './schedule'
 import { publisher } from './publish'
@@ -67,9 +68,14 @@ async function requestedPlaces(opts: ReturnType<typeof parseArgs>, localPlaces: 
         if (!p) throw new Error(`no place ${id} in the ${slug} collection`)
         return { ...p, collection: PLACES_COLLECTION }
       }
+      // a reference collection (Marine Regions): the build machine's private full-resolution parquet, the same
+      // geometry the gazetteer's derived products are built from, never the publisher's WFS
+      const own = internalParquet(slug)
+      if (own) return readParquetPlace(await asyncBufferFromFile(own), slug, id)
       return placeGeometry({ collection: slug, place_id: id })
     },
     localIds: localPlaces.map((p) => p.place_id),
+    internal: (slug) => internalParquet(slug) !== undefined,
     existing: (id) => itemCollections(id),
   })
 }

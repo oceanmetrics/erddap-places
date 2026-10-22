@@ -9,6 +9,7 @@ import {
   type Args, type RequestDeps,
 } from './request'
 import { TARGETS, DAYS, placesFor } from './targets'
+import { internalParquet } from './paths'
 import { PLACES_COLLECTION_TITLE, buildItem, itemCollections } from './stac'
 import type { Place } from '../../app/src/lib/gazetteer'
 import type { Provenance } from './stats'
@@ -84,7 +85,7 @@ describe('validateArgs: what a request must name', () => {
   })
 })
 
-describe('checkLayer: only polygon vector layers are fetched as geometry', () => {
+describe('checkLayer: only polygon vector layers, or reference layers held privately, are fetched as geometry', () => {
   const layers = [
     { slug: 'noaa_nerrs', kind: 'vector', geom_type: 'MultiPolygon' },
     { slug: 'mr_eez', kind: 'raster', geom_type: 'MultiPolygon' },
@@ -93,8 +94,16 @@ describe('checkLayer: only polygon vector layers are fetched as geometry', () =>
     { slug: 'old', geom_type: 'Polygon' },
   ]
   it('accepts a polygon vector layer', () => { expect(checkLayer(layers, 'noaa_nerrs').slug).toBe('noaa_nerrs') })
-  it('refuses a reference (raster) collection: it publishes no geometry', () => {
-    expect(refusal(() => checkLayer(layers, 'mr_eez'))).toMatch(/not a vector layer/)
+  it('refuses a reference (raster) collection this machine holds no private copy of', () => {
+    expect(refusal(() => checkLayer(layers, 'mr_eez'))).toBe('collection mr_eez is a reference ("raster") layer and this runner holds no private copy of its geometry to mask a grid with')
+  })
+  // indicators#3 (Albanian EEZ, 2026-10-21) was refused here although the Mac mini holds mr_eez/places.parquet
+  it('accepts a reference collection whose private parquet this machine holds', () => {
+    expect(checkLayer(layers, 'mr_eez', (s) => s === 'mr_eez').slug).toBe('mr_eez')
+  })
+  it('a private copy does not make a layer without kind, or a point layer, maskable', () => {
+    expect(refusal(() => checkLayer(layers, 'old', () => true))).toMatch(/not a vector layer/)
+    expect(refusal(() => checkLayer(layers, 'calcofi_stations', () => true))).toMatch(/only polygon places/)
   })
   it('refuses a layer without kind, a point or line layer, and an unknown slug', () => {
     expect(refusal(() => checkLayer(layers, 'old'))).toMatch(/not a vector layer/)
@@ -185,10 +194,16 @@ describe('resolveRequest', () => {
       expect(d.loadPlace).not.toHaveBeenCalled()
     }
   })
-  it('refuses a reference collection without fetching its geometry', async () => {
+  it('refuses a reference collection without a private copy, without fetching its geometry', async () => {
     const d = deps()
-    expect(await refusalOf(() => resolveRequest(args(['--gazetteer', 'mr_eez', '--place', 'MRGID:8403', '--dataset', 'dhw_5km']), d))).toMatch(/not a vector layer/)
+    expect(await refusalOf(() => resolveRequest(args(['--gazetteer', 'mr_eez', '--place', 'MRGID:8403', '--dataset', 'dhw_5km']), d))).toMatch(/no private copy/)
     expect(d.loadPlace).not.toHaveBeenCalled()
+  })
+  it('loads a place of a reference collection that this machine holds privately', async () => {
+    const EEZ = { ...NERR, place_id: 'MRGID:5670', collection: 'mr_eez' }
+    const d = deps({ internal: (s) => s === 'mr_eez', loadPlace: vi.fn(async () => EEZ) })
+    expect(await resolveRequest(args(['--gazetteer', 'mr_eez', '--place', 'MRGID:5670', '--dataset', 'dhw_5km']), d)).toEqual([EEZ])
+    expect(d.loadPlace).toHaveBeenCalledWith('mr_eez', 'MRGID:5670')
   })
   it('refuses a collection that is not in the manifest', async () => {
     const d = deps()
@@ -250,6 +265,18 @@ describe('gazetteer:collection on the Item', () => {
       expect(itemCollections('NMS:PMNM', dir)).toEqual(['places'])
       expect(itemCollections('NMS:NONE', dir)).toEqual([])
       expect(itemCollections('NMS:PMNM', join(dir, 'missing'))).toEqual([])
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+})
+
+describe('internalParquet: the private copy of a reference collection on this machine', () => {
+  it('names <dir>/<slug>/places.parquet when it exists, else undefined', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'internal-'))
+    try {
+      mkdirSync(join(dir, 'mr_eez'))
+      writeFileSync(join(dir, 'mr_eez', 'places.parquet'), '')
+      expect(internalParquet('mr_eez', dir)).toBe(join(dir, 'mr_eez', 'places.parquet'))
+      expect(internalParquet('mr_goas', dir)).toBeUndefined()
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 })

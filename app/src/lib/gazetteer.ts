@@ -1,7 +1,7 @@
 // the published gazetteer: a STAC catalog on object storage, with places.parquet (GeoParquet) as the
 // place list. we read the whole 4 MB file once with hyparquet (pure JS, no server, no DuckDB spatial
 // extension) and decode the WKB geometry with our own src/lib/wkb.ts.
-import { parquetReadObjects } from 'hyparquet'
+import { parquetMetadataAsync, parquetReadObjects, type AsyncBuffer, type FileMetaData } from 'hyparquet'
 import { compressors } from 'hyparquet-compressors'
 import { wkbToGeoJSON, polygonCoordinates } from './wkb'
 import { configure, getPlace, listLayers, loadIndex as clientIndex, type ClientConfig, type IndexPlace, type Layer } from './places'
@@ -123,6 +123,56 @@ async function readPlaces(buffer?: ArrayBuffer): Promise<Place[]> {
     bbox     : [Number(r.bbox.xmin), Number(r.bbox.ymin), Number(r.bbox.xmax), Number(r.bbox.ymax)] as [number, number, number, number],
     geometry : r.geometry as Geometry,
   })).sort((a, b) => a.gazetteer.localeCompare(b.gazetteer) || a.name.localeCompare(b.name))
+}
+
+/** the row ranges of the groups whose place_id min/max statistics admit `id` (a group without statistics always does) */
+export function idGroups(metadata: FileMetaData, id: string): Array<{ rowStart: number; rowEnd: number }> {
+  const text = (v: unknown) => (v == null ? undefined : v instanceof Uint8Array ? decoder.decode(v) : String(v))
+  const out: Array<{ rowStart: number; rowEnd: number }> = []
+  let start = 0
+  for (const rg of metadata.row_groups) {
+    const n  = Number(rg.num_rows)
+    const st = rg.columns.find((c) => c.meta_data?.path_in_schema.join('.') === 'place_id')?.meta_data?.statistics
+    const lo = text(st?.min_value ?? st?.min), hi = text(st?.max_value ?? st?.max)
+    if (lo === undefined || hi === undefined || (lo <= id && id <= hi)) out.push({ rowStart: start, rowEnd: start + n })
+    start += n
+  }
+  return out
+}
+
+/**
+ * One place of a places.parquet that is not fetched from the bucket: the precompute's private copy of a reference
+ * collection (Marine Regions), read from disk at full resolution. Only the row groups whose place_id statistics admit
+ * `id` are searched (the gazetteer writes one or two places per group, so mr_eez's Albania reads 1 MB of 145 MB), then
+ * only the row of `id`. The authority column is `authority` in a gazetteer collection and `gazetteer` in the places
+ * file. Rejects with "no place …" when the id is not in the file, as placeGeometry() does.
+ */
+export async function readParquetPlace(file: AsyncBuffer, collection: string, id: string): Promise<Place> {
+  const metadata = await parquetMetadataAsync(file)
+  const names    = new Set(metadata.schema.map((s) => s.name))
+  const auth     = names.has('authority') ? 'authority' : 'gazetteer'
+  let i = -1
+  for (const g of idGroups(metadata, id)) {
+    const ids = await parquetReadObjects({ file, metadata, compressors, columns: ['place_id'], rowStart: g.rowStart, rowEnd: g.rowEnd })
+    const j   = ids.findIndex((r: any) => String(r.place_id) === id)
+    if (j >= 0) { i = g.rowStart + j; break }
+  }
+  if (i < 0) throw new Error(`no place ${id} in the ${collection} collection`)
+  const [r]: any[] = await parquetReadObjects({
+    file, metadata, compressors, parsers, rowStart: i, rowEnd: i + 1,
+    columns: ['place_id', auth, 'name', 'area_km2', 'bbox', 'geometry'],
+  })
+  const geometry = r.geometry as Geometry
+  if (!polygonCoordinates(geometry).length) throw new Error(`${r.name ?? id} is a ${geometry.type}: only polygon places can be masked`)
+  return {
+    place_id  : id,
+    collection,
+    gazetteer : String(r[auth] ?? id.split(':')[0]),
+    name      : String(r.name ?? id),
+    area_km2  : Number(r.area_km2) || 0,
+    bbox      : [Number(r.bbox.xmin), Number(r.bbox.ymin), Number(r.bbox.xmax), Number(r.bbox.ymax)],
+    geometry,
+  }
 }
 
 // ── plain (non-reactive) geometry ─────────────────────────────────────────────
