@@ -11,6 +11,8 @@ export const chrome = $state({
   busy   : false,
   /** what is being done right now, shown after "updating…" */
   step   : '',
+  /** the hash on screen (a lens writes it with replaceState, which fires no event): the freeze banner's link follows it */
+  hash   : typeof location === 'undefined' ? '' : location.hash,
 })
 
 /** the theme the page is in (`data-theme` on <html>), kept current. */

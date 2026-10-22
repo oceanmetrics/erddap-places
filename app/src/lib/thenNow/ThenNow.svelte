@@ -49,7 +49,7 @@
   let tab = $state('method')
   // the permalink: every pick (and the pane layout) is written straight back into the hash
   const viewHash = $derived.by(() => { const { show, hide } = encodePanes(paneUrlState(panes, PANES0, VW), 'then-now'); return withExtras(encodeThenNow({ ...s }), { show, hide }) })
-  $effect(() => { const h = viewHash; if (typeof history !== 'undefined' && h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h) })
+  $effect(() => { const h = viewHash; if (typeof history !== 'undefined' && h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h); chrome.hash = h })
 
   // data root: the bucket URL itself, not the storage.oceanmetrics.io redirect, which would add a
   // 302 round trip to every range request

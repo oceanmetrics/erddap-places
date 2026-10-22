@@ -101,6 +101,17 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.11** (2026-10-22): frozen, with a "moving to" banner. A one-line `Notice` (kind `info`, dismissible for the
+session, sessionStorage key `om-freeze-dismissed`) opens the page: "ERDDAP Places is frozen. Its statistics move to Ocean
+Metrics Indicators in build week 2 (2026-11-06 to 11-12), when this address redirects.", with the link "Open this view
+in Indicators ↗". The link is `redirectFor(hash).url` (`src/lib/redirect.ts`, the map written in `../docs/redirects.md`, one
+test per rule): Statistics goes to the Indicators Place view with `ind=erddap:<dataset>:<variable>:<stat>` (`mean_wt` ->
+`mean`, `mean` -> `mean_unw`), Then vs Now to the same view for `dhw_5km`, not exact until build week 2. **Nothing is
+activated**: no 404 page, no JavaScript redirect, no DNS. The hash on screen is mirrored into `chrome.hash` by each lens, so
+the link follows the view without a new listener. The banner takes its height from the stage (the shell is a flex
+column), and on a phone it is a tight band so the page does not start to scroll. About carries the freeze line; bug fixes
+only from here. Entry JS 594.5 -> 595.5 KB, entry CSS 18.2 KB; no budget raised.
+
 **app 0.3.10** (2026-10-21): a link opens the dataset it names, or says why not. The indicators viewer's "Compute it
 now" link named ERDDAP's dataset id (`dataset=noaa_aoml_seascapes_8day`), not the STAC collection id the app writes
 (`erddap/noaa_aoml_seascapes_8day`), and the app replaced any dataset it did not recognise with CRW SST without a word

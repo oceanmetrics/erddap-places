@@ -6,7 +6,7 @@
   // card, the tour, the Help modals, the shortcuts, and the feedback dialog (a lazy chunk with
   // html-to-image). The lens on screen registers a LensApi so the tour and keys can open its tabs.
   import { onMount, type Component } from 'svelte'
-  import { Button, Footer, Header, Kbd, toggleTheme } from '@marinebon/ui'
+  import { Button, Footer, Header, Kbd, Notice, toggleTheme } from '@marinebon/ui'
   import App from './App.svelte'
   import { chrome, theme } from './lib/chrome.svelte'
   import { LENS_LABEL, lensHash, lensOf, migrateHash, type Lens, type Panes } from './lib/view'
@@ -22,6 +22,8 @@
   import type { LensApi, LensUi } from './lib/help/lensApi'
   import type { FeedbackKind } from './lib/feedback/issue'
   import { loadDatasets, type Dataset } from './lib/catalog'
+  import { redirectFor } from './lib/redirect'
+  import { dismissFreeze, FREEZE_ABOUT, FREEZE_LINK, FREEZE_TEXT, freezeDismissed } from './lib/freeze'
 
   const SOURCE = APP_REPO
   const GUIDE  = 'https://marinebon.org/tools/erddap-places/'
@@ -31,6 +33,12 @@
     const h = migrateHash(location.hash)
     if (h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h)
   }
+  // the freeze banner: its link is the redirect map's answer for the hash on screen. the lenses write
+  // the hash with replaceState (no event), so they mirror it into chrome.hash; a pasted link or Back
+  // (the listener below) refreshes it too
+  let freezeOpen = $state(!freezeDismissed())
+  const closeFreeze = () => { dismissFreeze(); freezeOpen = false }
+  const indicatorsHref = $derived(redirectFor(chrome.hash).url)
   let current = $state<Lens>(typeof location === 'undefined' ? 'stats' : lensOf(location.hash))
   // a door of the welcome card re-mounts the lens on its new hash (the lenses read the hash once)
   let viewKey = $state(0)
@@ -50,6 +58,7 @@
     const on = () => {
       const h = migrateHash(location.hash)
       if (h !== location.hash) history.replaceState(null, '', location.pathname + location.search + h)
+      chrome.hash = h
       const l = lensOf(h)
       if (l !== current) { api = null; current = l }
     }
@@ -186,6 +195,11 @@
 </script>
 
 <div class="shell" data-lens={current} data-busy={chrome.busy ? '1' : '0'}>
+  {#if freezeOpen}
+    <div class="freeze">
+      <Notice kind="info" ondismiss={closeFreeze}>{FREEZE_TEXT} <a href={indicatorsHref} target="_blank" rel="noopener">{FREEZE_LINK}</a></Notice>
+    </div>
+  {/if}
   <Header appName="erddap-places" tagline="place statistics from ERDDAP, in your browser" appHref="./">
     {#snippet lens()}{LENS_LABEL[current]}{/snippet}
     {#snippet help(close)}
@@ -230,6 +244,7 @@
   <Modal bind:open={helpModalOpen} title={MODAL_TITLE[helpModal]} width={helpModal === 'keys' ? '30rem' : helpModal === 'sources' ? '48rem' : '40rem'}>
     <div class="help">
       {#if helpModal === 'about'}
+        <p>{FREEZE_ABOUT}</p>
         <p><b>erddap-places</b> answers "what were the conditions in this place, over this time?" for a marine
            place (a national marine sanctuary, a MarineRegions.org area or a ProtectedSeas area) and an ERDDAP
            dataset. <b>Window statistics</b> summarise the place day by day; <b>Then vs Now</b> sets one day of the
@@ -304,6 +319,13 @@
 
 <style>
   .shell  { height: 100%; display: flex; flex-direction: column; background: var(--bg-page); }
+  .freeze { flex: none; padding: var(--space-1) var(--space-2); background: var(--bg-page); }
+  .freeze a { color: var(--link); white-space: nowrap; }
+  /* on a phone the page scrolls (the stage is 70vh), so the banner stays tight: it must cost less than the slack under the stage */
+  @media (max-width: 640px) {
+    .freeze { padding: 0; }
+    .freeze :global(.mbon-notice) { padding: var(--space-1) var(--space-2); border-radius: 0; border-width: 0 0 1px; }
+  }
   .body   { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
   .loading { margin: auto; color: var(--text-muted); }
   .shell :global(.mbon-footer) { flex: none; }

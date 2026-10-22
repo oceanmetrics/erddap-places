@@ -1,5 +1,9 @@
 # erddap-places
 
+> **Frozen since 2026-10-22:** erddap-places is moving to [Ocean Metrics Indicators](https://oceanmetrics.io/indicators/)
+> (build week 2, 2026-11-06 to 11-12, when this address redirects); bug fixes only. The redirect map is written, not
+> activated: [`docs/redirects.md`](docs/redirects.md).
+
 Place-based key statistics from ERDDAP™ gridded (and tabular) datasets, computed **in the browser**
 with DuckDB-WASM, for places from a gazetteer (NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas
 PSGID). No server of ours in the request path except ERDDAP itself. Started 2026-09-14 after Roy

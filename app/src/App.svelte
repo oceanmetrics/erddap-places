@@ -273,6 +273,7 @@
     const h = viewHash
     if (h && typeof history !== 'undefined' && h !== location.hash)
       history.replaceState(null, '', location.pathname + location.search + h)
+    if (h) chrome.hash = h
   })
   /** everything needed to repeat this run outside the browser, as one copyable block. */
   const reproduce = $derived.by(() => {

@@ -1,6 +1,8 @@
 // screenshots for the UI assessment: node shoot.mjs <which>   which = ep | oh | shiny | ep-after
 //   ep-after: the MBON re-layout (U2) into after/, from EP_URL (default the live app; a local
 //   `npm run preview` works too: EP_URL=http://localhost:4179/ node shoot.mjs ep-after)
+//   banner: the freeze banner (app 0.3.11), light and dark at 390 px and 1280 px, into this folder's after/ (from the
+//   script's own location, so a worktree writes into itself); EP_URL as above, PW_CHANNEL=chrome uses the installed Chrome
 //   Since Help, the tour and feedback (U4) every ep-after state opens with `?tour=off`, so no welcome
 //   card or tour lands in it; `welcome_*` is a first visit and `tour-stop-1_*` is `?tour=on`, each in
 //   both themes (`?theme=`) at the three widths. `ONLY=<regex>` re-shoots only the files whose path matches. `node shoot.mjs ep-after welcome` shoots only those.
@@ -11,7 +13,7 @@ const VP = { phone: { width: 390, height: 844 }, laptop: { width: 1280, height: 
 const EP = "https://oceanmetrics.io/erddap-places/";
 const OH = "https://oceanmetrics.io/obis-hex/";
 const HOME = process.env.HOME;
-const b = await chromium.launch({ args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+const b = await chromium.launch({ channel: process.env.PW_CHANNEL || undefined, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
 
 async function shot({ url, file, vp, ready, full = false, after, theme }) {
   if (process.env.ONLY && !new RegExp(process.env.ONLY).test(file)) return;   // ONLY='stats_table|welcome' re-shoots just those
@@ -121,6 +123,22 @@ if (which === "ep-after") {
     after: async (p) => { await p.getByRole("tab", { name: /Method/ }).click(); await p.waitForTimeout(400); } });
   await shot({ url: fk, vp: "phone", ready: epAfter, file: `${out}/stats_help_phone.png`,
     after: async (p) => { await p.getByRole("button", { name: /Help/ }).click(); await p.waitForTimeout(400); } });
+}
+if (which === "banner") {
+  const EPB = process.env.EP_URL ?? EP;
+  const out = new URL("./after/", import.meta.url).pathname; mkdirSync(out, { recursive: true });
+  const fk = `${EPB}?tour=off`;
+  const view = `#place=NMS:FKNMS&dataset=erddap/dhw_5km&variable=CRW_SST`;
+  // the banner sits above the header and takes its height from the stage; the shell must not overflow the viewport
+  const bannerNote = async (p) => p.evaluate(() => {
+    const r = (q) => { const e = document.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return `${Math.round(b.top)}+${Math.round(b.height)}`; };
+    const a = document.querySelector(".freeze a");
+    return `freeze ${r(".freeze")} | body ${r(".body")} | scroll ${document.documentElement.scrollHeight}/${innerHeight} x ${document.documentElement.scrollWidth}/${innerWidth} | link ${a?.getAttribute("href")}`;
+  });
+  for (const t of ["light", "dark"]) for (const vp of ["phone", "laptop"]) {
+    const file = `${out}/banner_${t}_${vp}.png`;
+    await shot({ url: `${fk}&theme=${t}${view}`, vp, theme: t, ready: async (p) => { await epAfter(p); return await bannerNote(p); }, file });
+  }
 }
 if (which === "oh") {
   const out = `${HOME}/Github/oceanmetrics/obis-hex/docs/ui-assessment`; mkdirSync(out, { recursive: true });
