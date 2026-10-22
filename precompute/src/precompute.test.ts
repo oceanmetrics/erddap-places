@@ -264,7 +264,13 @@ describe('buildItem', () => {
   it('points at the parquet with the right media type, role and href', () => {
     expect(item.assets.data.type).toBe('application/vnd.apache.parquet')
     expect(item.assets.data.roles).toEqual(['data'])
-    expect(item.assets.data.href).toBe('../../dhw_5km/CRW_SST/NMS:GRNMS.parquet')
+    expect(item.assets.data.href).toBe('../dhw_5km/CRW_SST/NMS:GRNMS.parquet')
+  })
+  it('regression: asset hrefs resolve from stats/items/ to the real files under stats/', () => {
+    // the hrefs were '../../<dataset>/...', which resolves to gazetteer/<dataset>/..., a path that does not exist
+    const at = 'https://x/gazetteer/stats/items/i.json'
+    expect(new URL(item.assets.data.href, at).href).toBe('https://x/gazetteer/stats/dhw_5km/CRW_SST/NMS:GRNMS.parquet')
+    expect(new URL(item.assets.provenance.href, at).href).toBe('https://x/gazetteer/stats/dhw_5km/CRW_SST/NMS:GRNMS.provenance.json')
   })
   it('describes the continuous schema for a continuous variable', () => {
     expect(item.assets.data['table:columns']).toBe(DAILY_COLUMNS)

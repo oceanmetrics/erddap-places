@@ -241,7 +241,7 @@ export function buildItem(p: Provenance, place: Place, datasetTitle: string) {
   const id      = itemId(p.dataset_id, p.variable, p.place_id)
   const href    = statsHref(p.dataset_id, p.variable, p.place_id)
   const parquet = statsPath(p.dataset_id, p.variable, p.place_id)
-  const rel     = (h: string) => h.replace(/^\.\//, '../../')      // items/ is two levels under stats/
+  const rel     = (h: string) => h.replace(/^\.\//, '../')         // items/ is one level under stats/: an Item's href is relative to the Item file
   const status  = itemStatus(p)
   const first   = recordStart(p.dataset_id, p.record_start)
   const coll    = place.collection ?? PLACES_COLLECTION

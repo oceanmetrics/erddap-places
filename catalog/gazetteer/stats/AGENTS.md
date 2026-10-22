@@ -37,7 +37,7 @@ Read [`collection.json`](collection.json): `summaries` lists every `erddap-place
 `erddap-places:variable` and `erddap-places:place_id`, and each `rel: "item"` link points at an Item
 under `items/`. An Item gives you:
 
-- `assets.data.href` — the Parquet file (relative to `stats/`), plus `table:columns`, `file:size`
+- `assets.data.href` — the Parquet file (relative to the Item, which sits in `items/`: `../<dataset>/<variable>/<place>.parquet`, so it resolves to a file under `stats/`), plus `table:columns`, `file:size`
 - `properties.erddap-places:place_id` / `:dataset_id` / `:variable`
 - `properties.gazetteer:collection` — the gazetteer collection the place came from (`places` for the 18
   sanctuaries above; another slug, e.g. `noaa_nerrs`, for a place that was requested). A place id is
