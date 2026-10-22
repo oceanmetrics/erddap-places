@@ -9,7 +9,7 @@
 //     SEARCH_LIMIT hits, grouped by collection.
 // Only polygons are listed: a grid mask needs an area, so lines and points are not selectable.
 import { PLACES_COLLECTION, placeKey } from './gazetteer'
-import type { IndexPlace, Layer } from './places'
+import type { IndexPlace, Layer } from '@oceanmetrics/places'
 
 export const GROUP_CAP    = 50
 export const SEARCH_LIMIT = 200

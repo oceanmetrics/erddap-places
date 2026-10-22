@@ -5,7 +5,7 @@
   // collections without a query and the client's ranked search with one (see placePicker.ts for the rules).
   import { alsoIn, azRows, defaultView, searchView, type PickRow } from './placePicker'
   import { placeKey } from './gazetteer'
-  import type { IndexPlace, Layer } from './places'
+  import type { IndexPlace, Layer } from '@oceanmetrics/places'
 
   interface Props {
     /** the selectable rows: every polygon place of the index */

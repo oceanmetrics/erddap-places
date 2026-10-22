@@ -21,7 +21,7 @@
     "undici": "^8.11.2"
   },
   "devDependencies": {
-    "@oceanmetrics/catalog": "file:../../platform/packages/catalog",
+    "@oceanmetrics/catalog": "^0.2.0",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.13.3",
     "tsx": "^4.20.6",

@@ -1,22 +1,13 @@
-// the `erddap-grid` STAC profile (@oceanmetrics/catalog): the collections in the repo and the builder's output must pass it.
-// the profile is a sibling package linked by `file:` until its npm publish (2026-10-26); where the sibling is not checked
-// out (CI on the runner), the package is absent and these tests skip, so the daily stats run never depends on it.
-// `npm run check:profiles` is the same check from the command line.
+// the `erddap-grid` STAC profile (@oceanmetrics/catalog, an npm devDependency): the collections in the repo and the
+// builder's output must pass it. `npm run check:profiles` is the same check from the command line.
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { validate } from '@oceanmetrics/catalog/validate'
 import { GAZETTEER } from './paths'
 import { SPECS, buildCollection } from '../../catalog/build_erddap_collections'
 
-type Validate = (name: string, doc: unknown) => { ok: boolean; errors: string[] }
-let validate: Validate | null = null
-try {
-  validate = (await import('@oceanmetrics/catalog/validate')).validate as Validate
-} catch {
-  validate = null
-}
 const PROFILE = 'erddap-grid'
-const describeIf = validate ? describe : describe.skip
 
 const ERDDAP_DIR = join(GAZETTEER, 'erddap')
 const collectionFiles = (): string[] =>
@@ -49,8 +40,8 @@ const INFO_DEPTH = {
 }
 const spec = (id: string) => SPECS.find(s => s.id === id)!
 
-describeIf('erddap-grid profile', () => {
-  const check = (doc: unknown) => validate!(PROFILE, doc)
+describe('erddap-grid profile', () => {
+  const check = (doc: unknown) => validate(PROFILE, doc)
 
   it('every catalog/gazetteer/erddap/*/collection.json passes', () => {
     const files = collectionFiles()

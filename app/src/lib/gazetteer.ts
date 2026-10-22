@@ -4,7 +4,7 @@
 import { parquetMetadataAsync, parquetReadObjects, type AsyncBuffer, type FileMetaData } from 'hyparquet'
 import { compressors } from 'hyparquet-compressors'
 import { wkbToGeoJSON, polygonCoordinates } from './wkb'
-import { configure, getPlace, listLayers, loadIndex as clientIndex, type ClientConfig, type IndexPlace, type Layer } from './places'
+import { configure, getPlace, listLayers, loadIndex as clientIndex, type ClientConfig, type IndexPlace, type Layer } from '@oceanmetrics/places'
 import { fetchRetry, hostOf, type RetryOpts } from './fetchRetry'
 import type { Feature, FeatureCollection, Geometry, Polygon } from 'geojson'
 
@@ -401,7 +401,7 @@ export function configureGazetteer(next: Partial<ClientConfig> = {}) {
   innerFetch = next.fetch ?? null
   parquetOf = next.parquetUrl ?? collectionParquet
   placeCache.clear(); totals.clear(); layersMemo = null; referenceMemo = null
-  configure({ base: GAZETTEER_FALLBACK, layersUrl: undefined, indexUrl: undefined, ...next, parquetUrl: parquetOf, fetch: meteredFetch })
+  configure({ base: GAZETTEER_FALLBACK, layersUrl: undefined, indexUrl: undefined, indexColumns: INDEX_COLUMNS, ...next, parquetUrl: parquetOf, fetch: meteredFetch })
 }
 
 let layersMemo: { src: Layer[]; out: Layer[] } | null = null
@@ -412,7 +412,14 @@ export async function loadLayers(): Promise<Layer[]> {
   return layersMemo.out
 }
 
-/** every place of every collection (no geometry), only the columns the app uses; cached. */
+/**
+ * the columns of places_index.parquet the app decodes (`indexColumns` of the client): the picker's lean read. license,
+ * attribution, version and updated stay null on every row: a credit comes from the layer manifest by collection, not
+ * from 14,734 copies of a sentence (so the client's creditsFor() with a bare place id credits nothing here: pass slugs).
+ */
+export const INDEX_COLUMNS = ['place_id', 'name', 'authority', 'place_type', 'geom_type', 'collection', 'bbox', 'centroid_lon', 'centroid_lat', 'area_km2', 'group_id']
+
+/** every place of every collection (no geometry), only INDEX_COLUMNS; cached. */
 export const loadIndex = (): Promise<IndexPlace[]> => clientIndex()
 
 /** the 18 precomputed places as index rows, for the first paint (before the index is in). */

@@ -7,12 +7,12 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { fileFetch } from './__fixtures__/fileFetch'
 import {
-  GAZETTEER_FALLBACK, PLACES_COLLECTION, buildIndex, bucketPmtiles, cachedPlace, collForHash, collectionAttribution, collectionParquet,
+  GAZETTEER_FALLBACK, INDEX_COLUMNS, PLACES_COLLECTION, buildIndex, bucketPmtiles, cachedPlace, collForHash, collectionAttribution, collectionParquet,
   configureGazetteer, fmtBytes, isPolygonal, loadIndex, loadLayers, placeGeometry, placeKey, placeLobes, polygonStatus, resolvePlace,
   rewriteLayers, PLACES_ATTRIBUTION, placesAttribution,
 } from './gazetteer'
 import { indexBounds } from './cells'
-import { INDEX_COLUMNS, search, type IndexPlace, type Layer } from './places'
+import { search, type IndexPlace, type Layer } from '@oceanmetrics/places'
 
 const DIR = path.dirname(fileURLToPath(import.meta.url))
 const FIX = path.join(DIR, '__fixtures__/gazetteer')
@@ -36,7 +36,7 @@ describe('the layers manifest', () => {
   it('has 22 layers whose pmtiles name the storage host, and loadLayers() rewrites each to the bucket', async () => {
     const raw: Layer[] = MANIFEST.layers
     expect(raw).toHaveLength(22)
-    expect(raw.every((l) => l.pmtiles.startsWith('https://storage.oceanmetrics.io/gazetteer/'))).toBe(true)
+    expect(raw.every((l) => !!l.pmtiles?.startsWith('https://storage.oceanmetrics.io/gazetteer/'))).toBe(true)
     const layers = await loadLayers()
     expect(layers).toHaveLength(22)
     for (const l of layers) {
@@ -59,9 +59,9 @@ describe('the layers manifest', () => {
 
   it('rewriteLayers() leaves out reference rasters (places client 0.3.0 kind: raster), keeps vector rows', () => {
     const [a, b] = MANIFEST.layers as Layer[]
-    const raster = { ...b, slug: 'mr_eez_raster', kind: 'raster', pmtiles: null, source_layer: null, parquet: null,
+    const raster = { ...b, slug: 'mr_eez_raster', kind: 'raster', access: 'public', pmtiles: null, source_layer: null, parquet: null,
                      raster: { tiles: ['https://example.invalid/{z}/{x}/{y}.png'], tile_size: 256, minzoom: 0, maxzoom: 8, link: null } }
-    const out = rewriteLayers([{ ...a, kind: 'vector', raster: null } as Layer, raster as unknown as Layer, a])
+    const out = rewriteLayers([{ ...a, kind: 'vector', access: 'public', raster: null } as Layer, raster as unknown as Layer, a])
     expect(out.map((l) => l.slug)).toEqual([a.slug, a.slug])
     expect(out.every((l) => l.pmtiles === bucketPmtiles(l.slug))).toBe(true)
   })

@@ -101,6 +101,21 @@ Data sources row and *Cite this data* carry the collection's own credit, citatio
 precomputed places keep their fast path. `gridMask()` also got faster for polygons with tens of thousands
 of vertices (below).
 
+**app 0.3.12** (2026-10-22): the places client is the npm package, not a copy. `src/lib/places/` (the vendored
+places client 0.2.0 and its four local patches, 667 lines) is gone; the app depends on `@oceanmetrics/places` ^0.5.2,
+which absorbed the patches: `loadIndex()` exported, the index downloaded with one GET, `search()`'s `geomType` filter
+(before `limit`), and an index without `group_id` still loading. The picker's lean index read stays as it was: the
+11 columns are now the app's own `INDEX_COLUMNS` in `gazetteer.ts`, passed as the client's `indexColumns`, so
+`license`, `attribution`, `version` and `updated` stay null on every row. Search, grouping, the polygon-only picker hits
+and the manifest give the same answers as the copy did (checked against the live index and manifest). Two upstream
+changes reach the app: `Layer.access` (`listLayers()` drops `unlisted` rows; every live row is `public`, and a manifest
+without the field counts as public), and since client 0.4.0 `getPlace()` reads no parquet for a `kind: "raster"` layer,
+so a raster collection without a `raster.feature_url` (`mr_goas`, `mr_high_seas`) now fails with "no place … in the
+… collection" after an index lookup instead of after the bucket's 403. `precompute/` takes `@oceanmetrics/catalog`
+^0.2.0 from npm instead of the `file:` link to `platform/`, so its `erddap-grid` profile tests run on the runner too.
+Entry JS 595.5 -> 597.2 KB (the package carries client code the copy did not: `identify`, derived layers,
+`mergeGeometries`); no budget raised. A fix of the client wiring only: the app stays frozen.
+
 **app 0.3.11** (2026-10-22): frozen, with a "moving to" banner. A one-line `Notice` (kind `info`, dismissible for the
 session, sessionStorage key `om-freeze-dismissed`) opens the page: "ERDDAP Places is frozen. Its statistics move to Ocean
 Metrics Indicators in build week 2 (2026-11-06 to 11-12), when this address redirects.", with the link "Open this view
@@ -239,7 +254,8 @@ items it is given and has no hook for a query, so it cannot sit on that many row
 
 Everything is read from the **bucket host** (`https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/`),
 never `storage.oceanmetrics.io`: its 302 costs a redirect per range request. `configureGazetteer()` points
-the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client 0.2.0; its header lists the four local patches) there and wraps its `fetch` (`meteredFetch()`).
+the places client (`@oceanmetrics/places` from npm, since app 0.3.12; before that a vendored copy in `src/lib/places/`) there, sets
+its `indexColumns` to the app's `INDEX_COLUMNS`, and wraps its `fetch` (`meteredFetch()`).
 
 - the layers manifest (`index/layers.json`, canonical, falling back to `layers.json`; 37 kB, 22 layers: slug == collection == PMTiles source-layer; top-level `base_direct` is the redirect-free S3 host): title, credit, citation,
   licence, paint. Its `pmtiles` URLs name the storage host; `loadLayers()` rewrites each to
@@ -248,8 +264,8 @@ the vendored client (`src/lib/places/`, re-vendored from places@cd1f52d = client
   `loadReferenceLayers()` returns the ones with a `raster.feature_url` (credit, citation, and the geometry source below).
 - `index/places_index.parquet` (1.1 MB, one GET): `loadIndex()` reads 11 of its columns (`group_id` only when the file has it) and leaves
   `license`, `attribution`, `version` and `updated` null; a credit comes from the manifest by collection. Read
-  through hyparquet's range reads it took ~140 sequential requests (10 s); the vendored client now downloads
-  the file whole (0.8 s). The index loads alongside the datasets and the 18 places, and a failure leaves the 18
+  through hyparquet's range reads it took ~140 sequential requests (10 s); the client downloads
+  the file whole (0.8 s; the vendored copy's patch, upstream since `@oceanmetrics/places` 0.5.2). The index loads alongside the datasets and the 18 places, and a failure leaves the 18
   places working.
 - `<collection>/places.parquet` (WKB, split at ±180): `placeGeometry()` reads ONE place with the client's
   `getPlace(id, { slug, unwrap: false })` (the slug pins the collection exactly), a row-group filtered range read,

@@ -8,13 +8,13 @@ import {
 } from './gazetteer'
 import { gridMask } from './gridMask'
 import { ErddapUnreachable } from './fetchRetry'
-import type { Layer } from './places'
+import type { Layer } from '@oceanmetrics/places'
 
 const HOST    = 'https://fixture.invalid/gazetteer/'
 const WFS     = 'https://wfs.invalid/geoserver/wfs?typeName=MarineRegions:eez&outputFormat=application/json&CQL_FILTER=mrgid={source_id}'
-const vector  = { slug: 'noaa_sanctuaries', title: 'Sanctuaries', collection: 'noaa_sanctuaries', kind: 'vector', raster: null,
+const vector  = { slug: 'noaa_sanctuaries', title: 'Sanctuaries', collection: 'noaa_sanctuaries', kind: 'vector', access: 'public', raster: null,
                   pmtiles: 'https://storage.invalid/noaa_sanctuaries/places.pmtiles', source_layer: 'noaa_sanctuaries' }
-const eez     = { slug: 'mr_eez', title: 'Marine Regions Exclusive Economic Zones', collection: 'mr_eez', kind: 'raster', pmtiles: null, source_layer: null,
+const eez     = { slug: 'mr_eez', title: 'Marine Regions Exclusive Economic Zones', collection: 'mr_eez', kind: 'raster', access: 'public', pmtiles: null, source_layer: null,
                   attribution_html: 'Flanders Marine Institute (2023). CC BY 4.0.', license: 'CC-BY-4.0',
                   raster: { tiles: ['https://wms.invalid/{z}/{x}/{y}.png'], feature_url: WFS } }
 const bare    = { ...eez, slug: 'mr_nofeature', title: 'No WFS', raster: { tiles: ['https://wms.invalid/{z}/{x}/{y}.png'] } }
@@ -61,7 +61,7 @@ describe('reference collections in the manifest', () => {
 
   it('names Marine Regions for its collections and the host for another publisher', () => {
     expect(referenceName(eez as unknown as Layer)).toBe('Marine Regions')
-    expect(referenceName({ title: 'Some Atlas', raster: { feature_url: 'https://geo.example.org/wfs?x={source_id}' } })).toBe('geo.example.org')
+    expect(referenceName({ title: 'Some Atlas', raster: { feature_url: 'https://geo.example.org/wfs?x={source_id}' } } as unknown as Layer)).toBe('geo.example.org')
     expect(polygonStatus('Albanian EEZ', 'mr_eez', 0, 0, 'Marine Regions')).toBe('loading Albanian EEZ polygon from Marine Regions (one feature)…')
     expect(polygonStatus('Albanian EEZ', 'mr_eez', 338_000, 338_000, 'Marine Regions')).toBe('loading Albanian EEZ polygon from Marine Regions (one feature, 338 kB)…')
     expect(polygonStatus('x', 'c', 840_000, 0)).toBe('loading x polygon from c (840 kB so far)…')    // unchanged for a vector collection
@@ -144,9 +144,15 @@ describe('placeGeometry() for a reference collection', () => {
   it('still reads a vector collection from its parquet, and a collection without a feature_url is not a reference', async () => {
     requests = []
     answer = () => new Response('', { status: 403, statusText: 'Forbidden' })
+    await expect(placeGeometry({ collection: 'noaa_sanctuaries', place_id: 'NMS:CINMS' })).rejects.toThrow()
+    expect(requests.some((u) => u.endsWith('noaa_sanctuaries/places.parquet'))).toBe(true)
+    // a raster row without a feature_url goes to the client's getPlace, not to a WFS. since @oceanmetrics/places 0.4.0
+    // the client knows a raster layer has no parquet of ours: it looks the id up in the index (here a 403) and never
+    // requests mr_nofeature/places.parquet (the vendored 0.2.0 copy did, and got the bucket's 403)
+    requests = []
     await expect(placeGeometry({ collection: 'mr_nofeature', place_id: 'MRGID:11' })).rejects.toThrow()
-    expect(requests.some((u) => u.endsWith('mr_nofeature/places.parquet'))).toBe(true)
     expect(requests.some((u) => u.includes('wfs.invalid'))).toBe(false)
+    expect(requests.some((u) => u.endsWith('mr_nofeature/places.parquet'))).toBe(false)
   })
 })
 

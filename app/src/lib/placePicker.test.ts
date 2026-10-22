@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { fileFetch } from './__fixtures__/fileFetch'
 import { buildIndex, configureGazetteer, loadIndex, type GazIndex } from './gazetteer'
 import { CURATED, GROUP_CAP, NOISY, PLACES_TITLE, SEARCH_LIMIT, alsoIn, azRows, defaultView, groupOrder, searchView } from './placePicker'
-import { groupHits, search, type IndexPlace, type Layer } from './places'
+import { groupHits, search, type IndexPlace, type Layer } from '@oceanmetrics/places'
 
 const FIX = path.join(path.dirname(fileURLToPath(import.meta.url)), '__fixtures__/gazetteer')
 const LAYERS: Layer[] = JSON.parse(fs.readFileSync(path.join(FIX, 'layers.json'), 'utf8')).layers

@@ -55,8 +55,8 @@ Rules for agents working in `app/` (Svelte 5 + Vite + TypeScript; see `README.md
 ## Gazetteer data contract (index + manifest + per-collection geometry)
 
 All under `https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/gazetteer/` (the bucket host: the
-storage host's 302 costs a redirect per range request). Code: `src/lib/gazetteer.ts`, the vendored client in
-`src/lib/places/` (its header lists the local patches: re-apply them when you re-copy it), the picker in
+storage host's 302 costs a redirect per range request). Code: `src/lib/gazetteer.ts` (it configures the npm client
+`@oceanmetrics/places`, with `indexColumns` = its `INDEX_COLUMNS`; no app vendors a copy of the client), the picker in
 `src/lib/PlacePicker.svelte` + `placePicker.ts`.
 
 - the manifest (`index/layers.json`; falls back to `layers.json`): 22 layers; slug == collection == PMTiles source-layer. `pmtiles` names the storage host:

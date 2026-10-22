@@ -12,7 +12,7 @@
   import { engine } from './lib/engine'
   import { buildIndex, cachedPlace, loadReferenceLayers, referenceName, collectionAttribution, collForHash, collectionParquet, loadIndex, loadLayers, loadPlaces, PLACES_COLLECTION, placeAsRow,
            placeGeometry, placeKey, placeLobes, placesPmtilesUrl, plainPlace, polygonStatus, resolvePlace, type GazIndex, type Place } from './lib/gazetteer'
-  import { search as gazSearch, type IndexPlace, type Layer } from './lib/places'
+  import { search as gazSearch, type IndexPlace, type Layer } from '@oceanmetrics/places'
   import PlacePicker from './lib/PlacePicker.svelte'
   import { linkMismatch, loadDatasets, lobeLonSpan, resolveDataset, statsTemplate, toDatasetLon, valueExpr, valueLabel, type CubeVariable, type Dataset } from './lib/catalog'
   import { addDays, clampWindow, daysBetween, defaultWindow, fetchTimeExtent, timeInstant, type TimeExtent } from './lib/extent'
