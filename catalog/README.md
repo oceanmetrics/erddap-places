@@ -16,6 +16,11 @@
   README/AGENTS and the `catalog.json` child links) for the datasets re-served from the USF IMaRS
   ERDDAP, from each server's `info/<id>/index.json`. Run with
   `cd precompute && npx tsx ../catalog/build_erddap_collections.ts [<id> ...]`.
+  The collections must pass the `erddap-grid` STAC profile (`@oceanmetrics/catalog`, in the sibling
+  `platform` checkout, linked from `precompute/` with `file:` until the npm publish on 2026-10-26).
+  Check with `cd precompute && npm run check:profiles` (`om-catalog validate erddap-grid`); the same check
+  runs in `precompute/src/profile.test.ts` against the files and the builder's `buildCollection()`, and
+  skips where the sibling is not checked out (CI), so run it before committing a collection change.
 - `places/` — build output directory. `gazetteer/places/` is the published copy tracked by
   Portolan (synced from here by `publish_places.sh`).
 - `build_then_now.py` — builds the Then vs Now `gazetteer/rasters/`, `climatology/`, `series/`

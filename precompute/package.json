@@ -7,7 +7,8 @@
   "scripts": {
     "stats": "tsx src/precompute.ts",
     "items": "tsx src/precompute.ts --items-only",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check:profiles": "om-catalog validate erddap-grid ../catalog/gazetteer/erddap/*/collection.json"
   },
   "dependencies": {
     "@duckdb/node-api": "^1.5.5-r.5",
@@ -20,6 +21,7 @@
     "undici": "^8.11.2"
   },
   "devDependencies": {
+    "@oceanmetrics/catalog": "file:../../platform/packages/catalog",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.13.3",
     "tsx": "^4.20.6",
