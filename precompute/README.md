@@ -32,6 +32,16 @@ Only the engine differs: native DuckDB (`@duckdb/node-api`) here, DuckDB-WASM in
 local copy is `src/sql.ts`, which loads the templates with `fs` instead of Vite's `import.meta.glob`;
 the `render()` / `lit()` rules are character-for-character the app's.
 
+## One row per day
+
+The final assembly (`assembleSql()` in `src/stats.ts`) keeps a day only from the chunk whose span
+`<start>_<end>` holds it, and one row per `date` (plus `class` for categorical variables), the first chunk by name.
+A chunk that ends on a day missing from the ERDDAP time axis gets its end snapped to the next available day, the next
+chunk's first, and the two rows of that day differ in the last bits of the sums, so `SELECT DISTINCT` kept both (six
+`CRW_SST` / `CRW_BAA` files carried a date twice, found by the Python engine's parity harness in
+`oceanmetrics/extract`, which applies the same rule). Files published before this fix are corrected on their next
+assembly; the aggregates and their thread order are unchanged.
+
 ## Being a good ERDDAP citizen
 
 - one place at a time, per dataset; at most **2 concurrent** griddap requests, with a 750 ms pause

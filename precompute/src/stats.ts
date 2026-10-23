@@ -332,6 +332,37 @@ export interface Provenance {
   sql          : string
 }
 
+/** a chunk file's span, `<start>_<end>.parquet`, read from its name in SQL. */
+const SPAN_START = String.raw`regexp_extract(filename, '(\d{4}-\d{2}-\d{2})_\d{4}-\d{2}-\d{2}\.parquet$', 1)::DATE`
+const SPAN_END   = String.raw`regexp_extract(filename, '\d{4}-\d{2}-\d{2}_(\d{4}-\d{2}-\d{2})\.parquet$', 1)::DATE`
+
+/**
+ * The COPY that writes the stats file from the chunk files: every chunk's rows plus `place_id`,
+ * `dataset_id`, `variable`, ordered by `date` (categorical `date, class`), ZSTD.
+ *
+ * The rule: **a day belongs to the chunk whose span holds it.** A chunk whose end falls on a day the
+ * ERDDAP time axis lacks gets its end snapped by the server to the next available day, which is also the
+ * next chunk's first day. Both chunks then carry a row for that day, and as their sums differ in the last
+ * bits (parallel aggregation) a plain `SELECT DISTINCT` does not merge them (CRW_SST and CRW_BAA files
+ * carried a date twice). So rows outside their chunk's own `<start>..<end>` are dropped, and should two
+ * kept chunks still overlap (cut at two sizes from one start), one row per key (`date`, plus `class` when
+ * categorical) is kept, the one of the first file by name (the oldest start). The same rule as the Python
+ * engine's `assemble_sql` (oceanmetrics/extract). Chunk files must be named `<start>_<end>.parquet`.
+ */
+export function assembleSql(
+  chunkFiles: string[], out: string, placeId: string, datasetId: string, variable: string, categorical: boolean,
+): string {
+  const order = categorical ? 'date, class' : 'date'
+  return `COPY (
+  SELECT *, '${placeId}' AS place_id, '${datasetId}' AS dataset_id, '${variable}' AS variable
+  FROM (
+    SELECT * EXCLUDE (filename) FROM read_parquet([${chunkFiles.map((f) => `'${f}'`).join(', ')}], filename = true)
+    WHERE date BETWEEN ${SPAN_START} AND ${SPAN_END}
+    QUALIFY row_number() OVER (PARTITION BY ${order} ORDER BY filename) = 1
+  ) ORDER BY ${order}
+) TO '${out}' (FORMAT PARQUET, COMPRESSION ZSTD)`
+}
+
 export async function computeOne(
   ds: Dataset, v: CubeVariable, place: Place, ext: TimeExtent, days: number | 'all' = DAYS, log = console.log,
   { shouldStop = () => false, onChunk = () => {} }: { shouldStop?: () => boolean; onChunk?: () => void } = {},
@@ -398,15 +429,10 @@ export async function computeOne(
   await agg
   if (todo.some(({ j }) => !existsSync(chunkFiles[j]))) throw new StopRequested()
 
-  // 3. the file: every chunk's rows, oldest first. DISTINCT again: two chunks snapped onto the same
-  // step of a coarse axis give that step's row twice, identical
-  const order = v.categorical ? 'date, class' : 'date'
+  // 3. the file: every chunk's rows, oldest first, one row per day (see assembleSql)
   const out   = statsPath(ds.datasetId, v.name, place.place_id)
   mkdirSync(dirname(out), { recursive: true })
-  await c.run(`COPY (
-  SELECT *, '${place.place_id}' AS place_id, '${ds.datasetId}' AS dataset_id, '${v.name}' AS variable
-  FROM (SELECT DISTINCT * FROM read_parquet([${chunkFiles.map((f) => `'${f}'`).join(', ')}])) ORDER BY ${order}
-) TO '${out}' (FORMAT PARQUET, COMPRESSION ZSTD)`)
+  await c.run(assembleSql(chunkFiles, out, place.place_id, ds.datasetId, v.name, v.categorical))
 
   const n = Number((await c.runAndReadAll(`SELECT count(*) AS n FROM read_parquet('${out}')`)).getRowObjects()[0].n)
   const bytes = statSync(out).size
