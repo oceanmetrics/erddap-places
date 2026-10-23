@@ -29,7 +29,7 @@ slice at `t2`), and `anom=1` shows `t2 − t` per cell on a diverging ramp.
 (swipe on one map in both projections, one colour scale, the anomaly) and its permalink keys (`layer`, `t`, `t2`, `swipe`,
 `anom`), both themes at 390 px.
 
-**Status 2026-10-23, later** (the indicators branch `wk2-rows` at `63aecb9`, its tests and `docs/shots/map_wk2_*`, with `@oceanmetrics/map` 0.3.0 from
+**Status 2026-10-23, later** (the indicators branch `wk2-rows` at `2090a71`, its tests and `docs/shots/map_wk2_*`, with `@oceanmetrics/map` 0.3.0 from
 platform's `map-wk2`; erddap-places `fa4e9b5`): **23 of 108 rows ticked**, the 12 above and 17, 19, 20, 22, 30, 32, 37, 58, 82, 95, 106: the
 cell readout (one slice and the compare mode), the cells sliced in the legend, the Retry, the globe and full screen (from their shots),
 a palette, the year-range Then, `l`, and the redirect naming the Map's compare link. Still open in week 2 (25 rows): 18, 21, 24, 25, 26,
