@@ -87,9 +87,12 @@ jobs:
       # the long pole: polite griddap requests (<=100k values each, <=2 concurrent per place, one place at
       # a time per server, servers side by side; a failing server rests 10 min to 2 h while the others go
       # on); days for the full-record backfill, then only each target's last chunk
-      # one transient ERDDAP fetch failure (e.g. PacIOOS "fetch failed" after retries on 2026-10-07)
-      # must not throw away the other items: keep going, publish what was produced, and fail the
-      # job at the end so the red run is still visible
+      # a source host that does not answer (timeout, dropped connection or 5xx after the retries: PacIOOS
+      # `pae-paha.pacioos.hawaii.edu`, the mirror `erddap.oceanmetrics.io`, coastwatch) is a WARNING, not a
+      # red job (precompute/src/outage.ts, run.ts): its units are skipped and keep their last published file,
+      # the others are computed and published, and stats/outage.json lists the skipped ones. Only a code or
+      # data error (a 4xx, a SQL error, a missing place, a failed upload) makes the precompute exit non-zero;
+      # it still runs the later steps, so what was produced is published, and fails the job at the end
       - name: precompute the statistics
         id: precompute
         continue-on-error: true
@@ -110,6 +113,28 @@ jobs:
           trap 'kill $hb 2>/dev/null' EXIT
           ${{ runner.os == 'macOS' && 'caffeinate -i ' || '' }}npx tsx src/precompute.ts ${{ inputs.dataset && format('--dataset {0}', inputs.dataset) || '' }} 2>&1 \
             | tee >(perl -MPOSIX -ne 'BEGIN { $| = 1 } print strftime("%H:%M:%SZ ", gmtime), $_' >> "$PROGRESS_LOG")
+
+      # the run's outage report (stats/outage.json, written only when a host did not answer): a step summary,
+      # one warning annotation per host, and a small artifact. Never fails the job.
+      - name: source host outage summary
+        if: always()
+        working-directory: precompute
+        run: npx tsx src/ci.ts outage-summary
+      - name: upload the outage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stats-outage
+          path: catalog/gazetteer/stats/outage.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+      # the Items fetched from S3 include those of requested places (NERRS:WEL) and of places since removed
+      # (MRGID:8439, PSGID:939) that collection.json does not list; rashid fails PTL-LNK-002 on them (red every
+      # day since 2026-10-20). Drop them from the checkout only: S3 keeps them (the sync below has no --delete).
+      - name: drop fetched Items the collection does not list
+        working-directory: precompute
+        run: npx tsx src/ci.ts prune-unlisted
 
       - name: validate the catalog
         run: rashid check catalog/gazetteer
@@ -147,8 +172,9 @@ jobs:
             aws s3 sync "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
               --delete --exclude '.portolan/*' --exclude 'h3/*'
           done
+          # outage.json is this run's report (an artifact), not part of the catalog: never published, never stale on S3
           aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
-            --exclude '.portolan/*'
+            --exclude '.portolan/*' --exclude 'outage.json'
 
       # place ids contain ':' (MRGID:8439), which upload-artifact rejects in file names: ship a tarball
       - name: pack the statistics
@@ -165,7 +191,7 @@ jobs:
       - name: fail the job if the precompute reported failures
         if: ${{ steps.precompute.outcome == 'failure' }}
         run: |
-          echo "::error::the precompute reported failed items or uploads (see its log); the successful items were published"
+          echo "::error::the precompute reported an error (a code or data failure, or a failed upload; see its log); the successful items were published. A source host outage is not one: see the outage summary"
           exit 1
       - name: memory after the run
         if: always()

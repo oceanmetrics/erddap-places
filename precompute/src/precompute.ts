@@ -36,7 +36,8 @@ import type { TimeExtent } from '../../app/src/lib/extent'
 import type { Dataset, CubeVariable } from '../../app/src/lib/catalog'
 import { configureGazetteer, placeGeometry, readParquetPlace, PLACES_COLLECTION, type Place } from '../../app/src/lib/gazetteer'
 import { itemCollections, writeItems, writeStac } from './stac'
-import { schedule, hostOf, type Unit } from './schedule'
+import { hostOf, type Unit } from './schedule'
+import { runUnits, type RunUnit } from './run'
 import { publisher } from './publish'
 import { Agent, setGlobalDispatcher } from 'undici'
 
@@ -50,7 +51,7 @@ const hhmmss = (ms: number) => {
 }
 
 // ── main ──────────────────────────────────────────────────────────────────────
-interface Job extends Unit { ds: Dataset; v: CubeVariable; place: Place; days: number | 'all' }
+interface Job extends RunUnit { ds: Dataset; v: CubeVariable; place: Place; days: number | 'all' }
 
 /** a requested run's places: the manifest check, then each place's geometry through the app's loader. */
 async function requestedPlaces(opts: ReturnType<typeof parseArgs>, localPlaces: Place[]): Promise<Place[]> {
@@ -112,7 +113,7 @@ async function main() {
       const key = `${ds.datasetId}/${v.name}/${id}`
       const place = byId.get(id)
       if (!place) { console.warn(`   !! no place ${id} in places.parquet; skipped`); failed.push(key); continue }
-      jobs.push({ key, host: hostOf(ds.baseUrl), ds, v, place, days })
+      jobs.push({ key, host: hostOf(ds.baseUrl), dataset: ds.datasetId, variable: v.name, place_id: id, ds, v, place, days })
     }
   }
 
@@ -140,9 +141,10 @@ async function main() {
   console.log(`full record unless --days; no new work after ${opts.hours} h; ` +
               `${pub.enabled ? `publishing each item to ${process.env.PRECOMPUTE_PUBLISH}` : 'not publishing (PRECOMPUTE_PUBLISH unset)'}`)
 
-  const res = await schedule(todo, {
+  const report = await runUnits(todo, {
     deadline,
-    run: async (j, attempt, progress) => {
+    outageFile: join(STATS, 'outage.json'),
+    compute: async (j, attempt, progress) => {
       const tag = `[${j.host.split('.')[0]}] ${j.key}`
       const log = (s: string) => console.log(`${tag}${s.startsWith(' ') ? '' : ' '}${s}`)
       const ext = await extentOf(j.ds)
@@ -158,18 +160,26 @@ async function main() {
       return 'done'
     },
   })
-  failed.push(...res.failed.map((f) => f.unit.key))
+  const by = (status: string) => report.units.filter((r) => r.status === status)
+  failed.push(...by('error').map((r) => r.key))
+  const skipped = by('skipped'), deferred = by('deferred'), done = by('completed')
   await pub.done()
 
-  if (!provs.length && !failed.length && !res.deferred.length) throw new Error('nothing computed')
+  // nothing asked for at all is a mistake; every unit skipped by an outage is not
+  if (!provs.length && !failed.length && !deferred.length && !skipped.length) throw new Error('nothing computed')
   // the whole collection once more (also the --items-only path)
   if (provs.length && !requested) writeStac(provs, byId, titles, keep, provs, planned)
-  console.log(`\n${res.done.length} item(s) computed, ${provs.length} in ${join(STATS, 'items')}${requested ? '' : ' + collection.json'}` +
+  console.log(`\n${done.length} item(s) computed, ${provs.length} in ${join(STATS, 'items')}${requested ? '' : ' + collection.json'}` +
               (pub.enabled ? `; ${pub.stats.files} file(s) uploaded, ${pub.stats.failures} upload failure(s)` : ''))
   console.log(`parquet: ${(provs.reduce((s, p) => s + p.bytes, 0) / 1e6).toFixed(1)} MB, ${provs.reduce((s, p) => s + p.rows, 0)} rows`)
-  if (res.deferred.length) console.log(`deferred to the next run (deadline): ${res.deferred.length}\n  ${res.deferred.map((u) => u.key).join('\n  ')}`)
-  if (failed.length) console.log(`failed: ${failed.length}\n  ${failed.join('\n  ')}`)
+  if (deferred.length) console.log(`deferred to the next run (deadline): ${deferred.length}\n  ${deferred.map((u) => u.key).join('\n  ')}`)
+  if (report.outage) {
+    console.log(`WARNING source host outage, ${skipped.length} unit(s) skipped (they keep their last published file; see ${join(STATS, 'outage.json')}):`)
+    for (const h of report.outage.hosts) console.log(`  ${h.host}: ${h.units_skipped.length} unit(s), ${h.kinds.join('/')}, ${h.first_failure} .. ${h.last_failure}`)
+  }
+  if (failed.length) console.log(`failed (error): ${failed.length}\n  ${failed.join('\n  ')}`)
   console.log(`total ${hhmmss(Date.now() - t0)}`)
+  // the rule: only an error (a code or data failure, or an upload) fails the run; a host outage is a warning
   if (failed.length || pub.stats.failures) process.exitCode = 1
 }
 

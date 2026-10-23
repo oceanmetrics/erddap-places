@@ -3,3 +3,5 @@
 # are tracked in git. run `cd precompute && npm run stats` to rebuild them locally.
 *.parquet
 *.provenance.json
+# this run's report of source hosts that did not answer (precompute/src/outage.ts); an artifact, never published
+outage.json

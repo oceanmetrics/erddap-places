@@ -33,7 +33,7 @@ export interface ScheduleOpts<U extends Unit> {
 export interface ScheduleResult<U extends Unit> {
   done    : U[]
   deferred: U[]
-  failed  : Array<{ unit: U; error: string }>
+  failed  : Array<{ unit: U; error: string; cause: unknown }>
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -73,7 +73,7 @@ export async function schedule<U extends Unit>(units: U[], o: ScheduleOpts<U>): 
         if (pieces) { q.stuck = 0; strikes = 0 } else q.stuck++
         const note = pieces ? `try ${q.tries}, ${pieces} piece(s) done first` : `try ${q.tries}, ${q.stuck}/${maxAttempts} in a row with no progress`
         if (q.stuck >= maxAttempts) {
-          res.failed.push({ unit: q.u, error: message(e) })
+          res.failed.push({ unit: q.u, error: message(e), cause: e })
           log(`!! ${q.u.key}: ${message(e)} (${note}; given up for this run)`)
         } else {
           queue.push(q)

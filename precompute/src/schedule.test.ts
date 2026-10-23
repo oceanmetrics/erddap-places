@@ -111,6 +111,11 @@ describe('schedule', () => {
     expect(at).toEqual([0, 10, 40, 100])                            // rests 10, 30, 60 between the four tries
     expect(res.failed.map((f) => [f.unit.key, f.error])).toEqual([['a1', '503 Service Unavailable'], ['a2', '503 Service Unavailable']])
   })
+  it('hands the last error of a given-up unit to the caller, so the run can tell an outage from an error', async () => {
+    const boom = new Error('503 Service Unavailable')
+    const res = await schedule([u('a1', 'h')], { ...clock(), restMs: [1], maxAttempts: 1, log: () => {}, run: async () => { throw boom } })
+    expect(res.failed[0].cause).toBe(boom)
+  })
   it('starts nothing after the deadline: the rest is deferred, as is a unit stopped mid-way', async () => {
     const c = clock()
     const res = await schedule([u('a1', 'h'), u('a2', 'h'), u('a3', 'h')], {

@@ -145,7 +145,7 @@ These are verified regressions, each guarded by a test. Details are in `app/READ
   stay under 100k values (extractr's `n_max_vals_per_req`); `precompute/src/schedule.ts` runs one lane
   per ERDDAP server and rests a failing server (10 min to 2 h) while the others go on; a place is given up for the
   run only after 3 tries in a row that finish no chunk, so a backfill that keeps progressing retries until the cutoff; each finished item
-  is uploaded at once (`publish.ts`), and a run starts no new work after `PRECOMPUTE_HOURS` (21). It runs `rashid check`, and syncs the gazetteer to
+  is uploaded at once (`publish.ts`), and a run starts no new work after `PRECOMPUTE_HOURS` (21). A source host that does not answer (timeout, connection error, 5xx after the retries) skips its units with a warning (`stats/outage.json`, a step summary, an artifact) and the run still exits 0; only an error fails it (`precompute/README.md`, "Source host outages"). It runs `rashid check`, and syncs the gazetteer to
   `s3://oceanmetrics.io-public/gazetteer/` using the host's AWS profile (the repo has no secrets).
   The sync excludes `rasters/`, `climatology/` and `series/`, which are uploaded from the Mac mini.
 - `.github/workflows/obis-h3.yml`: the monthly obis-h3 release for the obis-hex app, also on `macmini`

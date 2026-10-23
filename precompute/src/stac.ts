@@ -448,3 +448,17 @@ export function linkFromCatalog() {
   })
   writeJson(path, cat)
 }
+
+/**
+ * the Items in `dir` that the collection does not link. The daily workflow fetches every published Item from S3
+ * (so collection.json can list them all), but listedItems() lists only the daily run's places: a requested place
+ * (NERRS:WEL) or a place since removed (MRGID:8439, PSGID:939) stays on S3, unlisted, and `rashid check` then
+ * fails PTL-LNK-002 ("contained object has no item link") on every run (2026-10-20 on). Returns file names.
+ */
+export function unlistedItems(statsDir = STATS): string[] {
+  const dir = join(statsDir, 'items'), col = join(statsDir, 'collection.json')
+  if (!existsSync(dir) || !existsSync(col)) return []
+  const linked = new Set<string>((JSON.parse(readFileSync(col, 'utf8')).links ?? [])
+    .filter((l: { rel?: string; href?: string }) => l.rel === 'item' && l.href).map((l: { href: string }) => l.href.replace(/^\.\/items\//, '')))
+  return readdirSync(dir).filter((f) => f.endsWith('.json') && !linked.has(f)).sort()
+}

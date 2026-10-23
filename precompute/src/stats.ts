@@ -23,6 +23,8 @@ import { addDays, day, daysBetween, parseInfoExtent, timeInstant } from '../../a
 import type { TimeExtent }                    from '../../app/src/lib/extent'
 
 import { render } from './sql'
+import { HostOutage, networkKind, outageOf } from './outage'
+import { hostOf } from './schedule'
 import { CACHE, CHUNKS, GAZETTEER, PLACES, STATS } from './paths'
 import { DAYS, MAX_CHUNK_DAYS, MAX_REQUEST_VALUES, CONCURRENCY, SLEEP_MS } from './targets'
 
@@ -74,6 +76,7 @@ export async function liveExtent(
 ): Promise<TimeExtent> {
   const url = `${ds.baseUrl.replace(/\/+$/, '')}/info/${ds.datasetId}/index.json`
   let last: unknown
+  let status: number | undefined                                      // the HTTP status of the last failure, when it was a 5xx
   for (let i = 0; i < attempts; i++) {
     if (i > 0) {
       const ms = EXTENT_BACKOFF_MS[Math.min(i - 1, EXTENT_BACKOFF_MS.length - 1)]
@@ -82,14 +85,16 @@ export async function liveExtent(
     }
     let res: Response
     try { res = await fetchFn(url, { signal: AbortSignal.timeout(120_000) }) }
-    catch (e) { last = e; continue }                                   // network: retry
-    if (res.status >= 500) { last = new Error(`${url}: ${res.status} ${res.statusText}`); continue }
+    catch (e) { last = e; status = undefined; continue }               // network: retry
+    if (res.status >= 500) { last = new Error(`${url}: ${res.status} ${res.statusText}`); status = res.status; continue }
     if (!res.ok) throw new Error(`${url}: ${res.status} ${res.statusText}`)
     const ext = parseInfoExtent(await res.json())
     if (!ext) throw new Error(`${url}: no time extent in the info table`)
     return ext
   }
-  throw new Error(`${url}: extent probe failed ${attempts} times: ${errText(last)}`)
+  // every attempt timed out, was cut off or got a 5xx: the host is down, not the request wrong
+  throw new HostOutage(hostOf(url), status ? '5xx' : networkKind(last) ?? 'network',
+                       `${url}: extent probe failed ${attempts} times: ${errText(last)}`, status)
 }
 const errText = (e: unknown) => {
   if (!(e instanceof Error)) return String(e)
@@ -215,26 +220,38 @@ export async function maskLobe(ds: Dataset, lobe: Lobe): Promise<LobeMask> {
 }
 
 // ── griddap download, cached on disk ──────────────────────────────────────────
-/** GET a griddap URL to `file`, once; one retry on failure. cached files are reused. */
-export async function download(url: string, file: string, log = console.log): Promise<number> {
+/**
+ * GET a griddap URL to `file`, once; one retry on failure. cached files are reused. A request that never
+ * got an answer (timeout, connection error) or got a 5xx, twice, throws a HostOutage; a 4xx (the server
+ * refused the query) or a local failure is a plain Error. `fetchFn` / `wait` are for tests.
+ */
+export async function download(
+  url: string, file: string, log = console.log,
+  { fetchFn = fetch, wait = sleep }: { fetchFn?: typeof fetch; wait?: (ms: number) => Promise<unknown> } = {},
+): Promise<number> {
   if (existsSync(file) && statSync(file).size > 0) return statSync(file).size
   mkdirSync(dirname(file), { recursive: true })
   let last: unknown
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const t = Date.now()
-      const res = await fetch(url, { signal: AbortSignal.timeout(900_000) })
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}: ${(await res.text().catch(() => '')).slice(0, 300)}`)
+      const res = await fetchFn(url, { signal: AbortSignal.timeout(900_000) })
+      if (!res.ok) {
+        const msg = `${res.status} ${res.statusText}: ${(await res.text().catch(() => '')).slice(0, 300)}`
+        throw res.status >= 500 ? new HostOutage(hostOf(url), '5xx', msg, res.status) : new Error(msg)
+      }
       const buf = Buffer.from(await res.arrayBuffer())
       writeFileSync(file, buf)
       log(`      ${(buf.byteLength / 1e6).toFixed(1)} MB in ${((Date.now() - t) / 1000).toFixed(1)} s`)
       return buf.byteLength
     } catch (e) {
       last = e
-      if (attempt === 0) { log(`      retrying after: ${e instanceof Error ? e.message : String(e)}`); await sleep(5_000) }
+      if (attempt === 0) { log(`      retrying after: ${e instanceof Error ? e.message : String(e)}`); await wait(5_000) }
     }
   }
-  throw new Error(`griddap failed twice: ${url}\n  ${last instanceof Error ? last.message : String(last)}`)
+  const msg = `griddap failed twice: ${url}\n  ${last instanceof Error ? last.message : String(last)}`
+  const out = outageOf(last, hostOf(url))
+  throw out ? new HostOutage(out.host, out.kind, msg, out.status) : new Error(msg)
 }
 
 /** run `jobs` with at most `n` in flight, pausing SLEEP_MS between starts; no new job once `stop()`. */
@@ -432,10 +449,13 @@ export async function computeOne(
   // 3. the file: every chunk's rows, oldest first, one row per day (see assembleSql)
   const out   = statsPath(ds.datasetId, v.name, place.place_id)
   mkdirSync(dirname(out), { recursive: true })
-  await c.run(assembleSql(chunkFiles, out, place.place_id, ds.datasetId, v.name, v.categorical))
+  // a unit is complete or untouched: written beside the target and renamed over it once whole
+  const tmpOut = out + '.tmp'
+  rmSync(tmpOut, { force: true })
+  await c.run(assembleSql(chunkFiles, tmpOut, place.place_id, ds.datasetId, v.name, v.categorical))
 
-  const n = Number((await c.runAndReadAll(`SELECT count(*) AS n FROM read_parquet('${out}')`)).getRowObjects()[0].n)
-  const bytes = statSync(out).size
+  const n = Number((await c.runAndReadAll(`SELECT count(*) AS n FROM read_parquet('${tmpOut}')`)).getRowObjects()[0].n)
+  const bytes = statSync(tmpOut).size
   const chunksAt = slices.map(([s, e]): [string, string] => [t(s), t(e)])
   const urls = masks.flatMap((m) => chunksAt.map(([a, b]) => urlFor(m, a, b)))
   const prov: Provenance = {
@@ -450,7 +470,10 @@ export async function computeOne(
     erddap_base: ds.baseUrl, erddap_version: ds.version,
     sql: render(statsTemplate(v), { expr: valueExpr(v), slab: '(SELECT DISTINCT * FROM read_parquet([<one griddap slab per lobe for the chunk>]))', mask: 'mask' }),
   }
-  writeFileSync(out.replace(/\.parquet$/, '.provenance.json'), JSON.stringify(prov, null, 2) + '\n')
+  const provOut = out.replace(/\.parquet$/, '.provenance.json')
+  writeFileSync(provOut + '.tmp', JSON.stringify(prov, null, 2) + '\n')
+  renameSync(provOut + '.tmp', provOut)
+  renameSync(tmpOut, out)
   log(`    -> ${n} rows, ${(bytes / 1e3).toFixed(0)} kB in ${((Date.now() - t0) / 1000).toFixed(0)} s`)
   return prov
 }
