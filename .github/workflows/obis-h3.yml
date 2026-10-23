@@ -1,15 +1,18 @@
 # monthly refresh of the obis-h3 release that the obis-hex app reads:
 # sync OBIS open data -> build the H3 store -> export Parquet -> validate -> upload to
-# s3://oceanmetrics.io-public/obis-h3/<release>/ -> write obis-h3/latest.json last
+# obis-h3/<release>/ on both stores (om-publish.sh) -> write obis-h3/latest.json last
 #
 # the work is data-raw/run_refresh_docker.sh in marinebon/obisindicators, which is already checked out
 # on the host at ~/Github/marinebon/obisindicators; this repo is not checked out (nothing here is
 # built). Runs on the self-hosted runner `macmini` (see catalog/README.md "Where it runs"; msens until
 # 2026-10-12). The wrapper starts a Colima VM (profile obis-h3), runs refresh_obis_h3.sh in its Docker
 # image with the data on the external drive (DATA_ROOT, default /Volumes/msens_big/_big/obis), stops the
-# VM again, and rsyncs a published store to msens for h3t (only a warning when that fails). The S3
-# upload uses the host's ~/.aws, mounted read-only into the container: the repository holds no AWS
-# secrets, and credentials in the environment would not reach the container. The first run syncs
+# VM again, and rsyncs a published store to msens for h3t (only a warning when that fails). The upload
+# runs on the host after the container (obisindicators 0.12.1, data-raw/publish_obis_h3.sh): the release
+# folder, then latest.json, then collection.json through oceanmetrics/platform scripts/om-publish.sh, the
+# one publisher of the bucket, to both stores (R2, which storage.oceanmetrics.io serves, then S3), never
+# a delete; om-publish is checked out below (OM_PUBLISH) and reads the host's R2 rclone wrapper and AWS
+# profile, so the repository holds no secrets and none enters the image. The first run syncs
 # ~93 GB of OBIS snapshot before it builds: see data-raw/README.md
 #
 # after a published release the last step swaps the h3t tile service on msens to the new store
@@ -43,7 +46,7 @@ on:
         required: false
         default: false
       skip_upload:
-        description: 'skip the S3 upload and latest.json'
+        description: 'skip the upload (both stores) and latest.json'
         type: boolean
         required: false
         default: false
@@ -72,13 +75,26 @@ jobs:
     env:
       AWS_DEFAULT_REGION: us-east-1
       OBIS_BRANCH: main
+      OM_PUBLISH: ${{ github.workspace }}/om-platform/scripts/om-publish.sh
     steps:
+      # the one publisher of the bucket (oceanmetrics/platform at main, the one script), read by the wrapper's
+      # host-side upload through OM_PUBLISH
+      - uses: actions/checkout@v4
+        with:
+          repository: oceanmetrics/platform
+          path: om-platform
+          sparse-checkout: scripts/om-publish.sh
+          sparse-checkout-cone-mode: false
+
       - name: host tools
         run: |
           export PATH="/opt/homebrew/bin:$PATH"
           colima version | head -1
           docker --version
           aws --version
+          rclone version | head -1
+          test -x "$OM_PUBLISH" || { echo "::error::$OM_PUBLISH is missing"; exit 1; }
+          test -x "$HOME/.config/oceanmetrics/rclone-r2.sh" || { echo "::error::the R2 rclone wrapper is missing on the host"; exit 1; }
           vm_stat | head -5
           df -h /Volumes/msens_big || echo "::warning::/Volumes/msens_big is not mounted"
 
@@ -97,6 +113,8 @@ jobs:
           test -f "$OBIS_REPO/R/export.R" || { echo "::error::R/export.R not on $OBIS_BRANCH"; exit 1; }
           test -x "$OBIS_REPO/data-raw/run_refresh_docker.sh" \
             || { echo "::error::data-raw/run_refresh_docker.sh not on $OBIS_BRANCH"; exit 1; }
+          test -x "$OBIS_REPO/data-raw/publish_obis_h3.sh" \
+            || { echo "::error::data-raw/publish_obis_h3.sh (the om-publish upload, obisindicators 0.12.1) not on $OBIS_BRANCH"; exit 1; }
 
       - name: refresh obis-h3
         id: refresh

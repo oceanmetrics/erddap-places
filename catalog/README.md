@@ -237,11 +237,14 @@ external drive is mounted, starts the Colima VM `obis-h3` (stopped again afterwa
 `data-raw/refresh_obis_h3.sh` in its Docker image with `DATA_ROOT=/Volumes/msens_big/_big/obis` mounted as
 `/share/data`: sync OBIS open data, build the H3 store, `obis_h3_export_parquet()` into
 `$DATA_ROOT/obis-h3/<release>/`, validate (total records at least 90% of the previous release's, else nothing
-is uploaded), `aws s3 sync` to `s3://oceanmetrics.io-public/obis-h3/<release>/` without `--delete`, and
-**last** `obis-h3/latest.json`:
+is uploaded); then, on the host after the container (obisindicators 0.12.1, `data-raw/publish_obis_h3.sh`),
+the release folder to `obis-h3/<release>/` on **both stores** through oceanmetrics/platform
+`scripts/om-publish.sh` (R2 `oceanmetrics-io-public-enam`, which storage.oceanmetrics.io serves, then S3
+`oceanmetrics.io-public`; additive, never a delete; a count check on each store), then `obis-h3/latest.json`,
+then **last** the stable `obis-h3/collection.json` (their previous R2 copies under `obis-h3/_history/<date>/`):
 
 ```json
-{"release": "vYYYYMMDD", "base": "https://s3.us-east-1.amazonaws.com/oceanmetrics.io-public/obis-h3/vYYYYMMDD/",
+{"release": "vYYYYMMDD", "base": "https://storage.oceanmetrics.io/obis-h3/vYYYYMMDD/",
  "obis_snapshot": "YYYY-MM-DD", "built_at": "..."}
 ```
 
@@ -255,9 +258,13 @@ artifact, and a finished run writes `refresh_YYYYMMDD.done` beside it.
   `$DATA_ROOT`, then re-run with `gh workflow run obis-h3 -R oceanmetrics/erddap-places`), 3 another refresh
   holds the container `obis-h3-refresh`, 4 validation failed, 5 the drive is not mounted or Colima/Docker is
   missing.
-- **S3 credentials**: the mini's `~/.aws`, mounted read-only into the container. Credentials in the job's
-  environment would not reach the container, so the repository has no AWS secrets for this job.
-- **Rollback**: older releases stay on S3. Overwrite `obis-h3/latest.json` with the older release's `release`,
+- **Credentials**: the upload runs on the host, so om-publish reads the mini's R2 rclone wrapper
+  (`~/.config/oceanmetrics/rclone-r2.sh`, which sources `r2.env`) and `~/.aws`; neither enters the image, and
+  the repository has no secrets for this job. The workflow checks oceanmetrics/platform out at `main` (the one
+  script) and sets `OM_PUBLISH`.
+- **Rollback**: older releases stay on both stores (`om-publish.sh --really --keep-history --cache-control
+  max-age=300 <older latest.json> obis-h3 --as latest.json`; the one replaced last is on R2 under
+  `obis-h3/_history/<date>/`). Overwrite `obis-h3/latest.json` with the older release's `release`,
   `base`, `obis_snapshot` and `built_at` (the last two are in that release's `release.json`), with the same
   content type and cache-control as above. Clients pick it up within 5 minutes.
 - **WoRMS `taxon.parquet`** (`$DATA_ROOT/derived/taxon.parquet`) is a **manual input**, refreshed separately
