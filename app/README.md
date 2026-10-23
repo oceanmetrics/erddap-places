@@ -125,7 +125,9 @@ test per rule): Statistics goes to the Indicators Place view with `ind=erddap:<d
 activated**: no 404 page, no JavaScript redirect, no DNS. The hash on screen is mirrored into `chrome.hash` by each lens, so
 the link follows the view without a new listener. The banner takes its height from the stage (the shell is a flex
 column), and on a phone it is a tight band so the page does not start to scroll. About carries the freeze line; bug fixes
-only from here. Entry JS 594.5 -> 595.5 KB, entry CSS 18.2 KB; no budget raised.
+only from here. Entry JS 594.5 -> 595.5 KB, entry CSS 18.2 KB; no budget raised. The redirect is activated only after the
+parity checklist [`docs/parity.md`](docs/parity.md) passes: every user-visible behaviour of this app, row by row, with where it
+lives in Ocean Metrics and the build week it is due.
 
 **app 0.3.10** (2026-10-21): a link opens the dataset it names, or says why not. The indicators viewer's "Compute it
 now" link named ERDDAP's dataset id (`dataset=noaa_aoml_seascapes_8day`), not the STAC collection id the app writes
