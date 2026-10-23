@@ -61,8 +61,43 @@ Shell.svelte computes the banner's href as `redirectFor(chrome.hash).url`. `chro
 hash on screen: each lens writes it when it writes the permalink with `replaceState` (which fires no event), and the
 Shell's existing `hashchange` / `popstate` handler refreshes it for a pasted link or Back. There is no new listener.
 
-## To activate (build week 2)
+## The redirect page (written 2026-10-23, not active)
 
-Not done here. The plan: the page keeps its address, and on load, before the app mounts, a frozen-app redirect calls
-`redirectFor(location.hash)` and replaces the location; `exact: false` carries its `note` to the target as a banner.
-The banner's `FREEZE_TEXT` ("when this address redirects") is then replaced by the redirect.
+GitHub Pages cannot answer a 301 and the hash never reaches a server, so the move is a small JavaScript page. One template
+serves both frozen apps (erddap-places and obis-hex); it is **written, shipped at `redirect/redirect.html` and not linked
+from anywhere**.
+
+| file | where | what |
+|---|---|---|
+| `redirect.html`, `redirect.js` | `app/static/redirect/` (this repo is the source) | the template, identical in obis-hex's `public/redirect/` |
+| `config.json` | `app/static/redirect/` | this app's `{ app, target, codec }`, plus optional `stay`, `delayMs`, `home` |
+| `codec.js` | `app/dist/redirect/`, built by `vite.config.ts` (`redirectCodec`) from `src/lib/redirect.ts` | the app's `redirectFor` as an ES module |
+
+The deployed page is `https://oceanmetrics.io/erddap-places/redirect/redirect.html`. `decide(location, config)` in
+`redirect.js` is pure and tested (`src/lib/redirectPage.test.ts`): it strips the page's own `noredirect` switch, hands the
+rest of `?query#hash` to `redirectFor`, and answers `{ redirect, reason, url, exact, note, stay, delayMs, message }`. The
+page shows "This app moved to Ocean Metrics Indicators; taking you there…", the computed link, the note when `exact` is
+false, and a "Stay here" link for 5 s, then `location.replace(url)`. A codec that throws or answers a non-http(s) address
+leaves the page in place (or goes to `config.home` when set). `?noredirect=1` on the page shows the same address and does
+not navigate. The "Stay here" link is the app with its own link and `?noredirect=1`, so it does not forward again.
+
+**One template, two copies, one checksum.** A shared package (a `packages/status`-like one) is overkill for two files. The
+template is written here; `obis-hex/scripts/sync-redirect.mjs` copies `redirect.html` and `redirect.js` into obis-hex's
+`public/redirect/`. Both repos' page tests pin the SHA-256 of `redirect.html` + `redirect.js` (the same constant), and
+compare the two copies byte for byte when the repos are checked out side by side. To change the template: edit it here,
+run the sync script in obis-hex, update the pin in both `redirectPage.test.ts` files, commit both.
+
+## Activation (Ben's go; not done)
+
+Nothing in the build or the Pages workflow serves the template at `/`, and nothing forwards to it. Activation is one line in
+`app/index.html`, first thing in `<head>`:
+
+```html
+<script>if(!/[?&]noredirect=1/.test(location.search))location.replace('./redirect/redirect.html'+location.search+location.hash)</script>
+```
+
+Every old link then lands on the template, which carries it to Ocean Metrics Indicators after the 5 s notice. To check
+before the go, open `https://oceanmetrics.io/erddap-places/redirect/redirect.html?noredirect=1#<old hash>`: it shows the
+address it would open and does not navigate. The freeze banner's `FREEZE_TEXT` ("when this address redirects") and
+`FREEZE_ABOUT` are then dropped with the banner (the page replaces it). Preconditions are build week 2's: the parity
+checklist passes and Indicators answers every example above. To undo: remove the line and redeploy.

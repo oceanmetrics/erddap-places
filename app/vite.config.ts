@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import { defineConfig, type Plugin } from 'vite'
+import { build, defineConfig, type Plugin } from 'vite'
 import { createReadStream, readFileSync, statSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,6 +34,28 @@ const thenNowFixture = (): Plugin => ({
   },
 })
 
+// the redirect page's codec (2026-10-23): static/redirect/ holds the page template, and this bundles src/lib/redirect.ts
+// into dist/redirect/codec.js beside it, so the page can ask the app where a link lives in Ocean Metrics. The page
+// ships at <base>redirect/redirect.html and nothing forwards to it until the app's index.html does (docs/redirects.md,
+// "Activation"). src/lib/redirectPage.test.ts builds the same bundle and drives the page's decide() with it.
+const redirectCodec = (): Plugin => {
+  let outDir = 'dist'
+  return {
+    name: 'redirect-codec',
+    apply: 'build',
+    configResolved(c) { outDir = resolve(c.root, c.build.outDir) },
+    async closeBundle() {
+      await build({
+        configFile: false, logLevel: 'warn', publicDir: false,
+        build: {
+          target: 'es2022', emptyOutDir: false, outDir: resolve(outDir, 'redirect'),
+          lib: { entry: fileURLToPath(new URL('./src/lib/redirect.ts', import.meta.url)), formats: ['es'], fileName: () => 'codec.js' },
+        },
+      })
+    },
+  }
+}
+
 // base: './' by default, so the built app works from any path; the Pages workflow sets
 // VITE_BASE=/erddap-places/ for the project site (the duckdb-wasm worker + wasm are imported with
 // `?url`, so Vite rewrites those URLs to the same base and they still resolve under the sub-path).
@@ -47,7 +69,7 @@ try { COMMIT = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe'
 
 export default defineConfig({
   define       : { __APP_VERSION__: JSON.stringify(PKG.version), __APP_COMMIT__: JSON.stringify(COMMIT) },
-  plugins      : [svelte(), thenNowFixture()],
+  plugins      : [svelte(), thenNowFixture(), redirectCodec()],
   base         : process.env.VITE_BASE || './',
   publicDir    : 'static',
   optimizeDeps : { exclude: ['@duckdb/duckdb-wasm'] },

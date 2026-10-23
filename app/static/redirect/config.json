@@ -1,0 +1,7 @@
+{
+  "app": "ERDDAP Places",
+  "target": "Ocean Metrics Indicators",
+  "codec": "./codec.js",
+  "stay": "../",
+  "home": "https://oceanmetrics.io/indicators/"
+}

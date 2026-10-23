@@ -1,6 +1,7 @@
 // the redirect map of the freeze (2026-10-22): an erddap-places hash -> the Ocean Metrics Indicators
 // URL that shows the same thing. Written, NOT activated: nothing in the app navigates by it, the
-// freeze banner only offers the link. The table and the reason for each rule: ../../docs/redirects.md.
+// freeze banner only offers the link. The table and the reason for each rule: ../../docs/redirects.md. The page that will
+// call it (static/redirect/redirect.js, shared with obis-hex; bundled to dist/redirect/codec.js) is written, not linked.
 //
 //   Statistics   #place=NMS:FKNMS&dataset=erddap/dhw_5km&variable=CRW_SST&stat=mean_wt&from=…&to=…
 //     -> https://oceanmetrics.io/indicators/#view=place&place=NMS:FKNMS&ind=erddap:dhw_5km:CRW_SST:mean
