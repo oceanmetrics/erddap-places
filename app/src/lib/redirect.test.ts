@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { NOTE_NO_PLACE, NOTE_THEN_NOW, NOTE_WINDOW, OM_ORIGIN, redirectFor, STAT_MAP } from './redirect'
+import { NOTE_ANOM, NOTE_LATEST, NOTE_NO_PLACE, NOTE_RANGE, NOTE_THEN_NOW, NOTE_WINDOW, OM_ORIGIN, redirectFor, STAT_MAP } from './redirect'
 import { decodeHash, encodeHash } from './permalink'
 import { lensHash } from './view'
 
@@ -65,24 +65,45 @@ describe('redirectFor: Statistics -> the Indicators Place view', () => {
   })
 })
 
-describe('redirectFor: Then vs Now -> the Place view of dhw_5km, not exact until build week 2', () => {
-  const note = 'the slice arrives in build week 2 (2026-11-06 to 11-12)'
-  it('maps place and variable, with dataset dhw_5km and the mean', () => {
+describe('redirectFor: Then vs Now -> the Map\'s compare link (build week 2: t, t2, swipe, anom)', () => {
+  const M = `${I}#view=map&ind=erddap:dhw_5km:CRW_SST:mean`
+  it('Now (a year) and the month of md are t, Then is t2, the swipe is carried; not exact (a month, not a day)', () => {
+    expect(redirectFor('#lens=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=2003-2012&now=2024&swipe=0.35&anom=0')).toEqual({
+      url: `${M}&place=NMS:FKNMS&grain=month&layer=grid:dhw_5km:CRW_SST&pal=spectral_r&t=2024-08&t2=2003-2012&swipe=0.35`, exact: false, note: NOTE_THEN_NOW,
+    })
+    expect(NOTE_THEN_NOW).toBe('Then vs Now opens as the Map\'s compare mode, by month: the day of the year (md) is read as its month')
+  })
+  it('now=latest leaves t out (the layer\'s latest month), and a Then of more than 12 years says the Map averages 12', () => {
     expect(redirectFor('#lens=then-now&place=NMS:FKNMS&variable=CRW_SST&md=08-05&then=1985-2005&now=latest&swipe=0.5&anom=0')).toEqual({
-      url: `${I}#view=place&place=NMS:FKNMS&ind=erddap:dhw_5km:CRW_SST:mean`, exact: false, note,
-    })
-    expect(NOTE_THEN_NOW).toBe(note)
-  })
-  it('reads the old mode=then-now the same way', () => {
-    expect(redirectFor('#mode=then-now&place=NMS:CINMS&variable=CRW_BAA')).toEqual({
-      url: `${I}#view=place&place=NMS:CINMS&ind=erddap:dhw_5km:CRW_BAA:mean`, exact: false, note,
+      url: `${M}&place=NMS:FKNMS&grain=month&layer=grid:dhw_5km:CRW_SST&pal=spectral_r&t2=1985-2005`, exact: false,
+      note: [NOTE_THEN_NOW, NOTE_LATEST, NOTE_RANGE].join('; '),
     })
   })
-  it('takes CRW_SST when the link names no variable (the lens default)', () => {
-    expect(redirectFor('#lens=then-now&place=NMS:CINMS').url).toBe(`${I}#view=place&place=NMS:CINMS&ind=erddap:dhw_5km:CRW_SST:mean`)
+  it('anom=1 (or true) is the Map\'s anom=1, the swipe dropped, and the sign said', () => {
+    for (const a of ['1', 'true']) {
+      expect(redirectFor(`#lens=then-now&place=NMS:CINMS&md=02-10&then=2003-2012&now=2020&swipe=0.2&anom=${a}`)).toEqual({
+        url: `${I}#view=map&ind=erddap:dhw_5km:CRW_SST:mean&place=NMS:CINMS&grain=month&layer=grid:dhw_5km:CRW_SST&pal=spectral_r&t=2020-02&t2=2003-2012&anom=1`,
+        exact: false, note: [NOTE_THEN_NOW, NOTE_ANOM].join('; '),
+      })
+    }
+  })
+  it('pal=viridis is carried; the default Spectral is the map package\'s spectral_r (red = warm)', () => {
+    expect(redirectFor('#lens=then-now&place=NMS:CINMS&then=2003-2012&now=2020&pal=viridis').url).toContain('&pal=viridis&t=2020-08&')
+  })
+  it('reads the old mode=then-now the same way, with its variable', () => {
+    expect(redirectFor('#mode=then-now&place=NMS:CINMS&variable=CRW_BAA&now=2021&then=2003-2012').url)
+      .toBe(`${I}#view=map&ind=erddap:dhw_5km:CRW_BAA:mean&place=NMS:CINMS&grain=month&layer=grid:dhw_5km:CRW_BAA&pal=spectral_r&t=2021-08&t2=2003-2012`)
+  })
+  it('takes the lens defaults when the link names none (CRW_SST, 1985-2005, the latest, 08-05); a malformed key too', () => {
+    expect(redirectFor('#lens=then-now&place=NMS:CINMS').url).toBe(`${M}&place=NMS:CINMS&grain=month&layer=grid:dhw_5km:CRW_SST&pal=spectral_r&t2=1985-2005`)
+    expect(redirectFor('#lens=then-now&place=NMS:CINMS&md=02-30&then=nope&now=2019').url).toContain('&t=2019-08&t2=1985-2005')
   })
   it('opens the Indicators matrix when no place is named, with both notes', () => {
-    expect(redirectFor('#lens=then-now&md=08-05')).toEqual({ url: I, exact: false, note: `${note}; ${NOTE_NO_PLACE}` })
+    expect(redirectFor('#lens=then-now&md=08-05')).toEqual({ url: I, exact: false, note: `${NOTE_THEN_NOW}; ${NOTE_NO_PLACE}` })
+  })
+  it('the redirect stays written, not active: the link is a pure function of the hash', () => {
+    const h = '#lens=then-now&place=NMS:FKNMS&now=2024&then=2003-2012'
+    expect(redirectFor(h)).toEqual(redirectFor(h))
   })
 })
 
@@ -107,9 +128,9 @@ describe('redirectFor: no place, origin, odd input', () => {
 })
 
 describe('redirectFor: the examples of the app README and the permalinks the app writes', () => {
-  it('the README\'s Then vs Now offline link', () => {
+  it('the README\'s Then vs Now offline link (its data root dropped)', () => {
     expect(redirectFor('http://localhost:5179/#lens=then-now&place=NMS:TEST&data=/__then-now-fixture/').url)
-      .toBe(`${I}#view=place&place=NMS:TEST&ind=erddap:dhw_5km:CRW_SST:mean`)
+      .toBe(`${I}#view=map&ind=erddap:dhw_5km:CRW_SST:mean&place=NMS:TEST&grain=month&layer=grid:dhw_5km:CRW_SST&pal=spectral_r&t2=1985-2005`)
   })
   it('the permalink of a run (encodeHash) round-trips to its Place view', () => {
     const h = encodeHash({ place: 'NMS:HIHWNMS', dataset: 'erddap/dhw_5km', variable: 'CRW_SST', from: '2026-05-28', to: '2026-06-26' })
