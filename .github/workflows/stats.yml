@@ -1,6 +1,8 @@
 # refresh the precomputed place statistics (catalog/gazetteer/stats/) and publish the whole gazetteer
 # to s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
 #
+# OFF since 2026-10-24 (see `on:` below): every stats series is the one engine's.
+#
 # 2026-10-24: a stats series the one engine owns (precompute/src/targets.ts ENGINE_SERIES: dhw_5km CRW_SST and CRW_BAA
 # since week 1; the others as week 6 moves them, ledger om/plans_todo/2026-10-22_om-restructure_gates.md) is neither
 # precomputed (TARGETS leaves it out) nor written nor deleted from here: oceanmetrics/indicators requests.yml computes it
@@ -18,10 +20,12 @@
 name: stats
 
 on:
-  schedule:
-    # daily (weekly until 2026-10-12): while the full-record backfill is incomplete each run continues it
-    # (runs stop starting new work after PRECOMPUTE_HOURS); once caught up a run is the newest chunk per item
-    - cron: '17 9 * * *'          # 09:17 UTC
+  # 2026-10-24: OFF. Every stats series is the one engine's (precompute/src/targets.ts ENGINE_SERIES = ALL_TARGETS, so
+  # TARGETS is empty): oceanmetrics/indicators requests.yml computes, gates and publishes all 20, its `daily` job at
+  # 09:30 UTC by each unit's cadence (scripts/parity_units.tsv; ledger om/plans_todo/2026-10-22_om-restructure_gates.md,
+  # week 6). The schedule is gone and the workflow is disabled (`gh workflow disable stats.yml`); it was daily at
+  # 09:17 UTC (weekly until 2026-10-12). What it also published, the committed erddap and places catalogs and
+  # stats/collection.json, is frozen with this repo. A dispatch needs `gh workflow enable stats.yml` first.
   workflow_dispatch:
     inputs:
       dataset:

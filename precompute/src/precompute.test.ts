@@ -6,7 +6,7 @@ import { lobeAxes, parseProvenance } from '../../app/src/lib/precomputed'
 import { placeLobes, plainPlace } from '../../app/src/lib/gazetteer'
 import { buildCollection, buildItem, datasetProviders, itemStatus, listedItems, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
-import { ENGINE_SERIES, REEF_PLACES, TARGETS, engineOwns, inCollection, placesFor } from './targets'
+import { ALL_TARGETS, ENGINE_SERIES, REEF_PLACES, TARGETS, engineOwns, inCollection, placesFor } from './targets'
 import { readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -111,6 +111,19 @@ describe('targets', () => {
       ({ dataset_id, variable, place_id: 'NMS:CINMS', start_datetime: '2025-01-01T00:00:00Z', end_datetime: '2025-12-01T00:00:00Z' })
     const all = mergeItems([r('cmems_salinity', 'so')], [r('dhw_5km', 'CRW_SST'), r('dhw_5km', 'CRW_BAA'), r('gone', 'x')], inCollection)
     expect(all.map((x) => `${x.dataset_id}/${x.variable}`)).toEqual(['cmems_salinity/so', 'dhw_5km/CRW_BAA', 'dhw_5km/CRW_SST'])
+  })
+  // 2026-10-24 (ledger week 6): every series is the engine's; the daily precompute and stats.yml are off
+  it('precomputes nothing: every known series is the engine\'s, and stats.yml runs on no schedule', () => {
+    expect(TARGETS).toEqual([])
+    expect(ALL_TARGETS.length).toBe(20)
+    for (const t of ALL_TARGETS) expect(engineOwns(t.dataset, t.variable), `${t.dataset}/${t.variable}`).toBe(true)
+    expect(ENGINE_SERIES.length).toBe(20)
+    const wf = readFileSync(join(__dirname, '..', '..', '.github', 'workflows', 'stats.yml'), 'utf8')
+    const on = wf.slice(wf.indexOf('\non:'), wf.indexOf('\npermissions:'))
+    expect(on).not.toMatch(/^\s+schedule:/m)
+    expect(on).not.toMatch(/^\s+- cron:/m)
+    expect(on).toContain('workflow_dispatch:')
+    expect(wf).toMatch(/2026-10-24: OFF/)
   })
   it('runs the sanctuaries series over the full record', () => {
     const series = TARGETS.filter((t) => t.days === 'all')
