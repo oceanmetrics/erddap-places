@@ -35,7 +35,22 @@ const SANCTUARY_SERIES: Array<[string, string, string?]> = [
   ['moda_npp_mo_glob',            'npp'],
 ]
 
-export const TARGETS: Target[] = [
+/**
+ * the (dataset, variable) series the one engine computes and publishes (oceanmetrics/indicators requests.yml: om-extract,
+ * the compare gate and its `daily` job over scripts/parity_units.tsv; ledger om/plans_todo/2026-10-22_om-restructure_gates.md,
+ * week 1 for dhw_5km on 2026-10-24, week 6 for the others series by series). The daily run no longer precomputes them
+ * (`TARGETS` leaves them out), nothing of them is uploaded from here (publish.ts `NOT_OURS`: their files and their
+ * STAC Items), and collection.json still lists their Items (`inCollection`), which stay the engine's.
+ */
+export const ENGINE_SERIES: Array<[string, string]> = [
+  ['dhw_5km', 'CRW_SST'],
+  ['dhw_5km', 'CRW_BAA'],
+]
+export const engineOwns = (dataset: string, variable: string): boolean =>
+  ENGINE_SERIES.some(([d, v]) => d === dataset && v === variable)
+
+/** every series this repo knows how to compute, the engine's included: a request (--gazetteer) may still ask for one. */
+export const ALL_TARGETS: Target[] = [
   { dataset: 'dhw_5km',                  variable: 'CRW_SST', places: 'all' },
   { dataset: 'dhw_5km',                  variable: 'CRW_BAA', places: 'all',
     note: 'categorical bleaching alert area, 0-4' },
@@ -44,6 +59,17 @@ export const TARGETS: Target[] = [
   ...SANCTUARY_SERIES.map(([dataset, variable, note]): Target =>
     ({ dataset, variable, places: 'nms', days: 'all', note: ['sanctuaries series, full record', note].filter(Boolean).join('; ') })),
 ]
+
+/** what the daily run precomputes: every target but the engine's series. */
+export const TARGETS: Target[] = ALL_TARGETS.filter((t) => !engineOwns(t.dataset, t.variable))
+
+/** the targets a run selects from: a request (--gazetteer) any known series, the daily run `TARGETS`. */
+export const runTargets = (requested: boolean): Target[] => (requested ? ALL_TARGETS : TARGETS)
+
+/** whether collection.json lists the Items of a series: a daily target's, or an engine series' (its Items are the
+ *  engine's, fetched from S3 with the others, and listed so the catalog keeps finding them). */
+export const inCollection = (dataset: string, variable: string): boolean =>
+  TARGETS.some((t) => t.dataset === dataset && t.variable === variable) || engineOwns(dataset, variable)
 
 /** a target's place ids, out of every place id in the gazetteer. */
 export function placesFor(t: Pick<Target, 'places'>, all: string[]): string[] {

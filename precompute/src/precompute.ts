@@ -9,7 +9,7 @@
 // the other servers keep working. With PRECOMPUTE_PUBLISH set, each finished unit is uploaded at once
 // (publish.ts), so a run that is cut off, or takes days over several runs, loses nothing it finished.
 //
-//   npx tsx src/precompute.ts                     # everything in TARGETS
+//   npx tsx src/precompute.ts                     # everything in TARGETS (not the engine's series, targets.ts)
 //   npx tsx src/precompute.ts --dataset dhw_5km   # one dataset
 //   npx tsx src/precompute.ts --place NMS:PMNM    # one place (repeatable)
 //   npx tsx src/precompute.ts --days 30           # override every target's window (a quick smoke test)
@@ -24,7 +24,7 @@
 // catalog link, which describe the daily run's places); PRECOMPUTE_PUBLISH uploads exactly those.
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { TARGETS, placesFor } from './targets'
+import { TARGETS, inCollection, placesFor, runTargets } from './targets'
 import { STATS, internalParquet } from './paths'
 import { asyncBufferFromFile } from 'hyparquet'
 import {
@@ -92,8 +92,8 @@ async function main() {
   const titles = new Map<string, string>()
   const provs: Provenance[] = []
   const failed: string[] = []
-  const inTargets = new Set(TARGETS.map((t) => `${t.dataset}/${t.variable}`))
-  const keep = (d: string, v: string) => inTargets.has(`${d}/${v}`)
+  // the earlier Items collection.json keeps: a daily target's, and an engine series' (targets.ts inCollection)
+  const keep = inCollection
 
   // every (dataset, variable, place) the targets ask for, whatever --dataset / --place pick: the
   // collection lists those without an Item yet as pending (the daily run only)
@@ -104,7 +104,7 @@ async function main() {
 
   // every (dataset, variable, place) of the targets, in target order
   const jobs: Job[] = []
-  for (const { target: t, placeIds } of selectTargets(opts, places.map((p) => p.place_id))) {
+  for (const { target: t, placeIds } of selectTargets(opts, places.map((p) => p.place_id), runTargets(requested))) {
     const ds = loadDataset(t.dataset)
     titles.set(ds.datasetId, ds.title)
     const v  = variableOf(ds, t.variable)

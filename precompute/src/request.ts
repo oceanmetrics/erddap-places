@@ -1,14 +1,14 @@
 // the argument rules of precompute.ts, kept out of the script so they run offline in a test.
 //
 // two modes:
-//   default       every target in TARGETS, for the places the target's own rule names (all | nms | a list),
+//   default       every target in ALL_TARGETS (the daily run passes TARGETS), for the places the target's own rule names (all | nms | a list),
 //                 out of the local places collection. what the daily workflow runs; unchanged.
 //   --gazetteer   a REQUESTED run: one catalogued target (--dataset, optionally --variable) for the
 //                 --place ids of ANY published vector collection. the request names the places, so a
 //                 target's own `places` rule is not applied. the values come from public issues
 //                 (oceanmetrics/indicators "Request an indicator"), hence the strict patterns and the
 //                 checks before any geometry is fetched.
-import { TARGETS, DAYS, RUN_HOURS, placesFor, type Target } from './targets'
+import { ALL_TARGETS, DAYS, RUN_HOURS, placesFor, type Target } from './targets'
 import { GAZETTEER_FALLBACK, isPolygonal, PLACES_COLLECTION } from '../../app/src/lib/gazetteer'
 
 /** a collection slug, as the bucket names its directories. */
@@ -64,7 +64,7 @@ const refuse = (m: string): never => { throw new RequestRefusal(m) }
  * the checks that need no network. Without --gazetteer only --variable is checked (an unknown one would
  * select nothing); with it, everything a request must name.
  */
-export function validateArgs(o: Args, targets: Target[] = TARGETS): void {
+export function validateArgs(o: Args, targets: Target[] = ALL_TARGETS): void {
   const ofDataset = (d: string) => targets.filter((t) => t.dataset === d)
   for (const d of o.datasets) if (!ofDataset(d).length) refuse(`dataset ${JSON.stringify(d)} is not a catalogued target (have ${[...new Set(targets.map((t) => t.dataset))].join(', ')})`)
   if (o.variables.length) {
@@ -96,7 +96,7 @@ export function checkLayer(layers: Array<{ slug: string; kind?: string; geom_typ
 
 /** every (dataset, variable) the run asks for, and the place ids for each, in target order. */
 export interface Selected { target: Target; placeIds: string[] }
-export function selectTargets(o: Pick<Args, 'datasets' | 'variables' | 'places' | 'gazetteer'>, localIds: string[], targets: Target[] = TARGETS): Selected[] {
+export function selectTargets(o: Pick<Args, 'datasets' | 'variables' | 'places' | 'gazetteer'>, localIds: string[], targets: Target[] = ALL_TARGETS): Selected[] {
   return targets
     .filter((t) => !o.datasets.length || o.datasets.includes(t.dataset))
     .filter((t) => !o.variables.length || o.variables.includes(t.variable))
@@ -143,7 +143,7 @@ export interface RequestDeps {
  * (validateArgs), then the one manifest, then each place; nothing is fetched as geometry for a
  * collection that is not a polygon vector layer.
  */
-export async function resolveRequest(o: Args, d: RequestDeps, targets: Target[] = TARGETS) {
+export async function resolveRequest(o: Args, d: RequestDeps, targets: Target[] = ALL_TARGETS) {
   validateArgs(o, targets)
   const slug = o.gazetteer!
   checkLayer(await d.fetchLayers(), slug, d.internal)

@@ -1,14 +1,15 @@
 # refresh the precomputed place statistics (catalog/gazetteer/stats/) and publish the whole gazetteer
 # to s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
 #
-# 2026-10-24: gazetteer/stats/dhw_5km/ is no longer written (nor deleted) from here. It is the one engine's
-# (oceanmetrics/indicators requests.yml: om-extract run, the compare gate, and its `daily` job at 09:30 UTC
-# for the 18 sanctuaries x dhw_5km CRW_SST and CRW_BAA; ledger om/plans_todo/2026-10-22_om-restructure_gates.md,
-# week 1): on 2026-10-23 this job's sync overwrote the engine's files. The per-item upload skips stats/dhw_5km/
-# (precompute/src/publish.ts NOT_OURS) and the final sync of stats/ excludes dhw_5km/. The other 18 stats series
-# (cmems_*, IMERG_monthly_global_precip, moda_npp_mo_glob, noaa_aoml_seascapes_8day) are still computed only here and
-# keep publishing from here until the engine takes them (ledger week 6). A dispatch with sync_dry_run=true runs only
-# the publish step, as `aws s3 sync --dryrun`, to show what it would write.
+# 2026-10-24: a stats series the one engine owns (precompute/src/targets.ts ENGINE_SERIES: dhw_5km CRW_SST and CRW_BAA
+# since week 1; the others as week 6 moves them, ledger om/plans_todo/2026-10-22_om-restructure_gates.md) is neither
+# precomputed (TARGETS leaves it out) nor written nor deleted from here: oceanmetrics/indicators requests.yml computes it
+# with om-extract, gates it with the compare and publishes it (its `daily` job, 09:30 UTC). On 2026-10-23 this job's sync
+# overwrote the engine's files. The per-item upload skips its files and its Items (precompute/src/publish.ts NOT_OURS),
+# and the final sync of stats/ excludes the same (ci.ts sync-excludes). collection.json is still built here and lists
+# the engine's Items too. The other stats series (cmems_*, IMERG_monthly_global_precip, moda_npp_mo_glob,
+# noaa_aoml_seascapes_8day) are still computed here and keep publishing from here until the engine takes them. A
+# dispatch with sync_dry_run=true runs only the publish step, as `aws s3 sync --dryrun`, to show what it would write.
 #
 # runs on the self-hosted runner `macmini` (labels self-hosted, macOS, ARM64, macmini; see
 # catalog/README.md "Where it runs"; msens until 2026-10-12): node, python3, uv and the aws cli come
@@ -172,8 +173,8 @@ jobs:
             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
           aws sts get-caller-identity
-          # stats/ is synced WITHOUT --delete (an item that failed this week keeps last week's file) and without dhw_5km/
-          # (the engine's since 2026-10-24; see the end of this step).
+          # stats/ is synced WITHOUT --delete (an item that failed this week keeps last week's file) and without the
+          # engine's series, files and Items (since 2026-10-24; see the end of this step).
           # rasters/, climatology/ and series/ (Then vs Now) are built on the Mac mini by
           # catalog/build_then_now.py and uploaded from there; their data files are not in git.
           # the bucket now has a second publisher (oceanmetrics/places): sync per collection dir
@@ -189,12 +190,17 @@ jobs:
             aws s3 sync $SYNC_DRY_RUN "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
               --delete --exclude '.portolan/*' --exclude 'h3/*'
           done
-          # 2026-10-24: gazetteer/stats/dhw_5km/ is the engine's (oceanmetrics/indicators requests.yml, daily at 09:30
-          # UTC; ledger om/plans_todo/2026-10-22_om-restructure_gates.md, week 1): never written, never deleted from
-          # here. The other stats series still publish from here, as before (no --delete) until the engine takes them.
-          # outage.json is this run's report (an artifact), not part of the catalog: never published, never stale on S3
+          # 2026-10-24: an engine series (targets.ts ENGINE_SERIES; oceanmetrics/indicators requests.yml, daily at 09:30
+          # UTC; ledger om/plans_todo/2026-10-22_om-restructure_gates.md, weeks 1 and 6) is never written, never deleted
+          # from here: its files and its Items (fetched from S3 above) are excluded, the patterns from publish.ts
+          # (ci.ts sync-excludes). The other stats series still publish from here, as before (no --delete), until the
+          # engine takes them. outage.json is this run's report (an artifact), not part of the catalog: never published
+          excl=()
+          while IFS= read -r p; do excl+=(--exclude "$p"); done < <(cd precompute && npx tsx src/ci.ts sync-excludes)
+          [ ${#excl[@]} -gt 0 ] || { echo "error: no engine series to exclude (ci.ts sync-excludes printed nothing)" >&2; exit 1; }
+          echo "not synced from here (the engine's): ${excl[*]}"
           aws s3 sync $SYNC_DRY_RUN catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
-            --exclude '.portolan/*' --exclude 'outage.json' --exclude 'dhw_5km/*'
+            --exclude '.portolan/*' --exclude 'outage.json' "${excl[@]}"
 
       # place ids contain ':' (MRGID:8439), which upload-artifact rejects in file names: ship a tarball
       - name: pack the statistics

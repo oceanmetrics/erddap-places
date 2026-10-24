@@ -8,7 +8,7 @@ import {
   PLACE_ID_RE, SLUG_RE, RequestRefusal, checkLayer, collisionOf, daysOf, parseArgs, resolveRequest, selectTargets, validateArgs,
   type Args, type RequestDeps,
 } from './request'
-import { TARGETS, DAYS, placesFor } from './targets'
+import { ALL_TARGETS, TARGETS, DAYS, placesFor, runTargets } from './targets'
 import { internalParquet } from './paths'
 import { PLACES_COLLECTION_TITLE, buildItem, itemCollections } from './stac'
 import type { Place } from '../../app/src/lib/gazetteer'
@@ -117,9 +117,13 @@ describe('target selection', () => {
   const local = ['NMS:CBNMS', 'NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM']
   const none = { datasets: [], variables: [], places: [], gazetteer: undefined }
   it('the daily run expands every target by its own places rule, exactly as before', () => {
-    const sel = selectTargets(none, local)
+    // the daily run selects from TARGETS (precompute.ts: runTargets(false)), a request from every known series
+    expect(runTargets(false)).toBe(TARGETS)
+    expect(runTargets(true)).toBe(ALL_TARGETS)
+    const sel = selectTargets(none, local, runTargets(false))
     expect(sel.map((s) => s.target)).toEqual(TARGETS)
     expect(sel.map((s) => s.placeIds)).toEqual(TARGETS.map((t) => placesFor(t, local)))
+    expect(selectTargets(none, local).map((s) => s.target)).toEqual(ALL_TARGETS)
     expect(sel.find((s) => s.target.variable === 'chl')!.placeIds).toEqual(local)
     expect(sel.find((s) => s.target.variable === 'CLASS')!.placeIds).toEqual(['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])   // REEF_PLACES, a list
   })

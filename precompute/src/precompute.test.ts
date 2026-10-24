@@ -6,7 +6,7 @@ import { lobeAxes, parseProvenance } from '../../app/src/lib/precomputed'
 import { placeLobes, plainPlace } from '../../app/src/lib/gazetteer'
 import { buildCollection, buildItem, datasetProviders, itemStatus, listedItems, lobeBoxGeometry, mergeItems, writeThumbnail, CATEGORICAL_COLUMNS, DAILY_COLUMNS } from './stac'
 import { griddapUrl } from '../../app/src/lib/erddap'
-import { REEF_PLACES, TARGETS, placesFor } from './targets'
+import { ENGINE_SERIES, REEF_PLACES, TARGETS, engineOwns, inCollection, placesFor } from './targets'
 import { readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -95,8 +95,22 @@ describe('targets', () => {
     expect(TARGETS.flatMap((t) => (Array.isArray(t.places) ? t.places : []))).not.toContain('PSGID:939')
     expect(TARGETS.flatMap((t) => (Array.isArray(t.places) ? t.places : []))).not.toContain('MRGID:8439')
   })
-  it('keeps the daily targets on the default window and runs the sanctuaries series over the full record', () => {
-    expect(TARGETS.find((t) => t.variable === 'CRW_SST')!.days).toBeUndefined()
+  // 2026-10-24 (ledger week 1, week 6): the engine's series are no longer precomputed here (the daily run asked PacIOOS
+  // for hours for dhw_5km, which nothing published); their Items stay listed in collection.json
+  it('precomputes no series the engine owns, and still lists the engine series\' Items in the collection', () => {
+    expect(ENGINE_SERIES.length).toBeGreaterThan(0)
+    for (const t of TARGETS) expect(engineOwns(t.dataset, t.variable), `${t.dataset}/${t.variable}`).toBe(false)
+    expect(TARGETS.some((t) => t.dataset === 'dhw_5km')).toBe(false)
+    expect(inCollection('dhw_5km', 'CRW_SST')).toBe(true)
+    expect(inCollection('dhw_5km', 'CRW_BAA')).toBe(true)
+    expect(inCollection('cmems_salinity', 'so')).toBe(true)
+    expect(inCollection('dhw_5km', 'CRW_DHW')).toBe(false)
+    const r = (dataset_id: string, variable: string) =>
+      ({ dataset_id, variable, place_id: 'NMS:CINMS', start_datetime: '2025-01-01T00:00:00Z', end_datetime: '2025-12-01T00:00:00Z' })
+    const all = mergeItems([r('cmems_salinity', 'so')], [r('dhw_5km', 'CRW_SST'), r('dhw_5km', 'CRW_BAA'), r('gone', 'x')], inCollection)
+    expect(all.map((x) => `${x.dataset_id}/${x.variable}`)).toEqual(['cmems_salinity/so', 'dhw_5km/CRW_BAA', 'dhw_5km/CRW_SST'])
+  })
+  it('runs the sanctuaries series over the full record', () => {
     const series = TARGETS.filter((t) => t.days === 'all')
     expect(series.map((t) => t.variable).sort()).toEqual(
       ['chl', 'dissic', 'fe', 'mlotst', 'no3', 'npp', 'nppv', 'o2', 'ph', 'phyc', 'po4', 'precipitation', 'si', 'so', 'spco2', 'tob', 'zooc'])

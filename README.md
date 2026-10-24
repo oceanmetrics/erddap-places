@@ -3,11 +3,12 @@
 > **Frozen since 2026-10-22:** erddap-places is moving to [Ocean Metrics Indicators](https://oceanmetrics.io/indicators/)
 > (build week 2, 2026-11-06 to 11-12, when this address redirects); bug fixes only. The redirect map is written, not
 > activated: [`docs/redirects.md`](docs/redirects.md).
-> **The dhw_5km stats are the engine's since 2026-10-24; the other series until the engine takes them:**
-> `gazetteer/stats/dhw_5km/` is written by the one engine
-> ([oceanmetrics/indicators](https://github.com/oceanmetrics/indicators) `requests.yml`, its compare gate and its daily
-> run at 09:30 UTC), no longer by this repo's `stats.yml`, which still publishes the other stats series (cmems_*,
-> IMERG, moda_npp, seascapes) and the erddap and places catalogs.
+> **The stats series move to the one engine, series by series, since 2026-10-24:** a series listed in
+> `precompute/src/targets.ts` `ENGINE_SERIES` (dhw_5km CRW_SST and CRW_BAA so far) is computed, gated and published
+> by the one engine ([oceanmetrics/indicators](https://github.com/oceanmetrics/indicators) `requests.yml`, its compare
+> gate and its daily run at 09:30 UTC): this repo's `stats.yml` no longer precomputes it and writes nothing of it,
+> neither its files nor its STAC Items. It still publishes the other stats series (cmems_*, IMERG, moda_npp,
+> seascapes), `stats/collection.json` and the erddap and places catalogs.
 
 Place-based key statistics from ERDDAP™ gridded (and tabular) datasets, computed **in the browser**
 with DuckDB-WASM, for places from a gazetteer (NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas

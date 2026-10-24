@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { join } from 'node:path'
 import { planChunks } from './stats'
 import { schedule, hostOf, type Unit } from './schedule'
-import { cpArgs, isOurs, publisher, NOT_OURS } from './publish'
+import { cpArgs, isOurs, publisher, syncExcludes, NOT_OURS } from './publish'
+import { ENGINE_SERIES } from './targets'
 import { readFileSync } from 'node:fs'
 import { GAZETTEER } from './paths'
 
@@ -158,34 +159,48 @@ describe('publish', () => {
     expect(calls).toEqual(['x.parquet', 'bad.json', 'collection.json'])
     expect(p.stats).toEqual({ files: 2, failures: 1, skipped: 0 })
   })
-  // 2026-10-24 (ledger week 1): gazetteer/stats/dhw_5km/ is the engine's (oceanmetrics/indicators), never written from
-  // here; the other stats series are still this repo's until the engine takes them (ledger week 6)
-  it('never uploads a key under stats/dhw_5km/ (the engine\'s since 2026-10-24) and still uploads another stats key', async () => {
+  // 2026-10-24 (ledger week 1, week 6): a series the one engine owns (targets.ts ENGINE_SERIES: dhw_5km CRW_SST and
+  // CRW_BAA so far; oceanmetrics/indicators requests.yml) is never written from here, neither its files nor its STAC
+  // Items under stats/items/ (the daily job fetches the published Items from S3 and its sync would put them back:
+  // regression, the engine's dhw_5km Items); the other stats series are still this repo's until the engine takes them
+  it('NOT_OURS is every engine series\' directory and Item prefix', () => {
+    expect(ENGINE_SERIES).toEqual([['dhw_5km', 'CRW_SST'], ['dhw_5km', 'CRW_BAA']])
+    expect(NOT_OURS).toEqual(['stats/dhw_5km/CRW_SST/', 'stats/items/dhw_5km_CRW_SST_',
+                              'stats/dhw_5km/CRW_BAA/', 'stats/items/dhw_5km_CRW_BAA_'])
+    expect(syncExcludes()).toEqual(['dhw_5km/CRW_SST/*', 'items/dhw_5km_CRW_SST_*', 'dhw_5km/CRW_BAA/*', 'items/dhw_5km_CRW_BAA_*'])
+  })
+  it('never uploads an engine series\' file or Item and still uploads another stats key', async () => {
     const calls: string[] = []
     const logs: string[] = []
     const p = publisher('s3://b/gazetteer', async (_: string, a: string[]) => { calls.push(a[3]) }, (s) => logs.push(s))
     const st = (f: string) => join(GAZETTEER, 'stats', f)
     void p.publish([st('dhw_5km/CRW_SST/NMS:CINMS.parquet'), st('dhw_5km/CRW_BAA/NMS:CINMS.provenance.json'),
-                    st('cmems_salinity/so/NMS:CINMS.parquet'), st('moda_npp_mo_glob/npp/NMS:CINMS.parquet')])
+                    st('items/dhw_5km_CRW_SST_NMS-CINMS.json'), st('items/dhw_5km_CRW_BAA_NMS-PMNM.json'),
+                    st('cmems_salinity/so/NMS:CINMS.parquet'), st('moda_npp_mo_glob/npp/NMS:CINMS.parquet'),
+                    st('items/cmems_salinity_so_NMS-CINMS.json'), st('collection.json')])
     void p.publish([join(GAZETTEER, 'erddap', 'dhw_5km', 'collection.json')])
     await p.done()
     expect(calls).toEqual(['s3://b/gazetteer/stats/cmems_salinity/so/NMS:CINMS.parquet',
                            's3://b/gazetteer/stats/moda_npp_mo_glob/npp/NMS:CINMS.parquet',
+                           's3://b/gazetteer/stats/items/cmems_salinity_so_NMS-CINMS.json',
+                           's3://b/gazetteer/stats/collection.json',
                            's3://b/gazetteer/erddap/dhw_5km/collection.json'])
-    expect(calls.some((c) => c.includes('/stats/dhw_5km/'))).toBe(false)
-    expect(p.stats).toEqual({ files: 3, failures: 0, skipped: 2 })
-    expect(logs).toEqual(["not uploading under gazetteer/stats/dhw_5km/: the engine's since 2026-10-24 (oceanmetrics/indicators)"])
-    expect(() => cpArgs(st('dhw_5km/CRW_SST/x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's since 2026-10-24/)
+    expect(calls.some((c) => c.includes('dhw_5km_') || c.includes('/stats/dhw_5km/'))).toBe(false)
+    expect(p.stats).toEqual({ files: 5, failures: 0, skipped: 4 })
+    expect(logs).toEqual(["not uploading 4 file(s) of the engine's series (dhw_5km/CRW_SST, dhw_5km/CRW_BAA; oceanmetrics/indicators)"])
+    expect(() => cpArgs(st('dhw_5km/CRW_SST/x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's/)
+    expect(() => cpArgs(st('items/dhw_5km_CRW_BAA_NMS-CINMS.json'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(cpArgs(st('cmems_salinity/so/x.parquet'), 's3://b/gazetteer')[3]).toBe('s3://b/gazetteer/stats/cmems_salinity/so/x.parquet')
-    expect(NOT_OURS).toEqual(['stats/dhw_5km/'])
-    expect(isOurs('stats/dhw_5km')).toBe(false)
     expect(isOurs('stats/dhw_5km/CRW_BAA/x.parquet')).toBe(false)
+    expect(isOurs('stats/dhw_5km/CRW_BAA')).toBe(false)
+    expect(isOurs('stats/items/dhw_5km_CRW_SST_NMS-CINMS.json')).toBe(false)
     expect(isOurs('stats/dhw_5km_other/x.parquet')).toBe(true)
     expect(isOurs('stats/items/x.json')).toBe(true)
+    expect(isOurs('stats/collection.json')).toBe(true)        // built here (stac.ts) until the last series moves
     expect(isOurs('stats/cmems_salinity/so/x.parquet')).toBe(true)
     expect(isOurs('places/places.parquet')).toBe(true)
   })
-  it('stats.yml has no aws s3 destination under gazetteer/stats/dhw_5km/, and its stats sync excludes dhw_5km/ without --delete', () => {
+  it('stats.yml writes nothing of an engine series: its stats sync excludes syncExcludes() and never deletes', () => {
     const wf = readFileSync(join(__dirname, '..', '..', '.github', 'workflows', 'stats.yml'), 'utf8')
     // every aws s3 command, its continuation lines joined; comments dropped
     const cmds = wf.replace(/\\\n\s*/g, ' ').split('\n').map((l) => l.replace(/^\s*#.*$/, '').trim())
@@ -195,19 +210,22 @@ describe('publish', () => {
     for (const c of cmds) {
       // the positional arguments after `aws s3 <verb>`: options and their values dropped
       const rest = c.split(/\baws s3 /)[1].replace(/--(exclude|include|content-type) \S+/g, '')
-        .split(/\s+/).filter((a) => a && !a.startsWith('-') && a !== '$SYNC_DRY_RUN')
+        .split(/\s+/).filter((a) => a && !a.startsWith('-') && a !== '$SYNC_DRY_RUN' && a !== '"${excl[@]}"')
       const [verb, , dest] = rest
       expect(['sync', 'cp'], c).toContain(verb)              // never rm or mv
       const to = (dest ?? '').replace(/^["']|["']$/g, '')
-      if (to.startsWith('s3://')) expect(to, c).not.toMatch(/\/gazetteer\/stats\/dhw_5km(\/|$)/)
-      // a sync of the whole gazetteer/stats/ prefix must exclude dhw_5km/ and never delete
+      if (to.startsWith('s3://')) expect(to, c).not.toMatch(/\/gazetteer\/stats\/(dhw_5km|items\/dhw_5km_)/)
+      // a sync of the whole gazetteer/stats/ prefix must exclude every engine series (the patterns from ci.ts) and
+      // never delete
       if (/\/gazetteer\/stats\/?$/.test(to)) {
         statsSyncs++
-        expect(c, c).toMatch(/--exclude ['"]dhw_5km\/\*['"]/)
+        expect(c, c).toContain('"${excl[@]}"')
         expect(c, c).not.toContain('--delete')
       }
     }
     expect(statsSyncs).toBe(1)
+    expect(wf).toContain("done < <(cd precompute && npx tsx src/ci.ts sync-excludes)")
+    expect(wf).toContain('excl+=(--exclude "$p")')
     // the per-collection loop skips stats/, so its --delete never reaches gazetteer/stats/
     expect(wf).toMatch(/case "\$name" in stats\|rasters\|climatology\|series\) continue ;; esac/)
     expect(wf).toContain('2026-10-24')
