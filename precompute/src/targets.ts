@@ -49,6 +49,7 @@ export const ENGINE_SERIES: Array<[string, string]> = [
   ['IMERG_monthly_global_precip', 'precipitation'],
   ['moda_npp_mo_glob', 'npp'],
   ['cmems_salinity', 'so'],
+  ['cmems_biogeochem_nutrients', 'fe'],
 ]
 export const engineOwns = (dataset: string, variable: string): boolean =>
   ENGINE_SERIES.some(([d, v]) => d === dataset && v === variable)
