@@ -61,7 +61,7 @@ Shell.svelte computes the banner's href as `redirectFor(chrome.hash).url`. `chro
 hash on screen: each lens writes it when it writes the permalink with `replaceState` (which fires no event), and the
 Shell's existing `hashchange` / `popstate` handler refreshes it for a pasted link or Back. There is no new listener.
 
-## The redirect page (written 2026-10-23, not active)
+## The redirect page (written 2026-10-23, active since 2026-10-24)
 
 GitHub Pages cannot answer a 301 and the hash never reaches a server, so the move is a small JavaScript page. One template
 serves both frozen apps (erddap-places and obis-hex); it is **written, shipped at `redirect/redirect.html` and not linked
@@ -87,7 +87,7 @@ template is written here; `obis-hex/scripts/sync-redirect.mjs` copies `redirect.
 compare the two copies byte for byte when the repos are checked out side by side. To change the template: edit it here,
 run the sync script in obis-hex, update the pin in both `redirectPage.test.ts` files, commit both.
 
-## Activation (Ben's go; not done)
+## Activation (Ben's go 2026-10-24: ACTIVE since that day; `?noredirect=1` keeps the app for comparing old and new)
 
 Nothing in the build or the Pages workflow serves the template at `/`, and nothing forwards to it. Activation is one line in
 `app/index.html`, first thing in `<head>`:

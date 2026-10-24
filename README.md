@@ -1,8 +1,8 @@
 # erddap-places
 
 > **Frozen since 2026-10-22:** erddap-places is moving to [Ocean Metrics Indicators](https://oceanmetrics.io/indicators/)
-> (build week 2, 2026-11-06 to 11-12, when this address redirects); bug fixes only. The redirect map is written, not
-> activated: [`docs/redirects.md`](docs/redirects.md).
+> (build week 2, 2026-11-06 to 11-12, when this address redirects); bug fixes only. The redirect is active since 2026-10-24
+> (`?noredirect=1` keeps this app, for comparing old and new): [`docs/redirects.md`](docs/redirects.md).
 > **The precompute and `stats.yml` are off since 2026-10-24:** every stats series under `gazetteer/stats/` (dhw_5km
 > since week 1, the 18 sanctuaries series in week 6: `precompute/src/targets.ts` `ENGINE_SERIES`) is computed, gated
 > and published by the one engine ([oceanmetrics/indicators](https://github.com/oceanmetrics/indicators)
