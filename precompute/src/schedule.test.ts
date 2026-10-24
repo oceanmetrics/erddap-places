@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { join } from 'node:path'
 import { planChunks } from './stats'
 import { schedule, hostOf, type Unit } from './schedule'
-import { cpArgs, isOurs, publisher, syncExcludes, NOT_OURS } from './publish'
+import { cpArgs, isOurs, publisher, syncExcludes, ENGINE_FILES, NOT_OURS } from './publish'
 import { ENGINE_SERIES } from './targets'
 import { readFileSync } from 'node:fs'
 import { GAZETTEER } from './paths'
@@ -167,10 +167,28 @@ describe('publish', () => {
     // week 1: dhw_5km; week 6, series by series (oceanmetrics/indicators scripts/parity_units.tsv)
     expect(ENGINE_SERIES.slice(0, 3)).toEqual([['dhw_5km', 'CRW_SST'], ['dhw_5km', 'CRW_BAA'],
                                                ['IMERG_monthly_global_precip', 'precipitation']])
-    expect(NOT_OURS).toEqual(ENGINE_SERIES.flatMap(([d, v]) => [`stats/${d}/${v}/`, `stats/items/${d}_${v}_`]))
+    expect(NOT_OURS).toEqual([...ENGINE_SERIES.flatMap(([d, v]) => [`stats/${d}/${v}/`, `stats/items/${d}_${v}_`]),
+                              ...ENGINE_FILES])
     expect(NOT_OURS.slice(0, 2)).toEqual(['stats/dhw_5km/CRW_SST/', 'stats/items/dhw_5km_CRW_SST_'])
-    expect(syncExcludes()).toEqual(ENGINE_SERIES.flatMap(([d, v]) => [`${d}/${v}/*`, `items/${d}_${v}_*`]))
+    expect(syncExcludes()).toEqual([...ENGINE_SERIES.flatMap(([d, v]) => [`${d}/${v}/*`, `items/${d}_${v}_*`]),
+                                    'collection.json*', 'stats.thumb.png*'])
     expect(syncExcludes()).toContain('items/IMERG_monthly_global_precip_precipitation_*')
+  })
+  // 2026-10-24: stats/collection.json (and its thumbnail) is the engine's: indicators' daily job rebuilds it from the
+  // Items (om-extract stats-collection); stac.ts still writes a local one, which must never reach the bucket
+  it('never uploads stats/collection.json or its thumbnail, the engine\'s since 2026-10-24', async () => {
+    expect(ENGINE_FILES).toEqual(['stats/collection.json', 'stats/stats.thumb.png'])
+    const calls: string[] = []
+    const p = publisher('s3://b/gazetteer', async (_: string, a: string[]) => { calls.push(a[3]) }, () => {})
+    const st = (f: string) => join(GAZETTEER, 'stats', f)
+    void p.publish([st('stats.thumb.png'), st('collection.json'), join(GAZETTEER, 'erddap', 'x', 'collection.json')])
+    await p.done()
+    expect(calls).toEqual(['s3://b/gazetteer/erddap/x/collection.json'])
+    expect(p.stats).toEqual({ files: 1, failures: 0, skipped: 2 })
+    expect(isOurs('stats/collection.json')).toBe(false)
+    expect(isOurs('stats/stats.thumb.png')).toBe(false)
+    expect(() => cpArgs(st('collection.json'), 's3://b/gazetteer')).toThrow(/the engine's/)
+    expect(syncExcludes()).toContain('collection.json*')
   })
   it('never uploads an engine series\' file or Item and still uploads another stats key', async () => {
     const calls: string[] = []
@@ -188,13 +206,12 @@ describe('publish', () => {
     expect(calls).toEqual(['s3://b/gazetteer/stats/a_series/x/NMS:CINMS.parquet',
                            's3://b/gazetteer/stats/b_series/y/NMS:CINMS.parquet',
                            's3://b/gazetteer/stats/items/a_series_x_NMS-CINMS.json',
-                           's3://b/gazetteer/stats/collection.json',
                            's3://b/gazetteer/erddap/dhw_5km/collection.json'])
     expect(calls.some((c) => c.includes('dhw_5km_') || c.includes('/stats/dhw_5km/'))).toBe(false)
     expect(calls.some((c) => c.includes('IMERG'))).toBe(false)
-    expect(p.stats).toEqual({ files: 5, failures: 0, skipped: 6 })
+    expect(p.stats).toEqual({ files: 4, failures: 0, skipped: 7 })
     expect(logs).toHaveLength(1)
-    expect(logs[0]).toMatch(/^not uploading 6 file\(s\) of the engine's series \(dhw_5km\/CRW_SST, dhw_5km\/CRW_BAA, IMERG_monthly_global_precip\/precipitation/)
+    expect(logs[0]).toMatch(/^not uploading 7 file\(s\) of the engine's series \(dhw_5km\/CRW_SST, dhw_5km\/CRW_BAA, IMERG_monthly_global_precip\/precipitation/)
     expect(() => cpArgs(st('dhw_5km/CRW_SST/x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(() => cpArgs(st('items/dhw_5km_CRW_BAA_NMS-CINMS.json'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(cpArgs(st('a_series/x/x.parquet'), 's3://b/gazetteer')[3]).toBe('s3://b/gazetteer/stats/a_series/x/x.parquet')
@@ -205,7 +222,7 @@ describe('publish', () => {
     expect(isOurs('stats/items/IMERG_monthly_global_precip_precipitation_NMS-CINMS.json')).toBe(false)
     expect(isOurs('stats/dhw_5km_other/x.parquet')).toBe(true)
     expect(isOurs('stats/items/x.json')).toBe(true)
-    expect(isOurs('stats/collection.json')).toBe(true)        // built here (stac.ts) until the last series moves
+    expect(isOurs('stats/collection.json')).toBe(false)       // the engine's since 2026-10-24 (ENGINE_FILES)
     expect(isOurs('stats/a_series/x/x.parquet')).toBe(true)
     expect(isOurs('places/places.parquet')).toBe(true)
   })

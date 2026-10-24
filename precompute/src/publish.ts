@@ -19,8 +19,14 @@ const CONTENT_TYPES: Record<string, string> = {
 // om/plans_todo/2026-10-22_om-restructure_gates.md) is neither written nor deleted from here: not its files under
 // stats/<dataset>/<variable>/, not its STAC Items stats/items/<dataset>_<variable>_*.json (the daily job fetches every
 // published Item from S3, so its sync would put the engine's Items back). Two writers overwrote each other's files on
-// 2026-10-23. collection.json is still built here (stac.ts, it lists every Item) until the last series moves.
-export const NOT_OURS: string[] = ENGINE_SERIES.flatMap(([d, v]) => [`stats/${d}/${v}/`, `stats/items/${d}_${v}_`])
+// 2026-10-23. Since 2026-10-24 the stats collection is the engine's too (ENGINE_FILES): indicators' daily job rebuilds
+// stats/collection.json and its thumbnail from the Items (om-extract stats-collection, oceanmetrics/extract 0.6.5);
+// stac.ts keeps its code (frozen repo), but nothing it writes there is uploaded from here.
+export const ENGINE_FILES: string[] = ['stats/collection.json', 'stats/stats.thumb.png']
+export const NOT_OURS: string[] = [
+  ...ENGINE_SERIES.flatMap(([d, v]) => [`stats/${d}/${v}/`, `stats/items/${d}_${v}_`]),
+  ...ENGINE_FILES,
+]
 
 /** the `aws s3 sync --exclude` patterns, relative to gazetteer/stats/, of every NOT_OURS prefix (stats.yml, ci.ts). */
 export function syncExcludes(): string[] {

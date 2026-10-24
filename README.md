@@ -7,8 +7,11 @@
 > since week 1, the 18 sanctuaries series in week 6: `precompute/src/targets.ts` `ENGINE_SERIES`) is computed, gated
 > and published by the one engine ([oceanmetrics/indicators](https://github.com/oceanmetrics/indicators)
 > `requests.yml`, its compare gate and its daily job at 09:30 UTC by each unit's cadence). `stats.yml` has no
-> schedule and is disabled. The erddap and places catalogs and `stats/collection.json` it also published stay as last
-> published.
+> schedule and is disabled. The erddap and places catalogs it also published stay as last published.
+> **`stats/collection.json` is the engine's since 2026-10-24:** indicators' daily job rebuilds it and its thumbnail
+> from the published Items (`om-extract stats-collection`, [oceanmetrics/extract](https://github.com/oceanmetrics/extract)
+> 0.6.5). `precompute/src/stac.ts` keeps its code, but `publish.ts` never uploads either file (`ENGINE_FILES` in
+> `NOT_OURS`).
 
 Place-based key statistics from ERDDAP™ gridded (and tabular) datasets, computed **in the browser**
 with DuckDB-WASM, for places from a gazetteer (NOAA sanctuaries, MarineRegions MRGID, ProtectedSeas
