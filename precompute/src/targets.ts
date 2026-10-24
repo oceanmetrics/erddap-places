@@ -50,6 +50,7 @@ export const ENGINE_SERIES: Array<[string, string]> = [
   ['moda_npp_mo_glob', 'npp'],
   ['cmems_salinity', 'so'],
   ['cmems_biogeochem_nutrients', 'fe'],
+  ['cmems_biogeochem_nutrients', 'no3'],
 ]
 export const engineOwns = (dataset: string, variable: string): boolean =>
   ENGINE_SERIES.some(([d, v]) => d === dataset && v === variable)
