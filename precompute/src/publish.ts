@@ -1,6 +1,6 @@
 // publish each (dataset, variable, place) as soon as it is computed, so a run that takes days (or is cut
-// off) has already put everything it finished on S3; since 2026-10-24 never a key under stats/ (NOT_OURS below), so a
-// precompute run publishes nothing. Off unless PRECOMPUTE_PUBLISH names the gazetteer's
+// off) has already put everything it finished on S3; since 2026-10-24 never a key under stats/dhw_5km/ (NOT_OURS below); the other stats series
+// are still published from here. Off unless PRECOMPUTE_PUBLISH names the gazetteer's
 // S3 prefix (stats.yml sets s3://oceanmetrics.io-public/gazetteer); the workflow's final sync still runs.
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -13,11 +13,13 @@ const CONTENT_TYPES: Record<string, string> = {
   png    : 'image/png',
 }
 
-// 2026-10-24: gazetteer/stats/ is the one engine's (oceanmetrics/indicators requests.yml: the compare gate, and its
-// `daily` job at 09:30 UTC for the 18 sanctuaries x dhw_5km CRW_SST and CRW_BAA; ledger
+// 2026-10-24: gazetteer/stats/dhw_5km/ is the one engine's (oceanmetrics/indicators requests.yml: the compare gate, and
+// its `daily` job at 09:30 UTC for the 18 sanctuaries x dhw_5km CRW_SST and CRW_BAA; ledger
 // om/plans_todo/2026-10-22_om-restructure_gates.md, week 1). This repo neither writes nor deletes a key under it any
-// more: two writers overwrote each other's files on 2026-10-23. The erddap and places catalogs are still published here.
-export const NOT_OURS = ['stats/']
+// more: two writers overwrote each other's files on 2026-10-23. The other 18 stats series (cmems_* 15,
+// IMERG_monthly_global_precip, moda_npp_mo_glob, noaa_aoml_seascapes_8day) are still computed only here and stay
+// published from here until the engine takes them (ledger week 6). The erddap and places catalogs are published here too.
+export const NOT_OURS = ['stats/dhw_5km/']
 
 /** the bucket key (relative to the gazetteer prefix) of a local file under catalog/gazetteer/ */
 export function keyOf(file: string): string {
@@ -35,7 +37,7 @@ export function isOurs(key: string): boolean {
  * this repo does not own (`NOT_OURS`). */
 export function cpArgs(file: string, prefix: string): string[] {
   const key  = keyOf(file)
-  if (!isOurs(key)) throw new Error(`${key}: gazetteer/stats/ is the engine's since 2026-10-24, not written from here`)
+  if (!isOurs(key)) throw new Error(`${key}: gazetteer/stats/dhw_5km/ is the engine's since 2026-10-24, not written from here`)
   const type = CONTENT_TYPES[file.split('.').pop() ?? '']
   return ['s3', 'cp', file, `${prefix.replace(/\/+$/, '')}/${key}`, '--only-show-errors',
           ...(type ? ['--content-type', type] : [])]
@@ -54,10 +56,10 @@ export function publisher(prefix = process.env.PRECOMPUTE_PUBLISH ?? '', exec: E
   const stats = { files: 0, failures: 0, skipped: 0 }
   const publish = (files: string[]) => {
     if (!prefix) return Promise.resolve()
-    // a file under gazetteer/stats/ is the engine's (NOT_OURS): skipped and counted, never uploaded
+    // a file under gazetteer/stats/dhw_5km/ is the engine's (NOT_OURS): skipped and counted, never uploaded
     const ours = files.filter((f) => isOurs(keyOf(f)))
     if (ours.length < files.length) {
-      if (!stats.skipped) log(`not uploading under gazetteer/stats/: the engine's since 2026-10-24 (oceanmetrics/indicators)`)
+      if (!stats.skipped) log(`not uploading under gazetteer/stats/dhw_5km/: the engine's since 2026-10-24 (oceanmetrics/indicators)`)
       stats.skipped += files.length - ours.length
     }
     chain = chain.then(async () => {
