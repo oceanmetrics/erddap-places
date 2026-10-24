@@ -1,6 +1,14 @@
 # refresh the precomputed place statistics (catalog/gazetteer/stats/) and publish the whole gazetteer
 # to s3://oceanmetrics.io-public/gazetteer/ = https://storage.oceanmetrics.io/gazetteer/
 #
+# 2026-10-24: gazetteer/stats/ is no longer written (nor deleted) from here. It is the one engine's
+# (oceanmetrics/indicators requests.yml: om-extract run, the compare gate, and its `daily` job at 09:30 UTC
+# for the 18 sanctuaries x dhw_5km CRW_SST and CRW_BAA; ledger om/plans_todo/2026-10-22_om-restructure_gates.md,
+# week 1): on 2026-10-23 this job's sync overwrote the engine's files. The per-item upload skips stats/
+# (precompute/src/publish.ts NOT_OURS) and the final sync of stats/ is gone; the erddap and places catalogs
+# are still published by this job. A dispatch with sync_dry_run=true runs only the publish step, as
+# `aws s3 sync --dryrun`, to show what it would write.
+#
 # runs on the self-hosted runner `macmini` (labels self-hosted, macOS, ARM64, macmini; see
 # catalog/README.md "Where it runs"; msens until 2026-10-12): node, python3, uv and the aws cli come
 # from Homebrew on the host, and the S3 sync uses the host's AWS profile (~/.aws). The repository holds no AWS secrets; if the
@@ -23,6 +31,11 @@ on:
         type: boolean
         required: false
         default: true
+      sync_dry_run:
+        description: 'skip the precompute and run the publish step as aws s3 sync --dryrun (writes nothing)'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -95,6 +108,7 @@ jobs:
       # it still runs the later steps, so what was produced is published, and fails the job at the end
       - name: precompute the statistics
         id: precompute
+        if: ${{ !inputs.sync_dry_run }}
         continue-on-error: true
         working-directory: precompute
         shell: bash
@@ -146,17 +160,18 @@ jobs:
 
       # .portolan/ is local bookkeeping and is never published
       - name: publish to S3
-        if: ${{ github.event_name == 'schedule' || inputs.publish }}
+        if: ${{ github.event_name == 'schedule' || inputs.publish || inputs.sync_dry_run }}
         env:
           AWS_ACCESS_KEY_ID    : ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SYNC_DRY_RUN         : ${{ inputs.sync_dry_run && '--dryrun' || '' }}
         run: |
           # no secrets: fall back to the host's AWS profile (the mini's default profile)
           if [ -z "$AWS_ACCESS_KEY_ID" ]; then
             unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
           fi
           aws sts get-caller-identity
-          # stats/ is synced WITHOUT --delete: an item that failed this week keeps last week's file.
+          # stats/ is not synced from here since 2026-10-24 (the engine's; see the end of this step).
           # rasters/, climatology/ and series/ (Then vs Now) are built on the Mac mini by
           # catalog/build_then_now.py and uploaded from there; their data files are not in git.
           # the bucket now has a second publisher (oceanmetrics/places): sync per collection dir
@@ -169,12 +184,13 @@ jobs:
             # h3/ is the place x H3 membership oceanmetrics/places builds from the published parquet: never --delete it
             # the data files of these collections are committed (git main is their source of truth), so this sync
             # republishes them as committed: a collection published from here must be committed before the next run
-            aws s3 sync "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
+            aws s3 sync $SYNC_DRY_RUN "$d" "s3://oceanmetrics.io-public/gazetteer/$name/" \
               --delete --exclude '.portolan/*' --exclude 'h3/*'
           done
-          # outage.json is this run's report (an artifact), not part of the catalog: never published, never stale on S3
-          aws s3 sync catalog/gazetteer/stats/ s3://oceanmetrics.io-public/gazetteer/stats/ \
-            --exclude '.portolan/*' --exclude 'outage.json'
+          # 2026-10-24: no sync of catalog/gazetteer/stats/ any more (it was `aws s3 sync catalog/gazetteer/stats/
+          # s3://.../gazetteer/stats/`, no --delete): gazetteer/stats/ is the engine's, oceanmetrics/indicators
+          # requests.yml, daily at 09:30 UTC (ledger om/plans_todo/2026-10-22_om-restructure_gates.md, week 1)
+          echo "gazetteer/stats/: not synced from here (the engine's since 2026-10-24)"
 
       # place ids contain ':' (MRGID:8439), which upload-artifact rejects in file names: ship a tarball
       - name: pack the statistics

@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { join } from 'node:path'
 import { planChunks } from './stats'
 import { schedule, hostOf, type Unit } from './schedule'
-import { cpArgs, publisher } from './publish'
+import { cpArgs, isOurs, publisher, NOT_OURS } from './publish'
+import { readFileSync } from 'node:fs'
 import { GAZETTEER } from './paths'
 
 const win = { start: '2026-01-01', end: '2026-04-17' }
@@ -141,21 +142,60 @@ describe('schedule', () => {
 
 describe('publish', () => {
   it('uploads a file to the same key under the prefix, colon and all, with its content type', () => {
-    const f = join(GAZETTEER, 'stats', 'dhw_5km', 'CRW_SST', 'NMS:FKNMS.parquet')
+    const f = join(GAZETTEER, 'places', 'NMS:FKNMS.parquet')
     expect(cpArgs(f, 's3://oceanmetrics.io-public/gazetteer/')).toEqual([
-      's3', 'cp', f, 's3://oceanmetrics.io-public/gazetteer/stats/dhw_5km/CRW_SST/NMS:FKNMS.parquet',
+      's3', 'cp', f, 's3://oceanmetrics.io-public/gazetteer/places/NMS:FKNMS.parquet',
       '--only-show-errors', '--content-type', 'application/vnd.apache.parquet'])
   })
   it('uploads in order, one at a time, and counts a failure without throwing', async () => {
     const calls: string[] = []
     const exec = async (_: string, a: string[]) => { calls.push(a[3].split('/').pop()!); if (a[3].endsWith('bad.json')) throw new Error('AccessDenied') }
     const p = publisher('s3://b/gazetteer', exec, () => {})
-    const at = (f: string) => join(GAZETTEER, 'stats', f)
+    const at = (f: string) => join(GAZETTEER, 'erddap', 'x', f)
     void p.publish([at('x.parquet'), at('bad.json')])
     void p.publish([at('collection.json')])
     await p.done()
     expect(calls).toEqual(['x.parquet', 'bad.json', 'collection.json'])
-    expect(p.stats).toEqual({ files: 2, failures: 1 })
+    expect(p.stats).toEqual({ files: 2, failures: 1, skipped: 0 })
+  })
+  // 2026-10-24 (ledger week 1): gazetteer/stats/ is the engine's (oceanmetrics/indicators), never written from here
+  it('never uploads a key under stats/: the engine owns gazetteer/stats/ since 2026-10-24', async () => {
+    const calls: string[] = []
+    const logs: string[] = []
+    const p = publisher('s3://b/gazetteer', async (_: string, a: string[]) => { calls.push(a[3]) }, (s) => logs.push(s))
+    const st = (f: string) => join(GAZETTEER, 'stats', f)
+    void p.publish([st('dhw_5km/CRW_SST/NMS:CINMS.parquet'), st('dhw_5km/CRW_SST/NMS:CINMS.provenance.json'),
+                    st('items/dhw_5km_CRW_SST_NMS-CINMS.json'), st('collection.json')])
+    void p.publish([join(GAZETTEER, 'erddap', 'dhw_5km', 'collection.json')])
+    await p.done()
+    expect(calls).toEqual(['s3://b/gazetteer/erddap/dhw_5km/collection.json'])
+    expect(p.stats).toEqual({ files: 1, failures: 0, skipped: 4 })
+    expect(logs).toEqual(["not uploading under gazetteer/stats/: the engine's since 2026-10-24 (oceanmetrics/indicators)"])
+    expect(() => cpArgs(st('x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's since 2026-10-24/)
+    expect(NOT_OURS).toEqual(['stats/'])
+    expect(isOurs('stats')).toBe(false)
+    expect(isOurs('stats/items/x.json')).toBe(false)
+    expect(isOurs('statsx/a.json')).toBe(true)
+    expect(isOurs('places/places.parquet')).toBe(true)
+  })
+  it('stats.yml syncs nothing to gazetteer/stats/ and deletes nothing under it', () => {
+    const wf = readFileSync(join(__dirname, '..', '..', '.github', 'workflows', 'stats.yml'), 'utf8')
+    // every aws s3 command, its continuation lines joined; comments dropped
+    const cmds = wf.replace(/\\\n\s*/g, ' ').split('\n').map((l) => l.replace(/^\s*#.*$/, '').trim())
+      .filter((l) => /\baws s3 /.test(l))
+    expect(cmds.length).toBeGreaterThan(0)
+    for (const c of cmds) {
+      // the positional arguments after `aws s3 <verb>`: options and their values dropped
+      const rest = c.split(/\baws s3 /)[1].replace(/--(exclude|include|content-type) \S+/g, '')
+        .split(/\s+/).filter((a) => a && !a.startsWith('-') && a !== '$SYNC_DRY_RUN')
+      const [verb, , dest] = rest
+      expect(['sync', 'cp'], c).toContain(verb)              // never rm or mv
+      const to = (dest ?? '').replace(/^["']|["']$/g, '')
+      if (to.startsWith('s3://')) expect(to, c).not.toMatch(/\/gazetteer\/stats(\/|$)/)
+    }
+    // the per-collection loop skips stats/, so its --delete never reaches gazetteer/stats/
+    expect(wf).toMatch(/case "\$name" in stats\|rasters\|climatology\|series\) continue ;; esac/)
+    expect(wf).toContain('2026-10-24')
   })
   it('does nothing without a prefix', async () => {
     const p = publisher('', async () => { throw new Error('should not run') }, () => {})
