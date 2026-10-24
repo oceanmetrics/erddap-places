@@ -181,13 +181,13 @@ describe('publish', () => {
                     st('items/dhw_5km_CRW_SST_NMS-CINMS.json'), st('items/dhw_5km_CRW_BAA_NMS-PMNM.json'),
                     st('IMERG_monthly_global_precip/precipitation/NMS:CINMS.parquet'),
                     st('items/IMERG_monthly_global_precip_precipitation_NMS-CINMS.json'),
-                    st('cmems_salinity/so/NMS:CINMS.parquet'), st('moda_npp_mo_glob/npp/NMS:CINMS.parquet'),
-                    st('items/cmems_salinity_so_NMS-CINMS.json'), st('collection.json')])
+                    st('a_series/x/NMS:CINMS.parquet'), st('b_series/y/NMS:CINMS.parquet'),
+                    st('items/a_series_x_NMS-CINMS.json'), st('collection.json')])
     void p.publish([join(GAZETTEER, 'erddap', 'dhw_5km', 'collection.json')])
     await p.done()
-    expect(calls).toEqual(['s3://b/gazetteer/stats/cmems_salinity/so/NMS:CINMS.parquet',
-                           's3://b/gazetteer/stats/moda_npp_mo_glob/npp/NMS:CINMS.parquet',
-                           's3://b/gazetteer/stats/items/cmems_salinity_so_NMS-CINMS.json',
+    expect(calls).toEqual(['s3://b/gazetteer/stats/a_series/x/NMS:CINMS.parquet',
+                           's3://b/gazetteer/stats/b_series/y/NMS:CINMS.parquet',
+                           's3://b/gazetteer/stats/items/a_series_x_NMS-CINMS.json',
                            's3://b/gazetteer/stats/collection.json',
                            's3://b/gazetteer/erddap/dhw_5km/collection.json'])
     expect(calls.some((c) => c.includes('dhw_5km_') || c.includes('/stats/dhw_5km/'))).toBe(false)
@@ -197,7 +197,7 @@ describe('publish', () => {
     expect(logs[0]).toMatch(/^not uploading 6 file\(s\) of the engine's series \(dhw_5km\/CRW_SST, dhw_5km\/CRW_BAA, IMERG_monthly_global_precip\/precipitation/)
     expect(() => cpArgs(st('dhw_5km/CRW_SST/x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(() => cpArgs(st('items/dhw_5km_CRW_BAA_NMS-CINMS.json'), 's3://b/gazetteer')).toThrow(/the engine's/)
-    expect(cpArgs(st('cmems_salinity/so/x.parquet'), 's3://b/gazetteer')[3]).toBe('s3://b/gazetteer/stats/cmems_salinity/so/x.parquet')
+    expect(cpArgs(st('a_series/x/x.parquet'), 's3://b/gazetteer')[3]).toBe('s3://b/gazetteer/stats/a_series/x/x.parquet')
     expect(isOurs('stats/dhw_5km/CRW_BAA/x.parquet')).toBe(false)
     expect(isOurs('stats/dhw_5km/CRW_BAA')).toBe(false)
     expect(isOurs('stats/items/dhw_5km_CRW_SST_NMS-CINMS.json')).toBe(false)
@@ -206,7 +206,7 @@ describe('publish', () => {
     expect(isOurs('stats/dhw_5km_other/x.parquet')).toBe(true)
     expect(isOurs('stats/items/x.json')).toBe(true)
     expect(isOurs('stats/collection.json')).toBe(true)        // built here (stac.ts) until the last series moves
-    expect(isOurs('stats/cmems_salinity/so/x.parquet')).toBe(true)
+    expect(isOurs('stats/a_series/x/x.parquet')).toBe(true)
     expect(isOurs('places/places.parquet')).toBe(true)
   })
   it('stats.yml writes nothing of an engine series: its stats sync excludes syncExcludes() and never deletes', () => {
