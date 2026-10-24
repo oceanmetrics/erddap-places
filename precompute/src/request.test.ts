@@ -123,9 +123,11 @@ describe('target selection', () => {
     const sel = selectTargets(none, local, runTargets(false))
     expect(sel.map((s) => s.target)).toEqual(TARGETS)
     expect(sel.map((s) => s.placeIds)).toEqual(TARGETS.map((t) => placesFor(t, local)))
-    expect(selectTargets(none, local).map((s) => s.target)).toEqual(ALL_TARGETS)
-    expect(sel.find((s) => s.target.variable === 'chl')!.placeIds).toEqual(local)
-    expect(sel.find((s) => s.target.variable === 'CLASS')!.placeIds).toEqual(['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])   // REEF_PLACES, a list
+    // every known series by its own places rule (the engine's too: a request may name one)
+    const known = selectTargets(none, local)
+    expect(known.map((s) => s.target)).toEqual(ALL_TARGETS)
+    expect(known.find((s) => s.target.variable === 'chl')!.placeIds).toEqual(local)
+    expect(known.find((s) => s.target.variable === 'CLASS')!.placeIds).toEqual(['NMS:FKNMS', 'NMS:HIHWNMS', 'NMS:NMSAS', 'NMS:PMNM'])   // REEF_PLACES, a list
   })
   it('the daily run\'s --dataset and --place only filter', () => {
     const sel = selectTargets({ ...none, datasets: ['dhw_5km'], places: ['NMS:PMNM', 'NMS:XXX'] }, local)
