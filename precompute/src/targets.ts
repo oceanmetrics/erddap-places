@@ -45,6 +45,8 @@ const SANCTUARY_SERIES: Array<[string, string, string?]> = [
 export const ENGINE_SERIES: Array<[string, string]> = [
   ['dhw_5km', 'CRW_SST'],
   ['dhw_5km', 'CRW_BAA'],
+  // week 6: the sanctuaries series, each once its parity batch passed and the engine published it (2026-10-24)
+  ['IMERG_monthly_global_precip', 'precipitation'],
 ]
 export const engineOwns = (dataset: string, variable: string): boolean =>
   ENGINE_SERIES.some(([d, v]) => d === dataset && v === variable)

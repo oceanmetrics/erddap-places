@@ -101,6 +101,8 @@ describe('targets', () => {
     expect(ENGINE_SERIES.length).toBeGreaterThan(0)
     for (const t of TARGETS) expect(engineOwns(t.dataset, t.variable), `${t.dataset}/${t.variable}`).toBe(false)
     expect(TARGETS.some((t) => t.dataset === 'dhw_5km')).toBe(false)
+    expect(TARGETS.some((t) => t.dataset === 'IMERG_monthly_global_precip')).toBe(false)     // week 6, the first series
+    expect(inCollection('IMERG_monthly_global_precip', 'precipitation')).toBe(true)
     expect(inCollection('dhw_5km', 'CRW_SST')).toBe(true)
     expect(inCollection('dhw_5km', 'CRW_BAA')).toBe(true)
     expect(inCollection('cmems_salinity', 'so')).toBe(true)
@@ -112,8 +114,10 @@ describe('targets', () => {
   })
   it('runs the sanctuaries series over the full record', () => {
     const series = TARGETS.filter((t) => t.days === 'all')
-    expect(series.map((t) => t.variable).sort()).toEqual(
-      ['chl', 'dissic', 'fe', 'mlotst', 'no3', 'npp', 'nppv', 'o2', 'ph', 'phyc', 'po4', 'precipitation', 'si', 'so', 'spco2', 'tob', 'zooc'])
+    // the 17 sanctuaries series, but those the engine has taken (ENGINE_SERIES)
+    const all = ['chl', 'dissic', 'fe', 'mlotst', 'no3', 'npp', 'nppv', 'o2', 'ph', 'phyc', 'po4', 'precipitation', 'si', 'so', 'spco2', 'tob', 'zooc']
+    const taken = new Set(ENGINE_SERIES.map(([, v]) => v))
+    expect(series.map((t) => t.variable).sort()).toEqual(all.filter((v) => !taken.has(v)))
     expect(series.every((t) => t.places === 'nms')).toBe(true)
   })
   it('targets no pending or known-NaN dataset, and every target names a real collection variable', () => {

@@ -164,10 +164,13 @@ describe('publish', () => {
   // Items under stats/items/ (the daily job fetches the published Items from S3 and its sync would put them back:
   // regression, the engine's dhw_5km Items); the other stats series are still this repo's until the engine takes them
   it('NOT_OURS is every engine series\' directory and Item prefix', () => {
-    expect(ENGINE_SERIES).toEqual([['dhw_5km', 'CRW_SST'], ['dhw_5km', 'CRW_BAA']])
-    expect(NOT_OURS).toEqual(['stats/dhw_5km/CRW_SST/', 'stats/items/dhw_5km_CRW_SST_',
-                              'stats/dhw_5km/CRW_BAA/', 'stats/items/dhw_5km_CRW_BAA_'])
-    expect(syncExcludes()).toEqual(['dhw_5km/CRW_SST/*', 'items/dhw_5km_CRW_SST_*', 'dhw_5km/CRW_BAA/*', 'items/dhw_5km_CRW_BAA_*'])
+    // week 1: dhw_5km; week 6, series by series (oceanmetrics/indicators scripts/parity_units.tsv)
+    expect(ENGINE_SERIES.slice(0, 3)).toEqual([['dhw_5km', 'CRW_SST'], ['dhw_5km', 'CRW_BAA'],
+                                               ['IMERG_monthly_global_precip', 'precipitation']])
+    expect(NOT_OURS).toEqual(ENGINE_SERIES.flatMap(([d, v]) => [`stats/${d}/${v}/`, `stats/items/${d}_${v}_`]))
+    expect(NOT_OURS.slice(0, 2)).toEqual(['stats/dhw_5km/CRW_SST/', 'stats/items/dhw_5km_CRW_SST_'])
+    expect(syncExcludes()).toEqual(ENGINE_SERIES.flatMap(([d, v]) => [`${d}/${v}/*`, `items/${d}_${v}_*`]))
+    expect(syncExcludes()).toContain('items/IMERG_monthly_global_precip_precipitation_*')
   })
   it('never uploads an engine series\' file or Item and still uploads another stats key', async () => {
     const calls: string[] = []
@@ -176,6 +179,8 @@ describe('publish', () => {
     const st = (f: string) => join(GAZETTEER, 'stats', f)
     void p.publish([st('dhw_5km/CRW_SST/NMS:CINMS.parquet'), st('dhw_5km/CRW_BAA/NMS:CINMS.provenance.json'),
                     st('items/dhw_5km_CRW_SST_NMS-CINMS.json'), st('items/dhw_5km_CRW_BAA_NMS-PMNM.json'),
+                    st('IMERG_monthly_global_precip/precipitation/NMS:CINMS.parquet'),
+                    st('items/IMERG_monthly_global_precip_precipitation_NMS-CINMS.json'),
                     st('cmems_salinity/so/NMS:CINMS.parquet'), st('moda_npp_mo_glob/npp/NMS:CINMS.parquet'),
                     st('items/cmems_salinity_so_NMS-CINMS.json'), st('collection.json')])
     void p.publish([join(GAZETTEER, 'erddap', 'dhw_5km', 'collection.json')])
@@ -186,14 +191,18 @@ describe('publish', () => {
                            's3://b/gazetteer/stats/collection.json',
                            's3://b/gazetteer/erddap/dhw_5km/collection.json'])
     expect(calls.some((c) => c.includes('dhw_5km_') || c.includes('/stats/dhw_5km/'))).toBe(false)
-    expect(p.stats).toEqual({ files: 5, failures: 0, skipped: 4 })
-    expect(logs).toEqual(["not uploading 4 file(s) of the engine's series (dhw_5km/CRW_SST, dhw_5km/CRW_BAA; oceanmetrics/indicators)"])
+    expect(calls.some((c) => c.includes('IMERG'))).toBe(false)
+    expect(p.stats).toEqual({ files: 5, failures: 0, skipped: 6 })
+    expect(logs).toHaveLength(1)
+    expect(logs[0]).toMatch(/^not uploading 6 file\(s\) of the engine's series \(dhw_5km\/CRW_SST, dhw_5km\/CRW_BAA, IMERG_monthly_global_precip\/precipitation/)
     expect(() => cpArgs(st('dhw_5km/CRW_SST/x.parquet'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(() => cpArgs(st('items/dhw_5km_CRW_BAA_NMS-CINMS.json'), 's3://b/gazetteer')).toThrow(/the engine's/)
     expect(cpArgs(st('cmems_salinity/so/x.parquet'), 's3://b/gazetteer')[3]).toBe('s3://b/gazetteer/stats/cmems_salinity/so/x.parquet')
     expect(isOurs('stats/dhw_5km/CRW_BAA/x.parquet')).toBe(false)
     expect(isOurs('stats/dhw_5km/CRW_BAA')).toBe(false)
     expect(isOurs('stats/items/dhw_5km_CRW_SST_NMS-CINMS.json')).toBe(false)
+    expect(isOurs('stats/IMERG_monthly_global_precip/precipitation/NMS:CINMS.parquet')).toBe(false)
+    expect(isOurs('stats/items/IMERG_monthly_global_precip_precipitation_NMS-CINMS.json')).toBe(false)
     expect(isOurs('stats/dhw_5km_other/x.parquet')).toBe(true)
     expect(isOurs('stats/items/x.json')).toBe(true)
     expect(isOurs('stats/collection.json')).toBe(true)        // built here (stac.ts) until the last series moves
