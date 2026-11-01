@@ -93,6 +93,9 @@ jobs:
           docker --version
           aws --version
           rclone version | head -1
+          # om-catalog (the h3-profile validator of collection.json) runs on the host through npx, since obisindicators
+          # 0.12.2: the obis-h3 image carries no Node, and the 2026-11-01 run died in the container without it
+          node --version && npx --version
           test -x "$OM_PUBLISH" || { echo "::error::$OM_PUBLISH is missing"; exit 1; }
           test -x "$HOME/.config/oceanmetrics/rclone-r2.sh" || { echo "::error::the R2 rclone wrapper is missing on the host"; exit 1; }
           vm_stat | head -5
